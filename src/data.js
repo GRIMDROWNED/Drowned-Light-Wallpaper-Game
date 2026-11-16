@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.2.2";
+  DS.VERSION = "0.3.0";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -26,10 +26,16 @@
     feet: Object.fromEntries(seq("side/walk", 4).map((f) => [f, walkFeet])),
   }, extra);
 
+  // Frames cut from the side-view movement sheets (tools/cut_side.py): run, air, air attack, up-swing, plunge, dash.
+  const moves = (extra = {}) => Object.assign({
+    run: seq("side/run", 4), jump: ["side/rise"], rise: ["side/rise"], apex: ["side/apex"], fall: ["side/fall"], land: ["side/land"], flip: ["side/flip"],
+    dash: ["side/dash"], airAtk: ["side/airAtk"], upAtk: ["side/upWind", "side/up"], plunge: ["side/plunge"], plungeLand: ["side/plungeLand"],
+  }, extra);
+
   DS.KITS = {
     lanternBlade: {
       name: "Lantern Blade", tag: "Kit 01", color: "255,197,106",
-      sprite: std("lantern-knight", [44, 80]),
+      sprite: std("lantern-knight", [44, 80], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [44, 80]])), { "side/plunge": [31, 95], "side/flip": [34, 33] }) })),
       attack: { type: "arc", name: "Blade Arc", dmg: 12, range: 70, h: 64, cd: 0.32, kb: 220 },
       dashStrike: { dmg: 10, name: "Lantern Strike" },
       ability: { id: "illuminate", name: "Illuminate", cd: 9, radius: 160, dmg: 22, burn: 6, dur: 4,

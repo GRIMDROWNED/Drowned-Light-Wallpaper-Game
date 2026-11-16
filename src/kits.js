@@ -327,7 +327,7 @@
     G.fx.push({ kind: "slam", x: p.x, y: p.y, t: 0, life: 0.35, c: p.k.color });
     DS.fx.puff(p.x, p.y, 12, "rgba(160,180,170,0.55)");
     DS.fx.shake(7);
-    p.cast = { anim: "attack", t: 0, dur: 0.18, lock: true, frameP: 0.99 };
+    p.cast = DS.spriteOf(p).plungeLand ? { anim: "plungeLand", t: 0, dur: 0.18, lock: true, frameP: 0 } : { anim: "attack", t: 0, dur: 0.18, lock: true, frameP: 0.99 };
   }
 
   function update(p, dt) {

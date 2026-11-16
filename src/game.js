@@ -55,7 +55,7 @@
   function updatePlayer(p, dt) {
     const k = p.k;
     if (p.dead) { p.dead += dt; p.vx *= 0.9; p.vy += P.gravity * dt; Wd.move(p, dt); if (p.dead > 2.2) respawn(); return; }
-    p.inv = Math.max(0, p.inv - dt); p.hurtT = Math.max(0, p.hurtT - dt); p.dashCd = Math.max(0, p.dashCd - dt);
+    p.inv = Math.max(0, p.inv - dt); p.hurtT = Math.max(0, p.hurtT - dt); p.flipT = Math.max(0, (p.flipT || 0) - dt); p.landT = Math.max(0, (p.landT || 0) - dt); p.dashCd = Math.max(0, p.dashCd - dt);
     p.abilCd = Math.max(0, p.abilCd - dt); p.rushT = Math.max(0, p.rushT - dt); p.dropT = Math.max(0, p.dropT - dt);
     p.comboT = Math.max(0, p.comboT - dt);
     // Blood Tithe drains, forge heat cools
@@ -114,7 +114,7 @@
       if (jumped && p.atk && !p.atk.ranged) p.atk = null;
       if (drop) { p.dropT = 0.25; p.buffer = 0; p.onGround = false; p.y += 2; }
       else if (p.coyote > 0) { p.vy = -P.jump; p.coyote = 0; p.buffer = 0; p.jumpT = 0; puff(p.x, p.y, 5, "rgba(150,170,160,0.5)"); }
-      else if (p.airJumps > 0) { p.vy = -P.doubleJump; p.airJumps--; p.buffer = 0; p.jumpT = 0; ring(p.x, p.y - 10, "rgba(" + k.color + ",0.6)"); }
+      else if (p.airJumps > 0) { p.vy = -P.doubleJump; p.airJumps--; p.buffer = 0; p.jumpT = 0; p.flipT = 0.32; ring(p.x, p.y - 10, "rgba(" + k.color + ",0.6)"); }
     }
     // short hop: letting go early cuts the jump, but never before 0.1 s, so a quick tap still gives a real jump
     p.jumpT = (p.jumpT == null ? 9 : p.jumpT) + dt;
@@ -126,6 +126,7 @@
     if (p.onGround) {
       p.airJumps = 1; p.airDash = 1;
       if (wasAir && vyBefore > 400) puff(p.x, p.y, 6, "rgba(150,170,160,0.45)");
+      if (wasAir) { p.flipT = 0; if (vyBefore > 300 && Math.abs(p.vx) < 120) p.landT = 0.1; } // a short crouch on landing (look only, no lock)
       if (p.plunge) DS.Kits.plungeLand(p);
     }
     p.x = clamp(p.x, 40 + p.w / 2, Wd.W - 40 - p.w / 2);

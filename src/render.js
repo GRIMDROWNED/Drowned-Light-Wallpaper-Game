@@ -71,6 +71,7 @@
   };
 
   // ---------------- the knight ----------------
+  const FLIP = 0.32; // keep in step with game.js
   function playerFrame(p) {
     const set = DS.spriteOf(p);
     const f = (anim, prog) => S.frame(set, anim, prog);
@@ -80,17 +81,26 @@
     if (p.charge >= 0) return [f(set.charge ? "charge" : "cast", 0), 0];
     if (p.cast) return [f(p.cast.anim, p.cast.frameP != null ? p.cast.frameP : p.cast.t / p.cast.dur), 0];
     if (p.dashT > 0) return [f("dash", 0), 0];
-    if (p.plunge) return [f("attack", 0.99), 0.35];
-    if (p.atk) return [f("attack", p.atk.t / p.atk.dur), 0];
+    if (p.plunge) return set.plunge ? [f("plunge", 0), 0] : [f("attack", 0.99), 0.35];
+    if (p.atk) {
+      if (p.atk.up && set.upAtk) return [f("upAtk", Math.min(0.99, p.atk.t / (p.atk.dur * 0.45))), 0]; // wind-up, then the swing
+      if (!p.onGround && !p.atk.ranged && set.airAtk) return [f("airAtk", 0), 0];
+      return [f("attack", p.atk.t / p.atk.dur), 0];
+    }
     if (p.hurtT > 0.1) return [f("hurt", 0), 0];
+    if (!p.onGround && set.rise) {
+      if (p.flipT > 0 && set.flip) return [f("flip", 0), (1 - p.flipT / FLIP) * TAU, -p.h * 0.4]; // spun round its middle // the double jump somersault
+      return [f(p.vy < -220 ? "rise" : p.vy < 200 ? "apex" : "fall", 0), 0];
+    }
     if (!p.onGround) return [f(p.vy < 0 ? "jump" : "fall", 0), p.vy < 0 ? -0.06 : 0.05];
+    if (p.landT > 0 && set.land) return [f("land", 0), 0];
     if (Math.abs(p.vx) > 25) { const n = set.run.length, stride = n > 4 ? 11 : 20; return [f("run", ((p.runT / stride) % n) / n), 0]; }
     const n = set.idle.length;
     return [f("idle", n > 1 ? ((G.t * 7) % n) / n : 0), 0];
   }
 
   function drawPlayer(p) {
-    const [rec, rot] = playerFrame(p);
+    const [rec, rot, lift = 0] = playerFrame(p);
     const kc = p.k.color;
     // kit glows: stance, heat, tithe
     let glow = 0;
@@ -111,7 +121,7 @@
     const blink = p.inv > 0 && p.hurtT <= 0 && !p.dashT && Math.floor(G.t * 20) % 2 === 0 && p.inv < 0.65;
     const alpha = p.dead ? Math.max(0, 1 - (p.dead - 1.2)) : blink ? 0.45 : 1;
     const tint = p.hurtT > 0.2 ? ["#ff5050", 0.5] : p.lunge && p.lunge.kind === "brand" ? ["#ff9040", 0.25] : null;
-    if (!S.draw(ctx, rec, p.x, p.y + 1, dir, 1, tint, alpha, rot)) {
+    if (!S.draw(ctx, rec, p.x, p.y + 1 + lift, dir, 1, tint, alpha, rot)) {
       ctx.fillStyle = `rgb(${kc})`; ctx.fillRect(p.x - p.w / 2, p.y - p.h, p.w, p.h);
     }
     if (p.waltz) {
