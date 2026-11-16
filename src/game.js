@@ -69,7 +69,7 @@
 
     // dash (cancels attack recovery and casts that allow it)
     if (I.p.dash && p.dashCd <= 0 && !p.guard && !p.lunge && (p.onGround || p.airDash > 0) && !(p.cast && p.cast.lock)) {
-      if (p.atk && p.atk.t < p.atk.dur * 0.45) { /* too early in the swing */ } else {
+      { // a dash cancels any swing at once
         if (mx) p.dir = mx;
         p.atk = null; p.cast = null; p.plunge = false;
         p.dashT = P.dashTime; p.dashCd = k.dashCd || P.dashCd; p.inv = Math.max(p.inv, P.dashInv);
@@ -93,7 +93,7 @@
       DS.Kits.lungeTick(p, dt);
     } else {
       // run
-      const top = P.speed * speedMult(p) * (p.waltz ? k.ability.move : 1) * (p.atk && p.onGround && !p.atk.ranged ? 0.25 : 1) * (p.charge >= 0 ? 0.2 : 1);
+      const top = P.speed * speedMult(p) * (p.waltz ? k.ability.move : 1) * (p.atk && p.onGround && !p.atk.ranged ? 0.55 : 1) * (p.charge >= 0 ? 0.2 : 1);
       const want = locked ? 0 : mx * top;
       const acc = p.onGround ? P.accel : P.airAccel;
       if (want) p.vx += clamp(want - p.vx, -acc * dt, acc * dt);
@@ -103,15 +103,23 @@
       else p.vy = Math.min(P.maxFall, p.vy + P.gravity * dt * (p.vy > 0 ? 1.15 : 1));
     }
 
-    // jumping: coyote time, buffered presses, double jump, short hop on release, drop through platforms
+    // jumping: no cooldown. Coyote time, buffered presses, a double jump, and a jump cancels a dash or the
+    // rest of a swing. Drop through a platform only with the stick held hard down.
     p.coyote = p.onGround ? P.coyote : Math.max(0, p.coyote - dt);
     p.buffer = I.p.jump ? P.buffer : Math.max(0, p.buffer - dt);
-    if (p.buffer > 0 && !locked && !p.dashT && !p.plunge) {
-      if (I.h.down && p.onPlat) { p.dropT = 0.25; p.buffer = 0; p.onGround = false; p.y += 2; }
-      else if (p.coyote > 0) { p.vy = -P.jump; p.coyote = 0; p.buffer = 0; puff(p.x, p.y, 5, "rgba(150,170,160,0.5)"); }
-      else if (p.airJumps > 0) { p.vy = -P.doubleJump; p.airJumps--; p.buffer = 0; ring(p.x, p.y - 10, "rgba(" + k.color + ",0.6)"); }
+    if (p.buffer > 0 && !locked && !p.plunge) {
+      const drop = I.y > 0.8 && Math.abs(I.x) < 0.5 && p.onPlat;
+      const jumped = drop || p.coyote > 0 || p.airJumps > 0;
+      if (jumped && p.dashT > 0) { p.dashT = 0; p.vx *= 0.75; } // dash-jump keeps most of the dash's speed
+      if (jumped && p.atk && !p.atk.ranged) p.atk = null;
+      if (drop) { p.dropT = 0.25; p.buffer = 0; p.onGround = false; p.y += 2; }
+      else if (p.coyote > 0) { p.vy = -P.jump; p.coyote = 0; p.buffer = 0; p.jumpT = 0; puff(p.x, p.y, 5, "rgba(150,170,160,0.5)"); }
+      else if (p.airJumps > 0) { p.vy = -P.doubleJump; p.airJumps--; p.buffer = 0; p.jumpT = 0; ring(p.x, p.y - 10, "rgba(" + k.color + ",0.6)"); }
     }
-    if (I.r.jump && p.vy < 0 && !p.dashT) p.vy *= P.cut;
+    // short hop: letting go early cuts the jump, but never before 0.1 s, so a quick tap still gives a real jump
+    p.jumpT = (p.jumpT == null ? 9 : p.jumpT) + dt;
+    if (!I.h.jump && p.vy < 0 && !p.dashT && p.jumpT >= 0.1 && p.jumpT < 0.4 && !p.cutDone) { p.vy *= P.cut; p.cutDone = true; }
+    if (p.jumpT < dt * 1.5) p.cutDone = false;
 
     const wasAir = !p.onGround, vyBefore = p.vy;
     Wd.move(p, dt);

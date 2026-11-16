@@ -4,13 +4,13 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.2.0";
+  DS.VERSION = "0.2.1";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
     gravity: 2100, maxFall: 950, speed: 250, accel: 2600, airAccel: 1900, friction: 2600,
     jump: 720, doubleJump: 640, coyote: 0.1, buffer: 0.13, cut: 0.45,
-    dashSpeed: 700, dashTime: 0.17, dashCd: 0.55, dashInv: 0.2,
+    dashSpeed: 700, dashTime: 0.17, dashCd: 0.35, dashInv: 0.2,
     plungeSpeed: 1150, plungeDmg: 1.4, plungeR: 90,
     hurtInv: 0.7, hp: 140,
   };
