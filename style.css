@@ -54,7 +54,7 @@ h2 { font: 600 13px var(--display); letter-spacing: 0.14em; text-transform: uppe
 body.touch #touch, body.touch #pauseBtn { display: block; }
 #pauseBtn { position: fixed; z-index: 10; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
   width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: rgba(8, 18, 26, 0.6); color: var(--text); font: 700 13px var(--body); }
-#touch { position: fixed; z-index: 10; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: 230px; height: 200px; }
+#touch { position: fixed; z-index: 10; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(34px + env(safe-area-inset-bottom, 0px)); width: 230px; height: 200px; }
 .tb { position: absolute; border-radius: 50%; border: 2px solid rgba(200, 240, 240, 0.35); background: rgba(10, 25, 32, 0.45);
   color: rgba(230, 245, 245, 0.85); font: 700 11px var(--body); text-transform: uppercase; letter-spacing: 0.05em; padding: 0; }
 .tb.on { background: rgba(127, 227, 212, 0.45); border-color: var(--accent); }

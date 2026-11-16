@@ -13,7 +13,7 @@
   const PAD = { jump: [0], attack: [2, 6], dash: [1, 5], ability: [3, 7], pause: [9], kit: [4, 8], up: [12], down: [13], left: [14], right: [15], confirm: [0], back: [1] };
 
   const keys = new Set();
-  const touch = { x: 0, y: 0, b: {} }; // virtual stick and buttons
+  const touch = { x: 0, y: 0, b: {}, tap: {} }; // tap latches a press so a very quick tap is never missed between frames // virtual stick and buttons
   const mouse = { attack: false, ability: false };
   const I = { x: 0, y: 0, p: {}, r: {}, h: {}, source: "keys", padName: "" };
   let prev = {};
@@ -41,8 +41,10 @@
     root.addEventListener("touchstart", (e) => {
       I.source = "touch"; document.body.classList.add("touch");
       for (const t of e.changedTouches) {
-        const b = t.target.closest && t.target.closest("[data-act]");
-        if (b) { touch.b[b.dataset.act] = t.identifier; b.classList.add("on"); continue; }
+        let b = t.target.closest && t.target.closest("[data-act]");
+        // a touch on the right side that misses every button goes to the nearest one (fat thumbs, app bars over the edge)
+        if (!b && t.clientX > innerWidth * 0.5 && !t.target.closest("button,.menu")) b = nearestButton(root, t.clientX, t.clientY);
+        if (b) { touch.b[b.dataset.act] = t.identifier; touch.tap[b.dataset.act] = true; b.classList.add("on"); continue; }
         if (stickId === null && t.clientX < innerWidth * 0.45 && !t.target.closest("button,.menu")) {
           stickId = t.identifier; ox = t.clientX; oy = t.clientY;
           stickEl.style.left = ox + "px"; stickEl.style.top = oy + "px"; stickEl.classList.add("on");
@@ -70,6 +72,16 @@
       }
     };
     root.addEventListener("touchend", end); root.addEventListener("touchcancel", end);
+  }
+
+  function nearestButton(root, x, y) {
+    let best = null, bd = 1e9;
+    for (const b of root.querySelectorAll("#touch [data-act]")) {
+      const r = b.getBoundingClientRect(); if (!r.width) continue;
+      const d = Math.hypot(r.left + r.width / 2 - x, r.top + r.height / 2 - y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return bd < 160 ? best : null;
   }
 
   function pad() {
@@ -101,9 +113,11 @@
       if (Math.abs(touch.x) > 0.25) x = touch.x;
       if (Math.abs(touch.y) > 0.45) y = touch.y;
       for (const a in touch.b) now[a] = true;
+      for (const a in touch.tap) if (!prev[a]) now[a] = true;
       if (touch.y < -0.6) now.up = true; if (touch.y > 0.6) now.down = true;
       if (touch.x < -0.6) now.left = true; if (touch.x > 0.6) now.right = true;
     }
+    touch.tap = {};
     I.x = Math.max(-1, Math.min(1, x)); I.y = Math.max(-1, Math.min(1, y));
     for (const a of ACTIONS) { I.p[a] = now[a] && !prev[a]; I.r[a] = !now[a] && prev[a]; I.h[a] = now[a]; }
     prev = now;
