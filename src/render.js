@@ -3,10 +3,13 @@
 (function (DS) {
   const G = DS.G, S = DS.Sprites, Wd = DS.World;
   const R = DS.Render = { vw: 900, vh: 470 };
-  let cv, ctx, k = 1;
+  // The scene is drawn on a low-res canvas (1 px = 2 world units) and blown up with no smoothing, so terrain, sprites
+  // and effects share one pixel grid. Numbers and the HUD go on the full-res canvas on top.
+  let cv, ctx, main, lo, lctx, k = 1, LW = 1, LH = 1;
 
   R.init = function (canvas) {
-    cv = canvas; ctx = cv.getContext("2d");
+    cv = canvas; main = ctx = cv.getContext("2d");
+    lo = document.createElement("canvas"); lctx = lo.getContext("2d");
     addEventListener("resize", resize); resize();
   };
   function resize() {
@@ -17,21 +20,23 @@
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     cv.style.width = w + "px"; cv.style.height = h + "px";
     k = cv.width / R.vw;
+    LW = Math.ceil(R.vw / 2) + 1; LH = Math.ceil(vh / 2) + 1;
+    lo.width = LW; lo.height = LH;
   }
 
   const TAU = Math.PI * 2;
   const pct = (a, b) => Math.max(0, Math.min(1, a / b));
 
   R.draw = function () {
-    ctx.setTransform(k, 0, 0, k, 0, 0);
-    ctx.imageSmoothingEnabled = false;
     const vw = R.vw, vh = R.vh, c = G.cam;
     const sx = (Math.random() - 0.5) * c.shake, sy = (Math.random() - 0.5) * c.shake;
-    const cam = { x: c.x + sx, y: c.y + sy };
-    Wd.drawBackdrop(ctx, cam, vw, vh, G.t);
-    ctx.save();
-    ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
-    Wd.drawWorld(ctx, cam, vw, vh);
+    const cam = { x: Math.round((c.x + sx) / 2) * 2, y: Math.round((c.y + sy) / 2) * 2 };
+    // the pixel pass
+    ctx = lctx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+    Wd.drawBackdrop(ctx, cam, LW, LH, G.t);
+    Wd.drawWorld(ctx, cam, LW, LH);
+    ctx.setTransform(0.5, 0, 0, 0.5, -cam.x / 2, -cam.y / 2);
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
       for (const e of G.foes) drawFoe(e);
@@ -40,19 +45,26 @@
       for (const s of G.shots) drawShot(s);
       for (const f of G.fx) drawFx(f);
       if (G.boxes) drawBoxes();
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+    // blow it up
+    ctx = main;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(lo, 0, 0, LW, LH, 0, 0, LW * 2 * k, LH * 2 * k);
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    if (G.player) {
+      ctx.save(); ctx.translate(-cam.x, -cam.y);
       for (const t of G.texts) {
         ctx.globalAlpha = 1 - pct(t.t - 0.5, 0.4);
-        ctx.font = `700 ${t.size}px "Cinzel", Georgia, serif`; ctx.textAlign = "center";
-        ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,0.75)"; ctx.strokeText(t.txt, t.x, t.y);
+        ctx.font = `700 ${t.size + 2}px "Pixelify Sans", monospace`; ctx.textAlign = "center";
+        ctx.lineWidth = 3; ctx.strokeStyle = "rgba(10,6,8,0.9)"; ctx.strokeText(t.txt, t.x, t.y);
         ctx.fillStyle = t.color; ctx.fillText(t.txt, t.x, t.y);
       }
-      ctx.globalAlpha = 1;
+      ctx.restore(); ctx.globalAlpha = 1;
     }
-    ctx.restore();
-    Wd.drawNear(ctx, cam, vw, vh);
     // vignette and the red flash when hurt
     const v = ctx.createRadialGradient(vw / 2, vh * 0.55, vh * 0.35, vw / 2, vh * 0.55, vw * 0.75);
-    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,4,8,0.6)");
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,4,8,0.45)");
     ctx.fillStyle = v; ctx.fillRect(0, 0, vw, vh);
     if (G.redT > 0) { ctx.fillStyle = `rgba(160,20,20,${G.redT * 0.6})`; ctx.fillRect(0, 0, vw, vh); }
     if (G.player && G.mode !== "title") hud();
@@ -322,7 +334,7 @@
     ctx.textAlign = "left";
     const x = 14, y = 14;
     ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, 72);
-    ctx.font = '700 13px "Cinzel", Georgia, serif'; ctx.fillStyle = `rgb(${k.color})`;
+    ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = `rgb(${k.color})`;
     ctx.fillText(k.name.toUpperCase(), x, y + 10);
     ctx.font = '600 10px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb"; ctx.fillText(k.tag, x + 170, y + 10);
     // health
@@ -342,13 +354,13 @@
     if (k.rush) meter = ["Rush", p.rushT / k.rush.dur, "#c9a0ff"];
     if (meter) { ctx.fillStyle = "#cfd8dc"; ctx.fillText(meter[0], x + 130, y + 54); bar(x + 130, y + 58, 90, 4, meter[1], meter[2], "#141c22"); }
     // top right: wave, kills, combo, dummy dps
-    ctx.textAlign = "right"; ctx.font = '700 12px "Cinzel", Georgia, serif'; ctx.fillStyle = "#cfe6e8";
+    ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;
     const rx = vw - 14 - (document.body.classList.contains("touch") ? 64 : 0);
     ctx.fillText(G.waves ? `Wave ${G.wave}  ·  ${left} left` : `Free play  ·  ${left} foes`, rx, y + 10);
     ctx.font = '600 11px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb";
     ctx.fillText(`Kills ${G.kills}   Best combo ${G.best}`, rx, y + 26);
-    if (G.combo >= 3) { ctx.font = '900 22px "Cinzel", Georgia, serif'; ctx.fillStyle = `rgba(255,220,140,${Math.min(1, G.comboT)})`; ctx.fillText(G.combo + " HITS", rx, y + 52); }
+    if (G.combo >= 3) { ctx.font = '900 22px "Pixelify Sans", monospace'; ctx.fillStyle = `rgba(255,220,140,${Math.min(1, G.comboT)})`; ctx.fillText(G.combo + " HITS", rx, y + 52); }
     if (G.foes.some((e) => e.d.dummy)) {
       const sum = G.dummyLog.reduce((a, l) => a + l[1], 0), span = G.dummyLog.length ? Math.max(1, G.t - G.dummyLog[0][0]) : 1;
       ctx.font = '600 11px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#e8d6a0";
@@ -359,17 +371,17 @@
     const boss = G.foes.find((e) => e.d.boss && !e.dead);
     if (boss) {
       const w = Math.min(420, vw - 120), bx = (vw - w) / 2, by = R.vh - 34;
-      ctx.textAlign = "center"; ctx.font = '700 13px "Cinzel", Georgia, serif'; ctx.fillStyle = "#e6d2b0";
+      ctx.textAlign = "center"; ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = "#e6d2b0";
       ctx.fillText(boss.d.name, vw / 2, by - 6);
       bar(bx, by, w, 8, boss.hp / boss.max, "#c0a060", "#201810");
     }
     if (G.banner) {
       const a = Math.min(1, G.banner.t * 3, (2.2 - G.banner.t) * 2);
-      ctx.textAlign = "center"; ctx.font = '700 26px "Cinzel", Georgia, serif';
+      ctx.textAlign = "center"; ctx.font = '700 26px "Pixelify Sans", monospace';
       ctx.fillStyle = `rgba(220,240,240,${a})`; ctx.fillText(G.banner.txt, vw / 2, R.vh * 0.28);
     }
     if (p.dead) {
-      ctx.textAlign = "center"; ctx.font = '700 28px "Cinzel", Georgia, serif'; ctx.fillStyle = "#e8b0b0";
+      ctx.textAlign = "center"; ctx.font = '700 28px "Pixelify Sans", monospace'; ctx.fillStyle = "#e8b0b0";
       ctx.fillText("The light gutters…", vw / 2, R.vh * 0.42);
     }
     ctx.textAlign = "left";

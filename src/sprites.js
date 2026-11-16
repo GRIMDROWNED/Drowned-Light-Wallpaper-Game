@@ -7,9 +7,12 @@
   const tints = new Map(); // url|color -> canvas
   let pending = 0, loaded = 0;
 
-  function load(url, feet) {
+  // Characters are small pixel sprites (tools/pixelize.py) drawn at 2 world units a pixel, so one sprite pixel is one
+  // pixel of the low-res canvas (src/render.js). `scale` maps a feet point given in full-size pixels onto the pixel sprite.
+  const PX = 2;
+  function load(url, feet, scale = 1) {
     if (imgs[url]) return imgs[url];
-    const rec = { img: new Image(), ok: false, fx: feet ? feet[0] : 0, fy: feet ? feet[1] : 0, guess: !feet };
+    const rec = { img: new Image(), ok: false, fx: feet ? feet[0] * scale + (scale < 1 ? 1 : 0) : 0, fy: feet ? feet[1] * scale + (scale < 1 ? 1 : 0) : 0, guess: !feet };
     imgs[url] = rec; pending++;
     rec.img.onload = () => {
       rec.ok = true; loaded++;
@@ -42,9 +45,10 @@
     if (set._frames) return set;
     set._frames = {};
     const base = "assets/" + set.folder + "/";
+    set.px = (DS.PIXSCALE && DS.PIXSCALE[set.folder]) || 1;
     for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard"]) {
       if (!set[anim]) continue;
-      set._frames[anim] = set[anim].map((f) => load(base + f + ".png", set.feet && set.feet[f]));
+      set._frames[anim] = set[anim].map((f) => load(base + f + ".png", set.feet && set.feet[f], set.px));
     }
     return set;
   }
@@ -77,7 +81,8 @@
   function draw(ctx, rec, x, y, dir, scale = 1, tint = null, alpha = 1, rot = 0) {
     if (!rec || !rec.ok) return false;
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(Math.round(x / PX) * PX, Math.round(y / PX) * PX);
+    scale *= PX;
     if (rot) ctx.rotate(rot * dir);
     ctx.scale(dir * scale, scale);
     ctx.globalAlpha = alpha;
