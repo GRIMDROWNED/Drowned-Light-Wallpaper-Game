@@ -88,7 +88,7 @@
       p.vx = p.dir * P.dashSpeed * Math.min(1.2, speedMult(p) * 0.9 + 0.1); p.vy = 0;
       if (k.dashStrike) DS.Kits.dashStrike(p);
       if (Math.random() < 0.6) G.fx.push({ kind: "ghost", x: p.x, y: p.y, dir: p.dir, t: 0, life: 0.18, rec: DS.Sprites.frame(spriteOf(p), "dash", 0) });
-      if (p.dashT <= 0) p.vx *= 0.4;
+      if (p.dashT <= 0) { p.dashT = 0; p.vx *= 0.4; } // back to exactly 0: a negative timer read as "still dashing" and locked jump, attack and ability
     } else if (p.lunge) {
       DS.Kits.lungeTick(p, dt);
     } else {

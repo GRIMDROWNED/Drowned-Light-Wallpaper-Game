@@ -12,7 +12,7 @@
   // pad buttons: 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 View, 9 Menu, 12-15 D-pad
   const PAD = { jump: [0], attack: [2, 6], dash: [1, 5], ability: [3, 7], pause: [9], kit: [4, 8], up: [12], down: [13], left: [14], right: [15], confirm: [0], back: [1] };
 
-  const keys = new Set();
+  const keys = new Set(), tapped = new Set(); // tapped latches a key pressed and released within one frame
   const touch = { x: 0, y: 0, b: {}, tap: {} }; // tap latches a press so a very quick tap is never missed between frames // virtual stick and buttons
   const mouse = { attack: false, ability: false };
   const I = { x: 0, y: 0, p: {}, r: {}, h: {}, source: "keys", padName: "" };
@@ -20,7 +20,7 @@
 
   addEventListener("keydown", (e) => {
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab"].includes(e.code)) e.preventDefault();
-    keys.add(e.code); I.source = "keys";
+    keys.add(e.code); if (!e.repeat) tapped.add(e.code); I.source = "keys";
   });
   addEventListener("keyup", (e) => keys.delete(e.code));
   addEventListener("blur", () => keys.clear());
@@ -93,7 +93,8 @@
   function poll() {
     const g = pad();
     const now = {};
-    for (const a of ACTIONS) now[a] = KEYS[a].some((k) => keys.has(k));
+    for (const a of ACTIONS) now[a] = KEYS[a].some((k) => keys.has(k) || tapped.has(k) && !prev[a]);
+    tapped.clear();
     now.attack = now.attack || mouse.attack; now.ability = now.ability || mouse.ability;
     let x = (now.right ? 1 : 0) - (now.left ? 1 : 0), y = (now.down ? 1 : 0) - (now.up ? 1 : 0);
     if (g) {
