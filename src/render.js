@@ -84,7 +84,8 @@
     if (p.plunge) return set.plunge ? [f("plunge", 0), 0] : [f("attack", 0.99), 0.35];
     if (p.atk) {
       if (p.atk.up && set.upAtk) return [f("upAtk", Math.min(0.99, p.atk.t / (p.atk.dur * 0.45))), 0]; // wind-up, then the swing
-      if (!p.onGround && !p.atk.ranged && set.airAtk) return [f("airAtk", 0), 0];
+      if (p.atk.down && set.plunge) return [f("plunge", 0), 0]; // a shot straight down
+      if (!p.onGround && set.airAtk) return [f("airAtk", 0), 0];
       return [f("attack", p.atk.t / p.atk.dur), 0];
     }
     if (p.hurtT > 0.1) return [f("hurt", 0), 0];

@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.0";
+  DS.VERSION = "0.3.1";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -53,7 +53,7 @@
     },
     ashenArbalist: {
       name: "Ashen Arbalist", tag: "Kit 03", color: "220,225,235",
-      sprite: std("ashen-arbalist", [37, 83], { cast: ["side/castA", "side/castB"] }),
+      sprite: std("ashen-arbalist", [37, 83], moves({ cast: ["side/castA", "side/castB"], feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [37, 83]])), { "side/flip": [34, 35] }) })),
       attack: { type: "bolt", name: "Piercing Bolt", dmg: 14, range: 520, cd: 0.42, pierce: 1, speed: 900, far: { from: 120, to: 420, bonus: 0.35 } },
       ability: { id: "scatter", name: "Scatter Shot", cd: 7, count: 7, dmg: 12, spread: 0.5, flare: 8,
         text: "Kneel and loose a fan of bolts. Where each lands, light flares and burns." },
