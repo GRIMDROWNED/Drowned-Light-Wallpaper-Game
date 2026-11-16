@@ -37,11 +37,10 @@ def keep_main(fg, cell=3, keep=0.15):
     full = np.repeat(np.repeat(ok[lab], cell, 0), cell, 1)[:h, :w]
     return fg & full
 
-def key_mask(im):
-    r, g, b = im[..., 0], im[..., 1], im[..., 2]
-    if (r[2, 2] > 170 and b[2, 2] > 170):  # magenta
-        return (r - g > 70) & (b - g > 70) & (abs(r - b) < 90)
-    return (g - r > 70) & (g - b > 70)  # green
+def key_mask(im, tol=100):
+    """Background = close to the corner colour (magenta or green), so crimson and violet armour survive."""
+    bg = im[2:12, 2:12].reshape(-1, 3).mean(0)
+    return np.sqrt(((im - bg) ** 2).sum(-1)) < tol
 
 def cut(path, dest, scale, names):
     im = np.array(Image.open(path).convert("RGB")).astype(int)

@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.1";
+  DS.VERSION = "0.3.2";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -44,7 +44,7 @@
     },
     pikeWarden: {
       name: "Dragon Spear", tag: "Kit 02", color: "220,60,80",
-      sprite: std("pike-warden", [46, 101], { dash: ["attackB"] }),
+      sprite: std("pike-warden", [46, 101], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [46, 101]])), { "side/flip": [57, 45], "side/plunge": [42, 100] }) })),
       attack: { type: "thrust", name: "Spear Thrust", dmg: 15, range: 116, h: 30, cd: 0.42, kb: 280 },
       stance: { after: 0.35, guard: 0.25, dmg: 1.15 },
       ability: { id: "lunge", name: "Dragon Lunge", cd: 8, dmg: 24, kb: 380, reach: 420, speed: 900, coil: 0.3, r: 44,
