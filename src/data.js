@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.5";
+  DS.VERSION = "0.3.6";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -99,10 +99,11 @@
       name: "Jade Breaker", tag: "Kit 07", color: "80,220,150",
       sprite: {
         folder: "knights/jade-breaker",
-        idle: seq("side/idle", 8), run: seq("side/step", 8), jump: ["side/step2"], fall: ["side/step6"],
+        ...moves(),
+        idle: seq("side/idle", 8),
         attack: pick("side/sweep", [1, 2, 3, 4, 6, 7, 8]), hurt: ["side/hurt"], death: ["side/death"],
-        dash: ["side/dash"], cast: seq("side/tide", 8), charge: ["side/castA"],
-        feet: Object.assign({}, ...[["side/idle", [35, 89]], ["side/step", [35, 91]], ["side/sweep", [61, 124]], ["side/tide", [37, 126]]]
+        cast: seq("side/tide", 8), charge: ["side/castA"],
+        feet: Object.assign({ "side/flip": [48, 44], "side/plunge": [15, 99] }, ...[["side/idle", [35, 89]], ["side/step", [35, 91]], ["side/sweep", [61, 124]], ["side/tide", [37, 126]]]
           .map(([p, xy]) => Object.fromEntries(seq(p, 8).map((f) => [f, xy])))),
       },
       speedMult: 1.15,
