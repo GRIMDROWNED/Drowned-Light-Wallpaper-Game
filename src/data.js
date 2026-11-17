@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.8";
+  DS.VERSION = "0.3.9";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -126,7 +126,7 @@
     bloodsworn: {
       name: "Bloodsworn", tag: "Kit 09", color: "200,40,70",
       sprite: std("bloodsworn", [37, 86], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [37, 86]])), { "side/flip": [40, 32], "side/plunge": [19, 84] }) })),
-      forms: [{ at: 10, sprite: std("bloodsworn-f2", [34, 88], { dash: ["side/walk3"] }) }, { at: 30, sprite: std("bloodsworn-f3", [37, 92], { dash: ["side/walk3"] }) }],
+      forms: [{ at: 10, sprite: std("bloodsworn-f2", [34, 88], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [34, 88]])), { "side/flip": [50, 39], "side/plunge": [24, 85] }) })) }, { at: 30, sprite: std("bloodsworn-f3", [37, 92], { dash: ["side/walk3"] }) }],
       attack: { type: "arc", name: "Red Edge", dmg: 11, range: 74, h: 66, cd: 0.3, kb: 180 },
       tithe: { dmg: 0.02, speed: 0.01, atk: 0.01, hold: 4, drain: 0.4, boss: 5 },
       ability: { id: "reap", name: "Reap the Tithe", cd: 7, r: 90, perR: 6, rMax: 300, dmg: 18, perDmg: 0.08, kb: 280,
