@@ -9,6 +9,7 @@ SRC = os.path.join(sys.argv[1] if len(sys.argv) > 1 else "../Drowned-Light", "as
 OUT = os.path.join(os.path.dirname(__file__), "..", "assets")
 ART = os.path.join(os.path.dirname(__file__), "..", "art")
 KNIGHT_H, FOE_H, BOSS_H = 42, 36, 56
+VIOLET = {"chain-reaper"}  # his purple turns neon magenta at 1.35
 CRIMSON = {"pike-warden", "rose-paladin", "bloodsworn", "bloodsworn-f2", "bloodsworn-f3", "cinderbrand", "flame-bastion"}
 # the frame whose height sets each folder's scale
 REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1"}
@@ -36,7 +37,7 @@ for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H)):
         bb = ref.getbbox(); hgt = bb[3] - bb[1]
         s = (BOSS_H if folder == "champion" else target) / hgt
         scales[group + "/" + folder] = round(s, 4)
-        sat = 0.95 if folder in CRIMSON else 1.35
+        sat = 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
         art = os.path.join(ART, group, folder) + "/"  # frames cut from the side-view sheets (tools/cut_side.py)
         rels = {os.path.relpath(f, os.path.join(OUT, group, folder)) for f in glob.glob(os.path.join(OUT, group, folder, "**/*.png"), recursive=True)}
         rels |= {os.path.relpath(f, art) for f in glob.glob(art + "**/*.png", recursive=True)}

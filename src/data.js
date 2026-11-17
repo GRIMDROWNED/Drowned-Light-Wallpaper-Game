@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.4";
+  DS.VERSION = "0.3.5";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -87,7 +87,7 @@
     },
     chainReaper: {
       name: "Chain Reaper", tag: "Kit 06", color: "170,90,255",
-      sprite: std("chain-reaper", [44, 80], { attack: ["attackA", "attackB", "attackB"], cast: ["attackC"] }),
+      sprite: std("chain-reaper", [44, 80], moves({ attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [44, 80]])), { "side/flip": [36, 40] }) })),
       hpMult: 0.7, speedMult: 1.2, dashCd: 0.4,
       attack: { type: "chain", name: "Sickle Throw", dmg: 18, back: 0.5, range: 190, cd: 0.36, kb: 120 },
       rush: { speed: 1.25, dur: 1.5 },
