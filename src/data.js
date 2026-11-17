@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.6";
+  DS.VERSION = "0.3.7";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -115,8 +115,8 @@
     },
     rosePaladin: {
       name: "Rose Paladin", tag: "Kit 08", color: "230,60,90",
-      sprite: std("rose-paladin", [66, 98], { dash: ["side/walk3"], feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [66, 98]])),
-        { right: [56, 97], attackA: [54, 88], attackB: [48, 78], attackC: [52, 77], "side/hurt": [58, 85] }) }),
+      sprite: std("rose-paladin", [66, 98], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [66, 98]])),
+        { right: [56, 97], attackA: [54, 88], attackB: [48, 78], attackC: [52, 77], "side/hurt": [58, 85], "side/flip": [50, 50], "side/plunge": [35, 105] }) })),
       attack: { type: "arc", lash: true, name: "Thorn Lash", dmg: 22, range: 140, h: 110, back: 40, cd: 0.6, kb: 260 },
       aegis: 0.15, thorns: 0.5,
       ability: { id: "waltz", name: "Rose's Waltz", cd: 8, r: 130, spin: 1.2, hits: 3, dmg: 16, kb: 220, move: 0.6,
