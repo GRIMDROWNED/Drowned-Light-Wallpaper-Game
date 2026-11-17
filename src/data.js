@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.10";
+  DS.VERSION = "0.3.11";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -135,11 +135,11 @@
     },
     cinderbrand: {
       name: "Cinderbrand", tag: "Kit 10", color: "255,140,40",
-      sprite: std("cinderbrand", [40, 97], {
+      sprite: std("cinderbrand", [40, 97], moves({
         attack: ["side/lungeL", "guardF", "side/lunge"], dash: ["side/lunge"], cast: ["side/lunge"], guard: ["side/guard1", "side/guard2", "side/guard3"],
         feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [40, 97]])), { right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
-          "side/lungeL": [80, 67], "side/lunge": [38, 67], "side/chop": [50, 100], guardF: [36, 71], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78] }),
-      }),
+          "side/lungeL": [80, 67], "side/lunge": [38, 67], "side/chop": [50, 100], guardF: [36, 71], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78], "side/flip": [60, 40], "side/plunge": [35, 101] }),
+      })),
       attack: { type: "arc", name: "Forge Cleave", dmg: 24, range: 92, h: 84, cd: 0.6, kb: 280, heavy: true },
       heat: { perHit: 9, perBlock: 20, max: 100, hold: 3, cool: 14, dmg: 0.25 },
       ability: { id: "brand", name: "Brand Thrust", cd: 5, dmg: 30, kb: 300, burn: 5, speed: 820, dash: 0.2, guard: 0.8,
