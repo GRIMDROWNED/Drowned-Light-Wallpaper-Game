@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.2";
+  DS.VERSION = "0.3.3";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -61,8 +61,8 @@
     },
     relicBearer: {
       name: "Frostweaver", tag: "Kit 04", color: "150,210,255",
-      sprite: std("ice-mage", [53, 106], { dash: ["side/walk3"], feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [53, 106]])),
-        { right: [48, 105], attackA: [48, 103], attackB: [40, 94], attackC: [41, 102] }) }),
+      sprite: std("ice-mage", [53, 106], moves({ feet: Object.assign(Object.fromEntries(seq("side/walk", 4).map((f) => [f, [53, 106]])),
+        { right: [48, 105], attackA: [48, 103], attackB: [40, 94], attackC: [41, 102], "side/flip": [42, 50], "side/plunge": [35, 102] }) })),
       attack: { type: "frost", name: "Frost Bolt", dmg: 13, range: 460, cd: 0.4, speed: 640, chill: 1.4 },
       ability: { id: "icebomb", name: "Ice Bomb", cd: 8, radius: 150, dmg: 30, kb: 160, freeze: 2.2, vx: 520, vy: -560,
         text: "Lob a bomb of ice that bursts over a wide area, striking and freezing every Drowned in the blast." },
