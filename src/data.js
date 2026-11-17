@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.11";
+  DS.VERSION = "0.4.0";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -150,21 +150,23 @@
   DS.KIT_ORDER = Object.keys(DS.KITS);
 
   // The Drowned. ai: walker | leaper | archer | shield | caster | boss. All side-walk sheets face right.
-  const foe = (type, walkFeet, extra) => Object.assign({
-    sprite: {
+  // mv: frames from the side-view move sheets (side/<name>), e.g. { windup: "windup", recover: "slash" }
+  const foe = (type, walkFeet, extra, mv = null) => Object.assign({
+    sprite: Object.assign({
       folder: "drowned/" + type, idle: ["right"], run: seq("side/walk", 4), jump: ["side/walk2"], fall: ["side/walk4"],
       attack: ["attackA", "attackB", "attackC"], hurt: ["side/hurt"], death: ["side/death"],
       feet: Object.fromEntries(seq("side/walk", 4).map((f) => [f, walkFeet])),
-    },
+    }, mv && Object.fromEntries(Object.entries(Object.assign({ knock: "knock", fall: "fall", jump: "fall", land: "land", windup: "windup", strike: "strike", recover: "strike" }, mv))
+      .filter(([, v]) => v).map(([k, v]) => [k, ["side/" + v]]))),
   }, extra);
   DS.ENEMIES = {
-    footman: foe("footman", [56, 78], { name: "Drowned Wretch", ai: "walker", hp: 42, speed: 95, dmg: 10, reach: 60, windup: 0.45, cd: 1.1, w: 34, h: 74 }),
-    revenant: foe("revenant", [54, 79], { name: "Swarming Revenant", ai: "walker", hp: 20, speed: 175, dmg: 6, reach: 50, windup: 0.3, cd: 0.8, w: 30, h: 70, jumpy: true }),
-    squire: foe("squire", [46, 86], { name: "Mire Stalker", ai: "leaper", hp: 32, speed: 150, dmg: 10, reach: 210, windup: 0.4, cd: 1.6, w: 32, h: 78, leap: [480, -420] }),
-    defiler: foe("defiler", [54, 84], { name: "Lantern Reaver", ai: "walker", hp: 55, speed: 115, dmg: 13, reach: 80, windup: 0.55, cd: 1.3, w: 34, h: 78, lunge: 300 }),
-    archer: foe("archer", [44, 83], { name: "Tide Archer", ai: "archer", hp: 28, speed: 120, dmg: 9, reach: 560, keep: 300, windup: 0.7, cd: 1.8, w: 30, h: 76, shot: 620 }),
-    blackguard: foe("blackguard", [61, 87], { name: "Bone Bulwark", ai: "shield", hp: 95, speed: 62, dmg: 17, reach: 70, windup: 0.8, cd: 1.6, w: 44, h: 82, shield: 0.2, poise: true }),
-    hexbearer: foe("hexbearer", [55, 91], { name: "Marsh Hexbearer", ai: "caster", hp: 48, speed: 90, dmg: 11, reach: 500, keep: 260, windup: 0.8, cd: 2.4, w: 34, h: 86, orb: 230 }),
+    footman: foe("footman", [56, 78], { name: "Drowned Wretch", ai: "walker", hp: 42, speed: 95, dmg: 10, reach: 60, windup: 0.45, cd: 1.1, w: 34, h: 74 }, { recover: "slash" }),
+    revenant: foe("revenant", [54, 79], { name: "Swarming Revenant", ai: "walker", hp: 20, speed: 175, dmg: 6, reach: 50, windup: 0.3, cd: 0.8, w: 30, h: 70, jumpy: true }, { windup: "crouch", jump: "jump" }),
+    squire: foe("squire", [46, 86], { name: "Mire Stalker", ai: "leaper", hp: 32, speed: 150, dmg: 10, reach: 210, windup: 0.4, cd: 1.6, w: 32, h: 78, leap: [480, -420] }, { windup: "crouch", pounce: "strike", recover: "land" }),
+    defiler: foe("defiler", [54, 84], { name: "Lantern Reaver", ai: "walker", hp: 55, speed: 115, dmg: 13, reach: 80, windup: 0.55, cd: 1.3, w: 34, h: 78, lunge: 300 }, { recover: "slash" }),
+    archer: foe("archer", [44, 83], { name: "Tide Archer", ai: "archer", hp: 28, speed: 120, dmg: 9, reach: 560, keep: 300, windup: 0.7, cd: 1.8, w: 30, h: 76, shot: 620 }, { aimUp: "aimUp" }),
+    blackguard: foe("blackguard", [61, 87], { name: "Bone Bulwark", ai: "shield", hp: 95, speed: 62, dmg: 17, reach: 70, windup: 0.8, cd: 1.6, w: 44, h: 82, shield: 0.2, poise: true }, { block: "block" }),
+    hexbearer: foe("hexbearer", [55, 91], { name: "Marsh Hexbearer", ai: "caster", hp: 48, speed: 90, dmg: 11, reach: 500, keep: 260, windup: 0.8, cd: 2.4, w: 34, h: 86, orb: 230 }, { flinch: "flinch" }),
     champion: foe("champion", [87, 128], { name: "Drowned Sovereign", ai: "boss", hp: 900, speed: 120, dmg: 20, reach: 110, windup: 0.7, cd: 1.0, w: 70, h: 124, boss: true, poise: true }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);

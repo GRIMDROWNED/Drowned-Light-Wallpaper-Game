@@ -10,12 +10,33 @@
   // Characters are small pixel sprites (tools/pixelize.py) drawn at 2 world units a pixel, so one sprite pixel is one
   // pixel of the low-res canvas (src/render.js). `scale` maps a feet point given in full-size pixels onto the pixel sprite.
   const PX = 2;
+  // Character frames live packed in one atlas.png per folder (DS.ATLAS from tools/pixelize.py); a rec is a rectangle of it.
+  const sheets = {};
+  function sheet(src) {
+    if (sheets[src]) return sheets[src];
+    const sh = sheets[src] = { img: new Image(), ok: false, wait: [] };
+    pending++;
+    sh.img.onload = () => { sh.ok = true; loaded++; for (const f of sh.wait) f(); sh.wait = null; };
+    sh.img.onerror = () => { loaded++; };
+    sh.img.src = src + "?v=" + DS.VERSION;
+    return sh;
+  }
   function load(url, feet, scale = 1) {
     if (imgs[url]) return imgs[url];
-    const rec = { img: new Image(), ok: false, fx: feet ? feet[0] * scale + (scale < 1 ? 1 : 0) : 0, fy: feet ? feet[1] * scale + (scale < 1 ? 1 : 0) : 0, guess: !feet };
-    imgs[url] = rec; pending++;
+    const rec = { img: null, ok: false, sx: 0, sy: 0, w: 0, h: 0, fx: feet ? feet[0] * scale + (scale < 1 ? 1 : 0) : 0, fy: feet ? feet[1] * scale + (scale < 1 ? 1 : 0) : 0, guess: !feet };
+    imgs[url] = rec;
+    const m = url.match(/^assets\/((?:knights|drowned)\/[^/]+)\/(.+)\.png$/);
+    const r = m && DS.ATLAS && DS.ATLAS[m[1]] && DS.ATLAS[m[1]][m[2]];
+    if (r) {
+      const sh = sheet("assets/" + m[1] + "/atlas.png");
+      rec.img = sh.img; [rec.sx, rec.sy, rec.w, rec.h] = r;
+      const ready = () => { rec.ok = true; if (rec.guess) guessFeet(rec); };
+      if (sh.ok) ready(); else sh.wait.push(ready);
+      return rec;
+    }
+    rec.img = new Image(); pending++;
     rec.img.onload = () => {
-      rec.ok = true; loaded++;
+      rec.ok = true; loaded++; rec.w = rec.img.width; rec.h = rec.img.height;
       if (rec.guess) guessFeet(rec);
     };
     rec.img.onerror = () => { loaded++; };
@@ -25,11 +46,11 @@
 
   // Feet = the lowest opaque row; x = the middle of the opaque pixels in the bottom few rows.
   function guessFeet(rec) {
-    const { img } = rec, w = img.width, h = img.height;
+    const { img } = rec, w = rec.w, h = rec.h;
     rec.fx = w / 2; rec.fy = h;
     try {
       const c = document.createElement("canvas"); c.width = w; c.height = h;
-      const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+      const g = c.getContext("2d"); g.drawImage(img, rec.sx, rec.sy, w, h, 0, 0, w, h);
       const d = g.getImageData(0, 0, w, h).data;
       let low = -1;
       for (let y = h - 1; y >= 0 && low < 0; y--) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) { low = y; break; }
@@ -46,7 +67,7 @@
     set._frames = {};
     const base = "assets/" + set.folder + "/";
     set.px = (DS.PIXSCALE && DS.PIXSCALE[set.folder]) || 1;
-    for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard", "rise", "apex", "land", "flip", "airAtk", "upAtk", "plunge", "plungeLand"]) {
+    for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard", "rise", "apex", "land", "flip", "airAtk", "upAtk", "plunge", "plungeLand", "windup", "strike", "recover", "knock", "flinch", "block", "aimUp", "pounce"]) {
       if (!set[anim]) continue;
       set._frames[anim] = set[anim].map((f) => load(base + f + ".png", set.feet && set.feet[f], set.px));
     }
@@ -66,12 +87,12 @@
   }
 
   function tinted(rec, color) {
-    const key = rec.img.src + "|" + color;
+    const key = rec.img.src + "|" + rec.sx + "," + rec.sy + "|" + color;
     let c = tints.get(key);
     if (!c) {
-      c = document.createElement("canvas"); c.width = rec.img.width; c.height = rec.img.height;
+      c = document.createElement("canvas"); c.width = rec.w; c.height = rec.h;
       const g = c.getContext("2d");
-      g.drawImage(rec.img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(rec.img, rec.sx, rec.sy, rec.w, rec.h, 0, 0, rec.w, rec.h); g.globalCompositeOperation = "source-in"; g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
       tints.set(key, c);
     }
     return c;
@@ -86,7 +107,7 @@
     if (rot) ctx.rotate(rot * dir);
     ctx.scale(dir * scale, scale);
     ctx.globalAlpha = alpha;
-    ctx.drawImage(rec.img, -rec.fx, -rec.fy);
+    ctx.drawImage(rec.img, rec.sx, rec.sy, rec.w, rec.h, -rec.fx, -rec.fy, rec.w, rec.h);
     if (tint) { ctx.globalAlpha = alpha * tint[1]; ctx.drawImage(tinted(rec, tint[0]), -rec.fx, -rec.fy); }
     ctx.restore();
     return true;

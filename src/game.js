@@ -156,7 +156,7 @@
     let blocked = false;
     // the Bone Bulwark's shield: blocks blows from in front unless heavy or from above
     if (e.d.shield && !e.broken && !opt.heavy && !opt.plunge && Math.sign(dir) === -e.dir && e.state !== "hurt") {
-      dmg *= e.d.shield; blocked = true;
+      dmg *= e.d.shield; blocked = true; e.blockT = 0.3;
       spark(e.x + e.dir * e.w * 0.5, e.y - e.h * 0.55, "#cfd8dc", 6);
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
@@ -255,7 +255,7 @@
       return;
     }
     // statuses
-    for (const s of ["chill", "freeze", "root", "kbT", "broken"]) if (e[s] > 0) e[s] = Math.max(0, e[s] - dt);
+    for (const s of ["chill", "freeze", "root", "kbT", "broken", "blockT", "landT"]) if (e[s] > 0) e[s] = Math.max(0, e[s] - dt);
     if (e.burn) {
       e.burn.t -= dt; e.burn.tick -= dt;
       if (e.burn.tick <= 0) { e.burn.tick = 0.5; hitFoe(e, { dmg: e.burn.dps * 0.5, noMult: true, color: "#ffa040", hitstop: 0, noHeat: true, kb: 0 }); if (e.dead) return; }
@@ -319,7 +319,9 @@
     if (e.state === "windup" || e.state === "recover" || e.state === "hurt") e.vx *= e.onGround ? 0.85 : 1;
     e.vy = Math.min(P.maxFall, e.vy + P.gravity * dt);
     e.dropT = Math.max(0, (e.dropT || 0) - dt);
+    const air = !e.onGround, fallV = e.vy;
     Wd.move(e, dt, DS.Kits.walls());
+    if (air && e.onGround && fallV > 250) e.landT = 0.14; // the landing crouch
     e.x = clamp(e.x, 40 + e.w / 2, Wd.W - 40 - e.w / 2);
     if (e.leaping && e.onGround && e.st > 0.1) e.leaping = false;
     e.runT += Math.abs(e.vx) * dt;
