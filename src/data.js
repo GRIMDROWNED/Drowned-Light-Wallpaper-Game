@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.3.3";
+  DS.VERSION = "0.3.4";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -72,10 +72,11 @@
       name: "Flame Bastion", tag: "Kit 05", color: "255,120,50",
       sprite: {
         folder: "knights/flame-bastion",
-        idle: pick("side/idle", [1, 1, 1, 2, 2, 2]), run: seq("side/step", 8), jump: ["side/step3"], fall: ["side/step7"],
+        ...moves(),
+        idle: pick("side/idle", [1, 1, 1, 2, 2, 2]),
         attack: pick("side/cleave", [1, 2, 3, 5, 6, 7, 8]), hurt: ["side/hurt"], death: ["side/death"],
-        dash: ["side/step4"], cast: seq("side/plant", 8),
-        feet: Object.assign({}, ...[["side/idle", [32, 105], 8], ["side/step", [39, 96], 8], ["side/cleave", [67, 134], 8], ["side/plant", [42, 135], 8]]
+        cast: seq("side/plant", 8),
+        feet: Object.assign({ "side/flip": [41, 42], "side/plunge": [38, 92] }, ...[["side/idle", [32, 105], 8], ["side/step", [39, 96], 8], ["side/cleave", [67, 134], 8], ["side/plant", [42, 135], 8]]
           .map(([p, xy, n]) => Object.fromEntries(seq(p, n).map((f) => [f, xy])))),
       },
       attack: { type: "arc", name: "Bastion Blade", dmg: 20, range: 82, h: 90, cd: 0.55, kb: 300, heavy: true },
