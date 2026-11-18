@@ -545,23 +545,38 @@
     if (tgt && bd < 900 && !giveUp) {
       const dx = tgt.x - p.x, adx = Math.abs(dx), s = Math.sign(dx) || 1;
       move = adx > reach * 0.85 ? s : (p.dir !== s ? s * 0.5 : 0);
-      if (ranged && adx < 120) move = -s; // archers keep their distance
+      // (archers used to back away from foes closer than 120 px, which turned them round to fire at nothing
+      // for as long as a foe followed them: now they face the foe and shoot, whatever the distance)
       if (push && Math.abs(tgt.y - p.y) > 40 && adx < 140) move = s; // keep walking at a foe above or below
       if (adx < reach + 10 && Math.abs(tgt.y - p.y) < 90) {
-        if (p.dir === s || ranged && adx < 120) a.attack = Math.random() < 0.5;
+        if (p.dir === s) a.attack = Math.random() < 0.5; // only ever fire at the foe, never with its back to it
         if (p.abilCd <= 0 && Math.random() < 0.04) a.ability = true;
       }
-      if (tgt.y < p.y - 70 && p.onGround && adx < 220) a.jump = true;            // up to a ledge
+      // A foe above (an archer on a platform): ranged knights shoot up at it when the up-shot's slope fits,
+      // otherwise climb: jump, double-jump near the top, up-swing once close. One-way platforms let them through.
+      const dy = p.y - tgt.y;
+      if (dy > 70 && adx < 320) {
+        const upShot = ranged && Math.abs(0.62 * adx - dy) < 60 && adx < k.attack.range;
+        if (upShot) { move = p.dir !== s ? s * 0.5 : 0; a.y = -1; if (p.dir === s) a.attack = Math.random() < 0.5; }
+        else {
+          move = adx > 24 ? s : 0;
+          if (p.onGround) a.jump = true;
+          else if (p.airJumps > 0 && p.vy > -120 && p.y - 40 > tgt.y) a.jump = true;
+          if (adx < 110 && dy < 190) { a.y = -1; a.attack = Math.random() < 0.5; }
+        }
+      }
       if (tgt.state === "windup" && adx < 140 && p.dashCd <= 0 && Math.random() < 0.08) { a.dash = true; move = -s; }
     }
     // hop stones in the way, and the far side of a gap
     const ahead = p.x + Math.sign(move || p.dir) * (p.w / 2 + 14);
     if (move && (p.hitWall || Wd.solidAt(ahead, p.y - 8)) && (p.onGround || p.vy > 0)) a.jump = true;
+    a.hold = !p.onGround && p.vy < 0; // hold jump while rising, or the short-hop cut halves every auto jump
     a.x = move; press(a);
   }
   function press(a) {
     I.x = a.x; I.y = a.y;
     for (const n of ["jump", "attack", "dash", "ability"]) { I.p[n] = a[n]; I.h[n] = a[n]; I.r[n] = false; }
+    if (a.hold) I.h.jump = true;
     I.h.up = I.h.down = false;
   }
   Object.assign(DS, { loadLevel, setScroll, setAuto });
@@ -570,15 +585,21 @@
   // ?wallpaper (for wallpaper apps) or the pause-menu button: no HUD or buttons, the knight fights on forever
   // through the endless level, and a different knight takes over every WALL_SWAP seconds and after each fall.
   const WALL_SWAP = 75;
+  // a shuffled bag: every knight takes a turn before any comes round again, and never the same one twice running
+  let bag = [];
   function nextWallKnight() {
-    const ids = DS.KIT_ORDER.filter((id) => id !== G.kit);
-    const id = ids[Math.floor(Math.random() * ids.length)];
+    if (!bag.length) {
+      bag = DS.KIT_ORDER.slice();
+      for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+      if (bag[bag.length - 1] === G.kit) bag.unshift(bag.pop());
+    }
+    const id = bag.pop();
     DS.switchKit(id); G.wallT = 0;
     G.banner = { txt: DS.KITS[id].name, t: 0 };
   }
   function setWall(on) {
     G.wall = on; G.wallT = 0; document.body.classList.toggle("wall", on);
-    if (on) { G.scroll = true; G.kit = DS.KIT_ORDER[Math.floor(Math.random() * DS.KIT_ORDER.length)]; G.auto = true; restart(); }
+    if (on) { G.scroll = true; bag = []; G.kit = null; nextWallKnight(); G.auto = true; restart(); }
     else setAuto(innerHeight > innerWidth);
   }
   Object.assign(DS, { setWall });
