@@ -70,3 +70,6 @@ body.touch #touch, body.touch #pauseBtn { display: block; }
 /* portrait no longer asks to rotate: the knight fights on its own there (src/game.js autopilot) */
 body.auto #touch, body.auto #stick { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+/* wallpaper mode: nothing over the scene */
+body.wall #touch, body.wall #stick, body.wall #pauseBtn { display: none !important; }
+body.wall { cursor: none; }

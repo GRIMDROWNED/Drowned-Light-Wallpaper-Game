@@ -59,6 +59,7 @@
     $("#btnGod").onclick = () => { G.god = !G.god; syncToggles(); };
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
     $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
+    $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
     syncToggles();
   }
@@ -136,6 +137,11 @@
     document.querySelectorAll(".menu .back").forEach((b) => b.addEventListener("click", () => openMenu("pause")));
     DS.Input.bindMouse(document.getElementById("game"));
     DS.Input.bindTouch(document.body, $("#stick"), $("#knob"));
+    // a tap or click leaves the wallpaper for the pause menu (not when opened as ?wallpaper by a wallpaper app)
+    document.addEventListener("pointerdown", (e) => {
+      if (!G.wall || G.wallLocked || G.mode !== "play" || e.target.closest(".menu")) return;
+      DS.setWall(false); openMenu("pause");
+    });
     $("#ver").textContent = "v" + DS.VERSION;
     openMenu("kits");
   }

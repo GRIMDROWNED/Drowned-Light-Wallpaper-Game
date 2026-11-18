@@ -5,7 +5,7 @@
   const P = DS.PHYS, Wd = DS.World, I = DS.Input;
   const G = DS.G = {
     mode: "title", t: 0, foes: [], shots: [], zones: [], fx: [], texts: [],
-    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, auto: false, endless: false, autoT: 0, god: false, boxes: false,
+    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, auto: false, endless: false, autoT: 0, wall: false, wallT: 0, wallLocked: false, god: false, boxes: false,
     kills: 0, combo: 0, comboT: 0, best: 0, swingId: 0, dummyLog: [], kit: "lanternBlade",
   };
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -146,6 +146,7 @@
     G.tok++; // drop ambushes still being summoned; the ones from the checkpoint on spring again
     for (const e of G.enc) if (e.x >= G.checkpoint - 10) e.on = false;
     G.combo = 0;
+    if (G.wall) nextWallKnight();
   }
 
   // ---------------- damage ----------------
@@ -559,13 +560,31 @@
   }
   Object.assign(DS, { loadLevel, setScroll, setAuto });
 
+  // ---------------- wallpaper ----------------
+  // ?wallpaper (for wallpaper apps) or the pause-menu button: no HUD or buttons, the knight fights on forever
+  // through the endless level, and a different knight takes over every WALL_SWAP seconds and after each fall.
+  const WALL_SWAP = 75;
+  function nextWallKnight() {
+    const ids = DS.KIT_ORDER.filter((id) => id !== G.kit);
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    DS.switchKit(id); G.wallT = 0;
+    G.banner = { txt: DS.KITS[id].name, t: 0 };
+  }
+  function setWall(on) {
+    G.wall = on; G.wallT = 0; document.body.classList.toggle("wall", on);
+    if (on) { G.scroll = true; G.kit = DS.KIT_ORDER[Math.floor(Math.random() * DS.KIT_ORDER.length)]; G.auto = true; restart(); }
+    else setAuto(innerHeight > innerWidth);
+  }
+  Object.assign(DS, { setWall });
+
   // ---------------- main loop ----------------
   function step(dt) {
     I.poll();
-    setAuto(innerHeight > innerWidth); // portrait: the knight fights on its own
+    setAuto(G.wall || innerHeight > innerWidth); // portrait (or wallpaper): the knight fights on its own
     DS.UI.update(dt);
     if (G.mode !== "play") return;
-    if (I.p.pause) { DS.UI.open("pause"); return; }
+    if (I.p.pause) { if (G.wall && !G.wallLocked) setWall(false); DS.UI.open("pause"); return; }
+    if (G.wall && (G.wallT += dt) > WALL_SWAP) nextWallKnight();
     if (I.p.kit) { DS.UI.cycleKit(1); }
     if (G.auto && G.scroll) autopilot(dt);
     G.t += dt;
@@ -584,9 +603,11 @@
     G.dummyLog = G.dummyLog.filter((l) => G.t - l[0] < 5);
     // camera
     const c = G.cam, vw = DS.Render.vw, vh = DS.Render.vh;
-    const tx = p.x - vw / 2 + p.dir * 70 + p.vx * 0.12, ty = p.y - vh * 0.62;
+    const lead = G.wall ? 0.4 : 1, tx = p.x - vw / 2 + (p.dir * 70 + p.vx * 0.12) * lead, ty = p.y - vh * 0.62;
     c.x += (tx - c.x) * Math.min(1, dt * 6); c.y += (ty - c.y) * Math.min(1, dt * 5);
-    c.x = clamp(c.x, 0, Wd.W - vw); c.y = clamp(c.y, Wd.FLOOR + 80 - vh - 500, Wd.FLOOR + 80 - vh);
+    c.x = clamp(c.x, 0, Wd.W - vw); // a tall wallpaper keeps the knight above a phone's dock: more mud shows below
+    const below = G.wall && vh > vw ? vh * 0.22 : 0;
+    c.y = clamp(c.y, Wd.FLOOR + 80 - vh - 500, Wd.FLOOR + 80 + below - vh);
     if (vw > Wd.W) c.x = (Wd.W - vw) / 2;
     c.shake = Math.max(0, c.shake - dt * 30);
   }
@@ -615,7 +636,8 @@
 
   let last = 0;
   function frame(now) {
-    const dt = Math.min(0.033, (now - last) / 1000 || 0.016);
+    if (G.wall && now - last < 30) { requestAnimationFrame(frame); return; } // ~30 fps as a wallpaper
+    const dt = Math.min(0.04, (now - last) / 1000 || 0.016);
     last = now;
     step(dt);
     DS.Render.draw();
@@ -626,6 +648,7 @@
     DS.UI.init();
     for (const id of DS.KIT_ORDER) DS.Sprites.loadSet(DS.KITS[id].sprite);
     for (const id of DS.ENEMY_ORDER) DS.Sprites.loadSet(DS.ENEMIES[id].sprite);
+    if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); setWall(true); }
     requestAnimationFrame(frame);
   };
   DS.step = step; // for tests

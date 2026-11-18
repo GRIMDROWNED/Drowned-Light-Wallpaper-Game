@@ -63,11 +63,11 @@
       ctx.restore(); ctx.globalAlpha = 1;
     }
     // vignette and the red flash when hurt
-    const v = ctx.createRadialGradient(vw / 2, vh * 0.55, vh * 0.35, vw / 2, vh * 0.55, vw * 0.75);
+    const v = ctx.createRadialGradient(vw / 2, vh * 0.55, Math.min(vw, vh) * 0.35, vw / 2, vh * 0.55, Math.max(vw, vh) * 0.75);
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,4,8,0.45)");
     ctx.fillStyle = v; ctx.fillRect(0, 0, vw, vh);
     if (G.redT > 0) { ctx.fillStyle = `rgba(160,20,20,${G.redT * 0.6})`; ctx.fillRect(0, 0, vw, vh); }
-    if (G.player && G.mode !== "title") hud();
+    if (G.player && G.mode !== "title") { if (G.wall) wallBanner(); else hud(); }
   };
 
   // ---------------- the knight ----------------
@@ -348,6 +348,14 @@
     if (p.atk && !p.atk.ranged) { const [x0, y0, x1, y1] = DS.meleeBox(p, p.atk); ctx.strokeStyle = "rgba(255,80,80,0.8)"; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0); }
     ctx.strokeStyle = "rgba(0,200,255,0.6)";
     for (const e of G.foes) ctx.strokeRect(e.x - e.w / 2, e.y - e.h, e.w, e.h);
+  }
+
+  // wallpaper: only the name of the knight taking over, low and soft
+  function wallBanner() {
+    if (!G.banner) return;
+    const a = Math.min(1, G.banner.t * 2, (2.2 - G.banner.t) * 1.5) * 0.8;
+    ctx.textAlign = "center"; ctx.font = '700 16px "Pixelify Sans", monospace';
+    ctx.fillStyle = `rgba(220,240,240,${Math.max(0, a)})`; ctx.fillText(G.banner.txt, R.vw / 2, R.vh * 0.2);
   }
 
   // ---------------- HUD ----------------

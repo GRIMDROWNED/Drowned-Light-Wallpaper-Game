@@ -29,10 +29,30 @@ def table():
         out["knights/" + folder] = {n: [round(r["tx"] + off, 1), round(r["low"] + (tall - r["H"]) * 0.5, 1)] for n, r in zip(RUN, m)}
     return out
 
+def guesses():
+    """The lowest-pixel feet sprites.js would guess, worked out here so a page opened from disk (file://, e.g. by a
+    wallpaper app) where the canvas can't be read still stands every frame right. Pixel-sprite px."""
+    import glob
+    out = {}
+    for group in ("knights", "drowned"):
+        for d in sorted(glob.glob(os.path.join(ROOT, "assets", group, "*"))):
+            t = {}
+            for f in sorted(glob.glob(d + "/**/*.png", recursive=True)):
+                if f.endswith("/atlas.png"): continue
+                a = np.array(Image.open(f).convert("RGBA"))[..., 3] > 40
+                ys = np.where(a.any(1))[0]
+                if not len(ys): continue
+                low = ys.max(); xs = np.where(a[max(0, low - 8):low + 1])[1]
+                t[os.path.relpath(f, d)[:-4]] = [round(float(xs.mean()), 1), int(low) + 1]
+            out[group + "/" + os.path.basename(d)] = t
+    return out
+
 def write():
     p = os.path.join(ROOT, "src", "pixscale.js"); s = open(p).read()
     line = "/* run-cycle feet from tools/runfeet.py (full-size px) */\nDS.RUNFEET = " + json.dumps(table(), separators=(",", ":")) + ";\n"
+    line += "/* guessed feet of every frame (pixel px), for pages opened from disk */\nDS.GUESSFEET = " + json.dumps(guesses(), separators=(",", ":")) + ";\n"
     s = re.sub(r"/\* run-cycle feet.*?\*/\nDS\.RUNFEET = .*?;\n", "", s, flags=re.S)
+    s = re.sub(r"/\* guessed feet.*?\*/\nDS\.GUESSFEET = .*?;\n", "", s, flags=re.S)
     open(p, "w").write(s + line)
 
 if __name__ == "__main__":

@@ -30,6 +30,8 @@
     if (r) {
       const sh = sheet("assets/" + m[1] + "/atlas.png");
       rec.img = sh.img; [rec.sx, rec.sy, rec.w, rec.h] = r;
+      const gf = rec.guess && DS.GUESSFEET && DS.GUESSFEET[m[1]] && DS.GUESSFEET[m[1]][m[2]];
+      if (gf) { [rec.fx, rec.fy] = gf; rec.guess = false; } // worked out ahead by tools/runfeet.py
       const ready = () => { rec.ok = true; if (rec.guess) guessFeet(rec); };
       if (sh.ok) ready(); else sh.wait.push(ready);
       return rec;

@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.6.1";
+  DS.VERSION = "0.6.2";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
