@@ -1,11 +1,15 @@
-# Drowned Light: Side View (combat prototype)
+# Drowned Light: Wallpaper Game
 
-A side-on, fast combat proof of concept of Drowned Light: plain JavaScript on a canvas, no build step, no npm.
-Open `index.html` through any static server (or GitHub Pages).
+A side-on Drowned Light game that doubles as a live wallpaper: plain JavaScript on a canvas, no build step, no npm.
+Open `index.html` through any static server, or play it on GitHub Pages.
 
+- **Portrait:** the knight fights on its own through an endless drowned swamp.
+- **Landscape:** you take the knight, and the Drowned Sovereign waits ahead.
+- **Wallpaper:** `wallpaper.html` (or `index.html?wallpaper`, or Pause → Wallpaper) hides every button and HUD, swaps in a random knight every 75 s and runs at 30 fps.
+  For Lively Wallpaper on Windows, zip `LivelyInfo.json`, `wallpaper.html`, `style.css`, `src/` and `assets/`; on Android, point a web-page live-wallpaper app at the Pages address of `wallpaper.html`.
 - All 10 knight kits with their main-game attacks and abilities, 3-hit combos, up-swings, air plunge, double jump, air dash.
-- 8 Drowned types (the Drowned Sovereign as a boss), waves, a training dummy with a DPS readout.
-- Keyboard + mouse, Xbox pad (standard Gamepad mapping) and touch controls.
-- Pause menu: spawn any enemy, next wave, god mode, hitboxes.
+- 8 Drowned types (the Drowned Sovereign as a boss); keyboard + mouse, Xbox pad and touch.
+- Pause menu: spawn any enemy, skip to the boss, god mode, hitboxes, arena mode with waves.
 
-Art is the main game's side-view frames (facing right), copied into `assets/`. Numbers live in `src/data.js`.
+Art: Robert's side-view sheets cut by `tools/cut_side.py` into `art/` (full size), shrunk to pixel sprites and packed into one
+`atlas.png` per character by `tools/pixelize.py`. Numbers live in `src/data.js`.
