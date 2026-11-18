@@ -96,7 +96,8 @@ public class DrownedWallpaper extends WallpaperService {
 
         @Override public void onVisibilityChanged(boolean visible) {
             if (web == null) return;
-            if (visible) { web.onResume(); web.resumeTimers(); } else { web.onPause(); web.pauseTimers(); }
+            // onPause/onResume act on this WebView only (pauseTimers would also freeze the game window, same process)
+            if (visible) web.onResume(); else web.onPause();
         }
 
         @Override public void onSurfaceDestroyed(SurfaceHolder holder) {
