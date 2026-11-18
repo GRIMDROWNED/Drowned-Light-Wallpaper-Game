@@ -192,7 +192,7 @@
 
   function kill(e) {
     e.dead = true; e.state = "dead"; e.st = 0; e.deadT = 0; e.vy = -260; e.vx = Math.sign(e.x - G.player.x) * 160;
-    G.kills++;
+    G.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
     const p = G.player, k = p.k;
     for (let i = 0; i < 14; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-14, 14), y: e.y - rnd(10, e.h), vx: rnd(-60, 60), vy: rnd(-160, -40), t: 0, life: rnd(0.5, 1), c: "rgba(110,230,220," });
     if (k.tithe) { p.stacks += e.d.boss ? k.tithe.boss : 1; p.stackT = k.tithe.hold; }
@@ -534,13 +534,19 @@
       const d = Math.abs(e.x - p.x) + Math.max(0, Math.abs(e.y - p.y) - 60) * 2;
       if (d < bd) { bd = d; tgt = e; }
     }
-    const ranged = k.attack.range > 300;
-    const reach = ranged ? 360 : (k.attack.range || 70) + 6;
+    // No kill for a while (shots into a wall, chipping at a shield, foes stuck on other ground): stop standing there.
+    // After 4 s close in to melee range, dropping off or climbing to them; after 10 s leave them behind and run on.
+    if (!tgt || bd >= 900) G.autoKillT = G.t;
+    const idle = G.t - (G.autoKillT || 0), push = idle > 4, giveUp = idle > 10;
+    if (idle > 13) G.autoKillT = G.t - 4; // after 3 s of running on, fight again (still pushing)
+    const ranged = k.attack.range > 300 && !push;
+    const reach = ranged ? 360 : push ? 60 : (k.attack.range || 70) + 6;
     let move = 1;
-    if (tgt && bd < 900) {
+    if (tgt && bd < 900 && !giveUp) {
       const dx = tgt.x - p.x, adx = Math.abs(dx), s = Math.sign(dx) || 1;
       move = adx > reach * 0.85 ? s : (p.dir !== s ? s * 0.5 : 0);
       if (ranged && adx < 120) move = -s; // archers keep their distance
+      if (push && Math.abs(tgt.y - p.y) > 40 && adx < 140) move = s; // keep walking at a foe above or below
       if (adx < reach + 10 && Math.abs(tgt.y - p.y) < 90) {
         if (p.dir === s || ranged && adx < 120) a.attack = Math.random() < 0.5;
         if (p.abilCd <= 0 && Math.random() < 0.04) a.ability = true;
