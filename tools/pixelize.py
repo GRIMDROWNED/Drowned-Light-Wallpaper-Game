@@ -64,3 +64,4 @@ open(os.path.join(os.path.dirname(__file__), "..", "src", "pixscale.js"), "w").w
     '"use strict";\nwindow.DS = window.DS || {};\nDS.PIXSCALE = ' + json.dumps(scales, indent=1) + ";\n"
     "/* each folder's frames packed in assets/<folder>/atlas.png: name -> [x, y, w, h] */\n"
     "DS.ATLAS = " + json.dumps(atlas, separators=(",", ":")) + ";\n")
+import runfeet; runfeet.write()
