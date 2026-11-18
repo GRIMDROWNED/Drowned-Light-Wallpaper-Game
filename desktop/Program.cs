@@ -20,9 +20,11 @@ namespace DrownedLight
         static void Main(string[] args)
         {
             using var single = new Mutex(true, "DrownedLightDesktop", out bool first);
-            if (!first) { MessageBox.Show("Drowned Light is already running. Look for the knight icon by the clock.", "Drowned Light"); return; }
+            // opening the app again while it runs (the wallpaper is going) brings up the game in the running copy
+            using var show = new EventWaitHandle(false, EventResetMode.AutoReset, "DrownedLightDesktopShow");
+            if (!first) { show.Set(); return; }
             ApplicationConfiguration.Initialize();
-            Application.Run(new TrayApp(Array.Exists(args, a => a == "--startup")));
+            Application.Run(new TrayApp(Array.Exists(args, a => a == "--startup"), show));
         }
     }
 
@@ -38,8 +40,10 @@ namespace DrownedLight
         WallpaperForm wall;
         PlayForm play;
 
-        public TrayApp(bool startup)
+        public TrayApp(bool startup, EventWaitHandle show)
         {
+            var ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            new Thread(() => { while (show.WaitOne()) ui.Post(_ => ShowPlay(), null); }) { IsBackground = true }.Start();
             Unpack();
             wallItem = new ToolStripMenuItem("Wallpaper on", null, (s, e) => SetWall(wall == null));
             startItem = new ToolStripMenuItem("Start with Windows", null, (s, e) => SetStartup(!IsStartup()));
@@ -53,7 +57,9 @@ namespace DrownedLight
             tray = new NotifyIcon { Icon = LoadIcon(), Text = "Drowned Light", ContextMenuStrip = menu, Visible = true };
             tray.DoubleClick += (s, e) => ShowPlay();
             SetWall(true);
-            if (!startup) tray.ShowBalloonTip(4000, "Drowned Light", "The knights are fighting behind your desktop icons. Right-click the knight by the clock to play or switch it off.", ToolTipIcon.None);
+            if (startup) return; // signing in to Windows: just the wallpaper
+            ShowPlay(); // one app for everything: the wallpaper is set and the game opens
+            tray.ShowBalloonTip(4000, "Drowned Light", "The knights fight behind your desktop icons. Closing the game keeps the wallpaper; right-click the knight by the clock to switch it off or quit.", ToolTipIcon.None);
         }
 
         internal static Icon LoadIcon()
