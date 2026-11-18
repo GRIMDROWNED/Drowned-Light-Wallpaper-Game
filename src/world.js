@@ -2,19 +2,60 @@
    parallax backdrop (painted in code: the main game has no side-on scenery yet). */
 "use strict";
 (function (DS) {
-  const W = 2400, H = 1000, FLOOR = 860;
-  const solids = [
-    { x: -200, y: FLOOR, w: W + 400, h: 300 },           // floor
-    { x: -200, y: -400, w: 240, h: H + 600 },            // left wall
-    { x: W - 40, y: -400, w: 240, h: H + 600 },          // right wall
-    { x: 1100, y: 790, w: 200, h: 80 },                  // the dais
-  ];
-  const plats = [ // one-way: stand on top, jump up through, hold down + jump to drop
-    { x: 190, y: 755, w: 220 }, { x: 470, y: 655, w: 200 }, { x: 790, y: 745, w: 200 },
-    { x: 1110, y: 655, w: 180 }, { x: 1080, y: 540, w: 240 }, { x: 1440, y: 745, w: 220 },
-    { x: 1740, y: 655, w: 200 }, { x: 2010, y: 755, w: 220 },
-  ];
-  const spawns = [{ x: 120, y: FLOOR }, { x: W - 120, y: FLOOR }];
+  // The world is either the old arena or a scrolling level (Robert 2026-11-18: "make it a scroller").
+  // solids/plats are filled in place by arena() / level(); W is the current world width.
+  const H = 1000, FLOOR = 860;
+  const solids = [], plats = [], spawns = [];
+  const W0 = 2400;
+  function frame(w) { // floor and the two end walls
+    solids.length = 0; plats.length = 0; spawns.length = 0;
+    solids.push({ x: -200, y: FLOOR, w: w + 400, h: 300, kind: "floor" },
+      { x: -200, y: -400, w: 240, h: H + 600, kind: "wall" }, { x: w - 40, y: -400, w: 240, h: H + 600, kind: "wall" });
+    spawns.push({ x: 120, y: FLOOR }, { x: w - 120, y: FLOOR });
+    World.W = w; L && L.cache.clear();
+  }
+  function arena() {
+    frame(W0);
+    solids.push({ x: 1100, y: 790, w: 200, h: 80, kind: "stone" }); // the dais
+    plats.push( // one-way: stand on top, jump up through, hold down + jump to drop
+      { x: 190, y: 755, w: 220 }, { x: 470, y: 655, w: 200 }, { x: 790, y: 745, w: 200 },
+      { x: 1110, y: 655, w: 180 }, { x: 1080, y: 540, w: 240 }, { x: 1440, y: 745, w: 220 },
+      { x: 1740, y: 655, w: 200 }, { x: 2010, y: 755, w: 220 });
+  }
+
+  // A scrolling level: a run of 1200-wide stretches of swamp, each with an ambush of the Drowned, then the
+  // Sovereign's clearing at the far end. Returns { enc: [{x, foes, at}], bossX }.
+  const POOL = [["footman", 0], ["revenant", 0], ["squire", 1], ["archer", 1], ["defiler", 2], ["blackguard", 3], ["hexbearer", 3]];
+  function level(n, seed) {
+    const r = rng(seed), SEG = 1200, segs = 6 + Math.min(4, n), start = 700;
+    const bossX = start + segs * SEG, w = bossX + 1900;
+    frame(w);
+    const enc = [];
+    for (let i = 0; i < segs; i++) {
+      const x0 = start + i * SEG;
+      for (let k = 0; k < 4; k++) { // four slots of 300 per stretch
+        const sx = x0 + k * 300 + 30, roll = r();
+        if (roll < 0.22) continue;
+        if (roll < 0.42) { const sw = 120 + (r() * 3 | 0) * 40, sh = [60, 80, 80][r() * 3 | 0]; solids.push({ x: sx + 20, y: FLOOR - sh, w: sw, h: sh, kind: "stone" }); }
+        else if (roll < 0.52) { solids.push({ x: sx, y: FLOOR - 60, w: 100, h: 60, kind: "stone" }, { x: sx + 100, y: FLOOR - 120, w: 120, h: 120, kind: "stone" }); }
+        else if (roll < 0.78) { plats.push({ x: sx, y: r() < 0.5 ? 755 : 745, w: 200 + (r() * 3 | 0) * 20 }); if (r() < 0.5) plats.push({ x: sx + 40, y: 645, w: 180 }); }
+        else { plats.push({ x: sx, y: 655, w: 220 }); if (r() < 0.6) plats.push({ x: sx + 20, y: 545, w: 200 }); }
+      }
+      const avail = POOL.filter((t) => t[1] <= n + Math.floor(i / 2)).map((t) => t[0]);
+      const count = Math.min(9, 2 + Math.floor(i * 0.6) + n);
+      const foes = [], at = [];
+      for (let j = 0; j < count; j++) {
+        foes.push(avail[r() * avail.length | 0]);
+        const behind = n > 0 && j === count - 1 && r() < 0.5; // later levels: one comes from behind
+        at.push(behind ? x0 - 650 : x0 + 650 + r() * 500);
+      }
+      enc.push({ x: x0, foes, at });
+    }
+    // the Sovereign's clearing: flat, two ledges to dodge onto
+    plats.push({ x: bossX + 350, y: 700, w: 220 }, { x: bossX + 1250, y: 700, w: 220 });
+    enc.push({ x: bossX + 150, foes: ["champion"], at: [bossX + 1300], boss: true });
+    return { enc, bossX };
+  }
 
   // Move an entity (x = centre, y = feet) through the world. Sets e.onGround, e.hitWall, e.onPlat.
   function move(e, dt, blockers) {
@@ -228,11 +269,10 @@ function reeds(){
     return c;
   }
   function build() {
-    L = { sky: sky(), clouds: clouds(), hills: hills(), far: trees(5, true), mid: trees(8, false), reeds: reeds(), ground: ground(), wall: wall(20, 600), plats: new Map() };
-    const d = solids[3]; L.dais = stone(d.w / 2, d.h / 2);
-    for (const p of plats) L.plats.set(p, wood(p.w / 2));
+    L = { sky: sky(), clouds: clouds(), hills: hills(), far: trees(5, true), mid: trees(8, false), reeds: reeds(), ground: ground(), wall: wall(20, 600), cache: new Map() };
     const r = rng(77); L.wisps = []; for (let i = 0; i < 14; i++) L.wisps.push({ x: r() * TILE, y: 60 + r() * 80, p: r() * 6 });
   }
+  function art(o, make) { let c = L.cache.get(o); if (!c) { c = make(); L.cache.set(o, c); } return c; }
   function tiled(g, img, off, y, lw) { const x0 = -((Math.round(off) % TILE) + TILE) % TILE; for (let x = x0; x < lw; x += TILE) g.drawImage(img, x, Math.round(y)); }
 
   function drawBackdrop(g, cam, lw, lh, t) {
@@ -256,25 +296,28 @@ function reeds(){
   function drawWorld(g, cam, lw, lh) {
     if (!L) build();
     const X = (wx) => Math.round((wx - cam.x) / 2), Y = (wy) => Math.round((wy - cam.y) / 2), fy = Y(FLOOR);
+    const vis = (x, w) => X(x) < lw + 4 && X(x + w) > -4;
     // posts first, then planks
-    for (const p of plats) for (const wx of [p.x + 12, p.x + p.w - 20]) {
+    for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
       g.fillStyle = "#4a3624"; g.fillRect(X(wx), y0, 4, y1 - y0);
       g.fillStyle = "#6b5034"; g.fillRect(X(wx), y0, 1, y1 - y0);
     }
-    const d = solids[3]; g.drawImage(L.dais, X(d.x), Y(d.y));
+    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => stone(s.w / 2, s.h / 2)), X(s.x), Y(s.y));
     g.fillStyle = "#181210"; g.fillRect(0, fy + 60, lw, Math.max(0, lh - fy - 60));
     tiled(g, L.ground, cam.x / 2, fy - 8, lw);
-    for (const s of [solids[1], solids[2]]) {
+    for (const s of solids) {
+      if (s.kind !== "wall") continue;
       const x0 = X(s.x), w = Math.round(s.w / 2);
       if (x0 > lw || x0 + w < 0) continue;
       g.drawImage(L.wall, 0, 0, 20, 600, x0, Y(s.y), w, Math.round(s.h / 2));
-      const ex = s === solids[1] ? x0 + w - 1 : x0;
+      const ex = s.x < 0 ? x0 + w - 1 : x0;
       for (let y = Math.max(0, Y(s.y)); y < Math.min(lh, fy + 2); y++) { px(g, ex, y, y % 2 ? "#3b2c22" : "#16110f"); }
     }
-    for (const p of plats) g.drawImage(L.plats.get(p), X(p.x), Y(p.y));
+    for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => wood(p.w / 2)), X(p.x), Y(p.y));
   }
 
-  DS.World = { W, H, FLOOR, solids, plats, spawns, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  const World = DS.World = { W: W0, H, FLOOR, solids, plats, spawns, arena, level, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  arena();
 })(window.DS = window.DS || {});

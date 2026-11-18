@@ -379,7 +379,7 @@
     ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;
     const rx = vw - 14 - (document.body.classList.contains("touch") ? 64 : 0);
-    ctx.fillText(G.waves ? `Wave ${G.wave}  ·  ${left} left` : `Free play  ·  ${left} foes`, rx, y + 10);
+    ctx.fillText(G.scroll ? `Level ${G.level + 1}  ·  ${Math.min(100, Math.max(0, Math.round(G.player.x / (G.bossX + 150) * 100)))}%  ·  ${left} foes` : G.waves ? `Wave ${G.wave}  ·  ${left} left` : `Free play  ·  ${left} foes`, rx, y + 10);
     ctx.font = '600 11px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb";
     ctx.fillText(`Kills ${G.kills}   Best combo ${G.best}`, rx, y + 26);
     if (G.combo >= 3) { ctx.font = '900 22px "Pixelify Sans", monospace'; ctx.fillStyle = `rgba(255,220,140,${Math.min(1, G.comboT)})`; ctx.fillText(G.combo + " HITS", rx, y + 52); }

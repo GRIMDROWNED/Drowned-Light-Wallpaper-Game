@@ -5,7 +5,7 @@
   const P = DS.PHYS, Wd = DS.World, I = DS.Input;
   const G = DS.G = {
     mode: "title", t: 0, foes: [], shots: [], zones: [], fx: [], texts: [],
-    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, god: false, boxes: false,
+    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, god: false, boxes: false,
     kills: 0, combo: 0, comboT: 0, best: 0, swingId: 0, dummyLog: [], kit: "lanternBlade",
   };
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -19,7 +19,7 @@
     (k.forms || []).forEach((f) => DS.Sprites.loadSet(f.sprite));
     const max = Math.round(P.hp * (k.hpMult || 1));
     return {
-      kitId, k, x: Wd.W / 2, y: Wd.FLOOR - 200, vx: 0, vy: 0, w: 28, h: 74, dir: 1,
+      kitId, k, x: G.scroll ? G.checkpoint : Wd.W / 2, y: Wd.FLOOR - 200, vx: 0, vy: 0, w: 28, h: 74, dir: 1,
       hp: max, max, onGround: false, coyote: 0, buffer: 0, airJumps: 1, airDash: 1,
       dashT: 0, dashCd: 0, inv: 1, hurtT: 0, dead: 0, atk: null, comboStep: 0, comboT: 0,
       cast: null, abilCd: 0, stillT: 0, moveT: 0, rushT: 0, heat: 0, heatT: 0, stacks: 0, stackT: 0,
@@ -130,7 +130,7 @@
       if (p.plunge) DS.Kits.plungeLand(p);
     }
     p.x = clamp(p.x, 40 + p.w / 2, Wd.W - 40 - p.w / 2);
-    if (p.y > Wd.H + 200) { p.y = Wd.FLOOR - 300; p.x = Wd.W / 2; p.vy = 0; }
+    if (p.y > Wd.H + 200) { p.y = Wd.FLOOR - 300; p.x = G.scroll ? G.checkpoint : Wd.W / 2; p.vy = 0; }
 
     // attack / ability
     DS.Kits.update(p, dt);
@@ -143,6 +143,8 @@
     G.foes = G.foes.filter((f) => f.d.dummy);
     G.shots = []; G.zones = [];
     G.waveT = 2.5;
+    G.tok++; // drop ambushes still being summoned; the ones from the checkpoint on spring again
+    for (const e of G.enc) if (e.x >= G.checkpoint - 10) e.on = false;
     G.combo = 0;
   }
 
@@ -230,10 +232,16 @@
   function spawnFoe(type, x, y) {
     const d = type === "dummy" ? DUMMY : DS.ENEMIES[type];
     if (d.sprite) DS.Sprites.loadSet(d.sprite);
+    if (x == null && G.scroll && G.player) { // in a level: just off screen, either side of the knight
+      const p = G.player, s = Math.random() < 0.5 ? -1 : 1;
+      x = clamp(p.x + s * (DS.Render.vw / 2 + 60), 100, Wd.W - 100); y = Wd.surfaceBelow(x, -2000);
+      if (Wd.solidAt(x, y + 1) && y < Wd.FLOOR) { /* on a stone: fine */ }
+    }
     const side = x == null ? (Math.random() < 0.5 ? 0 : 1) : null;
     const sp = side == null ? { x, y } : Wd.spawns[side];
+    const px = G.player ? G.player.x : Wd.W / 2;
     const e = {
-      type, d, x: sp.x + (side == null ? 0 : rnd(-30, 30)), y: sp.y, vx: 0, vy: 0, w: d.w, h: d.h, dir: sp.x < Wd.W / 2 ? 1 : -1,
+      type, d, x: sp.x + (side == null ? 0 : rnd(-30, 30)), y: sp.y, vx: 0, vy: 0, w: d.w, h: d.h, dir: sp.x < px ? 1 : -1,
       hp: d.hp, max: d.hp, chill: 0, freeze: 0, root: 0, kbT: 0, broken: 0, state: "move", st: 0, cd: rnd(0.4, 1.2), spawnT: d.dummy ? 0 : 0.5, jumpCd: 0, runT: 0, flash: 0,
       boss: d.boss ? { next: 0, phase: 1 } : null,
     };
@@ -453,6 +461,42 @@
     G.waveT = 3;
   }
 
+  // ---------------- the scrolling level ----------------
+  function loadLevel(n) {
+    G.level = n; G.tok++;
+    const lv = Wd.level(n, 1000 + n * 7919);
+    G.enc = lv.enc; G.bossX = lv.bossX; G.checkpoint = 300; G.clearT = 0;
+    G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
+    G.banner = { txt: "Level " + (n + 1), t: 0 };
+  }
+  function updateScroll(dt) {
+    const p = G.player, tok = G.tok;
+    for (const e of G.enc) {
+      if (e.on || p.x < e.x - 150) continue;
+      e.on = true; G.checkpoint = Math.max(G.checkpoint, e.x - 250);
+      e.foes.forEach((type, i) => setTimeout(() => {
+        if (G.tok !== tok || !(G.mode === "play" || G.mode === "menu")) return;
+        const x = clamp(e.at[i], 100, Wd.W - 100);
+        const f = spawnFoe(type, x, Wd.surfaceBelow(x, -2000)); f.enc = e;
+      }, e.boss ? 700 : i * 260));
+      if (e.boss) G.banner = { txt: "The Drowned Sovereign", t: 0 };
+    }
+    // the level is done once the Sovereign falls and his clearing is quiet
+    const bossEnc = G.enc[G.enc.length - 1];
+    if (bossEnc && bossEnc.on && !G.clearT && G.foes.some((f) => f.enc === bossEnc) && !G.foes.some((f) => !f.dead && !f.d.dummy)) {
+      G.clearT = 3.5; G.banner = { txt: "Level " + (G.level + 1) + " cleared", t: 0 };
+    }
+    if (G.clearT > 0) {
+      G.clearT -= dt;
+      if (G.clearT <= 0) { loadLevel(G.level + 1); const pl = G.player; pl.x = G.checkpoint; pl.y = Wd.FLOOR - 200; pl.vx = pl.vy = 0; G.cam.x = pl.x - DS.Render.vw / 2; }
+    }
+  }
+  function setScroll(on) {
+    G.scroll = on; G.waves = !on;
+    if (on) loadLevel(0); else { Wd.arena(); G.enc = []; G.tok++; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
+  }
+  Object.assign(DS, { loadLevel, setScroll });
+
   // ---------------- main loop ----------------
   function step(dt) {
     I.poll();
@@ -472,7 +516,7 @@
     updateShots(dt);
     DS.Kits.updateZones(dt);
     updateFx(dt);
-    updateWaves(dt);
+    if (G.scroll) updateScroll(dt); else updateWaves(dt);
     G.dummyLog = G.dummyLog.filter((l) => G.t - l[0] < 5);
     // camera
     const c = G.cam, vw = DS.Render.vw, vh = DS.Render.vh;
@@ -493,6 +537,7 @@
   }
   function restart() {
     G.foes = []; G.shots = []; G.zones = []; G.fx = []; G.texts = []; G.wave = 0; G.waveT = 2; G.kills = 0; G.combo = 0; G.best = 0;
+    if (G.scroll) loadLevel(0); else { Wd.arena(); G.tok++; }
     start(G.kit);
   }
   function switchKit(kitId) {

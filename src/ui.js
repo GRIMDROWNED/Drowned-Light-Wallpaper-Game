@@ -49,9 +49,13 @@
     }
     $("#btnResume").onclick = () => { close(); G.mode = "play"; };
     $("#btnKits").onclick = () => openMenu("kits");
-    $("#btnWave").onclick = (e) => { G.waveT = 0; G.foes = G.foes.filter((f) => f.d.dummy); G.waves = true; syncToggles(); flash(e.target); };
+    $("#btnWave").onclick = (e) => {
+      if (G.scroll) { for (const en of G.enc) if (!en.boss) en.on = true; const p = G.player; p.x = G.bossX - 200; p.y = DS.World.FLOOR - 200; p.vx = p.vy = 0; G.foes = G.foes.filter((f) => f.d.dummy); }
+      else { G.waveT = 0; G.foes = G.foes.filter((f) => f.d.dummy); G.waves = true; }
+      syncToggles(); flash(e.target);
+    };
     $("#btnClear").onclick = (e) => { G.foes = []; G.shots = []; flash(e.target); };
-    $("#btnWaves").onclick = () => { G.waves = !G.waves; syncToggles(); };
+    $("#btnWaves").onclick = () => { DS.setScroll(!G.scroll); DS.restart(); close(); G.mode = "play"; };
     $("#btnGod").onclick = () => { G.god = !G.god; syncToggles(); };
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
     $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
@@ -59,7 +63,9 @@
     syncToggles();
   }
   function syncToggles() {
-    $("#btnWaves").textContent = "Waves: " + (G.waves ? "on" : "off");
+    $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
+    $("#btnWave").textContent = G.scroll ? "Skip to the boss" : "Next wave now";
+    $("#btnRestart").textContent = G.scroll ? "Restart level" : "Restart arena";
     $("#btnGod").textContent = "God mode: " + (G.god ? "on" : "off");
     $("#btnBoxes").textContent = "Hitboxes: " + (G.boxes ? "on" : "off");
   }
@@ -68,6 +74,7 @@
   function openMenu(name) {
     for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name;
     open = name; focus = 0;
+    if (name === "pause") syncToggles();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
       focus = Math.max(0, DS.KIT_ORDER.indexOf(G.kit));
