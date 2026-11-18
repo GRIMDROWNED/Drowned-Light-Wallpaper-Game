@@ -36,12 +36,15 @@
     if (k.momentum) m *= 1 + Math.min(1, p.moveT / k.momentum.full) * k.momentum.bonus;
     if (k.heat) m *= 1 + (p.heat / k.heat.max) * k.heat.dmg;
     if (k.tithe) m *= 1 + p.stacks * k.tithe.dmg;
+    if (p.bless > 0) m *= 1 + p.blessAmt;   // Abigail's blessing
+    if (p.fury > 0) m *= 1 + p.furyAmt;     // David's War Fury
     return m;
   }
   function speedMult(p) {
     let m = p.k.speedMult || 1;
     if (p.rushT > 0) m *= p.k.rush.speed;
     if (p.k.tithe) m *= 1 + p.stacks * p.k.tithe.speed;
+    if (p.bless > 0) m *= 1 + p.blessAmt;
     return m;
   }
   function atkSpeed(p) { return p.k.tithe ? 1 + p.stacks * p.k.tithe.atk : 1; }
@@ -147,6 +150,7 @@
     for (const e of G.enc) if (e.x >= G.checkpoint - 10) e.on = false;
     G.combo = 0;
     if (G.wall) nextWallKnight();
+    DS.Fam.reset();
   }
 
   // ---------------- damage ----------------
@@ -164,6 +168,7 @@
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
     if (e.brittle) dmg *= 1.2;
+    if (e.curse) dmg *= 1 + e.curse; // cursed by Abigail's soul orbs
     dmg = Math.max(1, Math.round(dmg));
     e.hp -= dmg; e.flash = 0.1;
     if (e.d.dummy) { e.hp = e.max; G.dummyLog.push([G.t, dmg]); }
@@ -182,8 +187,7 @@
     text(e.x + rnd(-8, 8), e.y - e.h - 4, String(dmg), blocked ? "#9aa" : opt.color || "#fff", dmg >= 25 ? 17 : 14);
     spark(e.x - dir * e.w * 0.2, e.y - e.h * 0.55, opt.sparkColor || "#e8f4ff", blocked ? 3 : 8);
     G.hitstop = Math.max(G.hitstop, opt.hitstop != null ? opt.hitstop : 0.045);
-    shake(opt.heavy ? 5 : 2.5);
-    I.rumble(opt.heavy ? 0.5 : 0.2, 0.3, 60);
+    if (!opt.quiet) { shake(opt.heavy ? 5 : 2.5); I.rumble(opt.heavy ? 0.5 : 0.2, 0.3, 60); } // a familiar's blows don't shake the screen
     G.combo++; G.comboT = 2; G.best = Math.max(G.best, G.combo);
     if (G.player.k.heat && !opt.noHeat) { p.heat = Math.min(p.k.heat.max, p.heat + p.k.heat.perHit); p.heatT = p.k.heat.hold; }
     if (e.hp <= 0 && !e.d.dummy) kill(e);
@@ -193,6 +197,7 @@
   function kill(e) {
     e.dead = true; e.state = "dead"; e.st = 0; e.deadT = 0; e.vy = -260; e.vx = Math.sign(e.x - G.player.x) * 160;
     G.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
+    DS.Fam.onKill();
     const p = G.player, k = p.k;
     for (let i = 0; i < 14; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-14, 14), y: e.y - rnd(10, e.h), vx: rnd(-60, 60), vy: rnd(-160, -40), t: 0, life: rnd(0.5, 1), c: "rgba(110,230,220," });
     if (k.tithe) { p.stacks += e.d.boss ? k.tithe.boss : 1; p.stackT = k.tithe.hold; }
@@ -211,6 +216,8 @@
     if (k.aegis) m *= 1 - k.aegis;
     const stance = k.stance && p.stillT >= k.stance.after;
     if (stance) m *= 1 - k.stance.guard;
+    if (p.bless > 0) m *= 1 - p.blessAmt;             // Abigail's blessing
+    if (src && src.curse) m *= 1 - src.curse;         // a foe she cursed hits softer
     if (p.guard && front) {
       m *= 1 - k.ability.guard;
       p.heat = Math.min(k.heat.max, p.heat + k.heat.perBlock); p.heatT = k.heat.hold;
@@ -256,7 +263,10 @@
   function canSee(e, p) { return Math.abs(p.y - e.y) < 260; }
 
   function updateFoe(e, dt) {
-    const p = G.player, d = e.d;
+    const d = e.d;
+    // a Drowned near one of Derek's walls turns on the wall (it stands in for the knight below)
+    if (e.state === "move" || e.state === "hurt") e.lure = DS.Fam.lure(e);
+    const p = e.lure && !e.lure.gone ? e.lure : G.player;
     e.flash = Math.max(0, e.flash - dt);
     if (e.spawnT > 0) { e.spawnT -= dt; return; }
     if (e.dead) {
@@ -270,7 +280,8 @@
       if (e.burn.tick <= 0) { e.burn.tick = 0.5; hitFoe(e, { dmg: e.burn.dps * 0.5, noMult: true, color: "#ffa040", hitstop: 0, noHeat: true, kb: 0 }); if (e.dead) return; }
       if (e.burn.t <= 0) e.burn = null;
     }
-    const slow = e.chill > 0 ? 0.5 : 1;
+    const slow = (e.chill > 0 ? 0.5 : 1) * DS.Fam.tickFoe(e, dt); // frost, Fred's spores, Abigail's curse
+    if (e.dead) return; // bled out
     const busy = e.freeze > 0;
     e.cd -= dt * slow * (busy ? 0 : 1);
     e.jumpCd -= dt;
@@ -329,7 +340,7 @@
     e.vy = Math.min(P.maxFall, e.vy + P.gravity * dt);
     e.dropT = Math.max(0, (e.dropT || 0) - dt);
     const air = !e.onGround, fallV = e.vy;
-    Wd.move(e, dt, DS.Kits.walls());
+    Wd.move(e, dt, DS.Kits.walls().concat(DS.Fam.walls()));
     if (air && e.onGround && fallV > 250) e.landT = 0.14; // the landing crouch
     e.x = clamp(e.x, 40 + e.w / 2, Wd.W - 40 - e.w / 2);
     if (e.leaping && e.onGround && e.st > 0.1) e.leaping = false;
@@ -349,7 +360,7 @@
   // the moment an attack lands
   function strike(e) {
     const d = e.d, p = G.player;
-    e.hitDone = false; e.strikeDur = 0.18;
+    e.hitDone = false; e.famHit = false; e.strikeDur = 0.18;
     if (d.ai === "walker" || d.ai === "shield") {
       if (d.lunge) e.vx = e.dir * d.lunge;
       if (d.ai === "shield") { shake(4); groundWave(e, e.x + e.dir * 50, e.dir, 0, 260, 0.35, d.dmg * 0.6); }
@@ -369,10 +380,13 @@
     if (d.ai === "walker" || d.ai === "shield") {
       if (!e.hitDone && e.st < 0.14) {
         const x0 = e.dir > 0 ? e.x : e.x - d.reach - 10, x1 = e.dir > 0 ? e.x + d.reach + 10 : e.x;
-        if (boxHitsPlayer(x0, e.y - e.h, x1, e.y)) { e.hitDone = true; hurtPlayer(d.dmg, e, d.name); }
+        if (e.lure && !e.lure.gone) { const w = e.lure; if (w.x + w.w / 2 > x0 && w.x - w.w / 2 < x1) { e.hitDone = true; DS.Fam.hitWall(w, e); } }
+        else if (boxHitsPlayer(x0, e.y - e.h, x1, e.y)) { e.hitDone = true; hurtPlayer(d.dmg, e, d.name); }
+        if (!e.famHit) { e.famHit = true; DS.Fam.struck(x0, e.y - e.h, x1, e.y, d.dmg); }
       }
     } else if (d.ai === "leaper") {
       if (!e.hitDone && boxHitsPlayer(e.x - e.w * 0.7, e.y - e.h, e.x + e.w * 0.7, e.y)) { e.hitDone = true; hurtPlayer(d.dmg, e, d.name); }
+      if (!e.famHit && DS.Fam.struck(e.x - e.w * 0.7, e.y - e.h, e.x + e.w * 0.7, e.y, d.dmg)) e.famHit = true;
       if (e.onGround && e.st > 0.15) e.st = 1;
     } else if (d.ai === "boss") DS.Boss.tick(e, dt);
   }
@@ -408,6 +422,7 @@
       if (s.life <= 0) { if (!s.ended && s.onEnd) s.onEnd(s, "time"); s.ended = true; continue; }
       if (s.team === "f") {
         const h = s.h || s.r * 2;
+        if (DS.Fam.blocks(s)) { s.life = 0; continue; } // Derek's walls stop their shots
         if (boxHitsPlayer(s.x - s.r, s.y - h / 2, s.x + s.r, s.y + h / 2)) {
           // the Cinderbrand's guard eats shots from the front
           if (p.guard && Math.sign(s.vx) === -p.dir && s.kind !== "wave") { hurtPlayer(s.dmg, null, s.by, s.x); s.life = 0; continue; }
@@ -595,12 +610,15 @@
     }
     const id = bag.pop();
     DS.switchKit(id); G.wallT = 0;
+    // each knight brings a familiar along (or none, now and then); it grows as the knight fights on
+    const fams = DS.FAM_ORDER.concat([null]), fam = fams[Math.floor(Math.random() * fams.length)];
+    DS.Fam.set(fam, true);
     G.banner = { txt: DS.KITS[id].name, t: 0 };
   }
   function setWall(on) {
     G.wall = on; G.wallT = 0; document.body.classList.toggle("wall", on);
     if (on) { G.scroll = true; bag = []; G.kit = null; nextWallKnight(); G.auto = true; restart(); }
-    else setAuto(innerHeight > innerWidth);
+    else { setAuto(innerHeight > innerWidth); DS.Fam.set(DS.Fam.picked()); }
   }
   Object.assign(DS, { setWall });
 
@@ -621,6 +639,7 @@
     if (G.hitstop > 0) { G.hitstop -= dt; updateFx(dt * 0.3); return; }
     const p = G.player;
     updatePlayer(p, dt);
+    DS.Fam.update(dt);
     for (const e of G.foes) updateFoe(e, dt);
     G.foes = G.foes.filter((e) => !e.dead || e.deadT < 1.4);
     updateShots(dt);
@@ -646,6 +665,7 @@
     G.cam.y = Wd.FLOOR + 80 - DS.Render.vh;
     G.mode = "play";
     try { localStorage.setItem("dl-side-kit", kitId); } catch (e) { /* storage blocked */ }
+    if (!G.wall) DS.Fam.set(DS.Fam.picked());
   }
   function restart() {
     G.foes = []; G.shots = []; G.zones = []; G.fx = []; G.texts = []; G.wave = 0; G.waveT = 2; G.kills = 0; G.combo = 0; G.best = 0;
@@ -675,6 +695,7 @@
     DS.UI.init();
     for (const id of DS.KIT_ORDER) DS.Sprites.loadSet(DS.KITS[id].sprite);
     for (const id of DS.ENEMY_ORDER) DS.Sprites.loadSet(DS.ENEMIES[id].sprite);
+    DS.Fam.load();
     if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); setWall(true); }
     requestAnimationFrame(frame);
   };

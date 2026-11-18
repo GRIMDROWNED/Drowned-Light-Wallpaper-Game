@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.6.4">
+<link rel="stylesheet" href="style.css?v=0.7.0">
 </head>
 <body>
 <!--BODY-->
@@ -29,6 +29,8 @@
   </header>
   <div id="kitGrid"></div>
   <p id="kitText"></p>
+  <div id="famPick" class="row2 famRow"></div>
+  <p id="famText"></p>
   <div class="foot">
     <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · Q next knight · Esc menu</p>
     <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · LB next knight · Menu pause</p>
@@ -44,6 +46,8 @@
       <button id="btnKits" class="opt">Change knight</button>
       <button id="btnRestart" class="opt">Restart arena</button>
     </div>
+    <h2>Familiar</h2>
+    <div id="famPause" class="row2 famRow" style="justify-content:flex-start"></div>
     <h2>Spawn the Drowned</h2>
     <div id="spawnRow" class="row2"></div>
     <h2>Testing</h2>
@@ -53,6 +57,7 @@
       <button id="btnWaves" class="opt small">Waves</button>
       <button id="btnGod" class="opt small">God mode</button>
       <button id="btnBoxes" class="opt small">Hitboxes</button>
+      <button id="btnGrow" class="opt small">Grow familiar</button>
       <button id="btnWall" class="opt small">Wallpaper</button>
       <button id="btnHelp" class="opt small">Controls</button>
     </div>
@@ -66,15 +71,16 @@
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.6.4"></script>
-<script src="src/pixscale.js?v=0.6.4"></script>
-<script src="src/sprites.js?v=0.6.4"></script>
-<script src="src/input.js?v=0.6.4"></script>
-<script src="src/world.js?v=0.6.4"></script>
-<script src="src/game.js?v=0.6.4"></script>
-<script src="src/kits.js?v=0.6.4"></script>
-<script src="src/render.js?v=0.6.4"></script>
-<script src="src/ui.js?v=0.6.4"></script>
+<script src="src/data.js?v=0.7.0"></script>
+<script src="src/pixscale.js?v=0.7.0"></script>
+<script src="src/sprites.js?v=0.7.0"></script>
+<script src="src/input.js?v=0.7.0"></script>
+<script src="src/world.js?v=0.7.0"></script>
+<script src="src/game.js?v=0.7.0"></script>
+<script src="src/kits.js?v=0.7.0"></script>
+<script src="src/familiars.js?v=0.7.0"></script>
+<script src="src/render.js?v=0.7.0"></script>
+<script src="src/ui.js?v=0.7.0"></script>
 <script>DS.boot();</script>
 </body>
 </html>

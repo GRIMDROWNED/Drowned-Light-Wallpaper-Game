@@ -43,17 +43,36 @@ def pack(folder_dir):
     for rel, im in ims: sheet.paste(im, tuple(rects[rel][:2]))
     sheet.save(folder_dir + "/atlas.png", optimize=True)
     return rects
-for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H)):
+# The familiars (src/familiars.js): each form's main-game folder and the file px per art px it was cut at (res).
+# Shown 1.2 times the size the main game gives them beside a 40 px knight, so the smallest still read as pixel art.
+FAMILIARS = {"bone-hound-f0": 4, "bone-hound": 2, "bone-hound-f2": 4, "bone-hound-f3": 4,
+             "derek-f0": 4, "derek": 4, "derek-f2": 4, "derek-f3": 4, "kindle": 4,
+             "abigail": 4, "abigail-f2": 4, "abigail-f3": 4,
+             "fred-f0": 4, "fred-f1": 4, "fred-f2": 4, "fred-f3": 4,
+             "wyvern-f0": 4, "wyvern-f1": 4, "wyvern-f2": 4, "wyvern-f3": 4}
+FAM_X = 1.2 * KNIGHT_H / 40
+def fam_frames(src):
+    """Every side-on frame of a familiar: the stills and actions (right, attacks, pour, bless...) and side/*, not the
+    front and back views."""
+    out = []
+    for f in glob.glob(src + "*.png") + glob.glob(src + "side/*.png"):
+        rel = os.path.relpath(f, src)
+        if rel in ("front.png", "back.png") or rel.startswith(("walkF", "walkB")): continue
+        out.append(rel)
+    return out
+for fam in FAMILIARS: os.makedirs(os.path.join(OUT, "familiars", fam), exist_ok=True)
+for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H), ("familiars", None)):
     for folder in sorted(os.listdir(os.path.join(OUT, group))):
-        src = SRC + (folder if group == "knights" else "drowned/" + folder) + "/"
+        src = SRC + ("drowned/" + folder if group == "drowned" else folder) + "/"
         ref = Image.open(src + REF.get(folder, "side/walk1") + ".png").convert("RGBA")
         bb = ref.getbbox(); hgt = bb[3] - bb[1]
-        s = (BOSS_H if folder == "champion" else target) / hgt
+        s = (BOSS_H if folder == "champion" else target) / hgt if target else FAM_X / FAMILIARS[folder]
         scales[group + "/" + folder] = round(s, 4)
-        sat = 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
+        sat = 1.0 if group == "familiars" else 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
         art = os.path.join(ART, group, folder) + "/"  # frames cut from the side-view sheets (tools/cut_side.py)
         rels = {os.path.relpath(f, os.path.join(OUT, group, folder)) for f in glob.glob(os.path.join(OUT, group, folder, "**/*.png"), recursive=True) if not f.endswith("/atlas.png")}
         rels |= {os.path.relpath(f, art) for f in glob.glob(art + "**/*.png", recursive=True)}
+        if group == "familiars": rels |= set(fam_frames(src))
         for rel in sorted(rels):
             f = os.path.join(OUT, group, folder, rel); os.makedirs(os.path.dirname(f), exist_ok=True)
             pixelize(Image.open(art + rel if os.path.exists(art + rel) else src + rel).convert("RGBA"), s, sat=sat).save(f)

@@ -34,6 +34,34 @@
     G.mode = "play";
   }
 
+  // the familiar picker: one row on the knight screen, one in the pause menu
+  function buildFams() {
+    for (const row of [$("#famPick"), $("#famPause")]) {
+      row.innerHTML = "";
+      for (const id of [null].concat(DS.FAM_ORDER)) {
+        const d = id && DS.FAMILIARS[id];
+        const b = el("button", "opt small fam");
+        b.dataset.fam = id || "";
+        b.style.setProperty("--fc", d ? d.color : "160,180,185");
+        b.innerHTML = d ? `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}">${d.name}` : "No familiar";
+        b.addEventListener("click", () => { DS.Fam.set(id); syncFams(); flash(b); });
+        b.addEventListener("focus", () => showFamText(id));
+        b.addEventListener("mouseenter", () => showFamText(id));
+        row.appendChild(b);
+      }
+    }
+    syncFams();
+  }
+  function showFamText(id) {
+    const d = id && DS.FAMILIARS[id];
+    $("#famText").innerHTML = d ? `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} Forms: ${d.forms.map((f) => f.name).join(" → ")}` : "Fight alone.";
+  }
+  function syncFams() {
+    const cur = G.wall && G.fam ? G.fam.id : DS.Fam.picked();
+    for (const b of document.querySelectorAll(".fam")) b.classList.toggle("sel", (b.dataset.fam || null) === (cur || null));
+    showFamText(cur);
+  }
+
   function buildPause() {
     const spawn = $("#spawnRow"); spawn.innerHTML = "";
     for (const id of DS.ENEMY_ORDER.concat(["dummy"])) {
@@ -59,6 +87,7 @@
     $("#btnGod").onclick = () => { G.god = !G.god; syncToggles(); };
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
     $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
+    $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
     syncToggles();
@@ -76,6 +105,7 @@
     for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name;
     open = name; focus = 0;
     if (name === "pause") syncToggles();
+    syncFams();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
       focus = Math.max(0, DS.KIT_ORDER.indexOf(G.kit));
@@ -132,7 +162,8 @@
 
   function init() {
     try { const k = localStorage.getItem("dl-side-kit"); if (k && DS.KITS[k]) G.kit = k; } catch (e) { /* storage blocked */ }
-    buildKits(); buildPause();
+    DS.Fam.load();
+    buildKits(); buildPause(); buildFams();
     $("#pauseBtn").addEventListener("click", () => { if (G.mode === "play") openMenu("pause"); });
     document.querySelectorAll(".menu .back").forEach((b) => b.addEventListener("click", () => openMenu("pause")));
     DS.Input.bindMouse(document.getElementById("game"));
