@@ -146,7 +146,15 @@ namespace DrownedLight
             BackColor = Color.FromArgb(10, 20, 32);
             KeyPreview = true;
             Controls.Add(view);
-            Load += async (s, e) => { await Web.Load(view, "index.html"); view.CoreWebView2.AcceleratorKeyPressed += (o, a) => { if (a.VirtualKey == (uint)Keys.F11 && a.KeyEventKind == CoreWebView2KeyEventKind.KeyDown) { a.Handled = true; BeginInvoke(new Action(ToggleFull)); } }; };
+            Load += async (s, e) =>
+            {
+                await Web.Load(view, "index.html");
+                // F11 inside the page asks the window to go full screen
+                await view.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                    "addEventListener('keydown', e => { if (e.key === 'F11') { e.preventDefault(); chrome.webview.postMessage('f11'); } });");
+                view.CoreWebView2.WebMessageReceived += (o, a) => { if (a.TryGetWebMessageAsString() == "f11") ToggleFull(); };
+                view.CoreWebView2.Reload();
+            };
         }
         void ToggleFull()
         {
