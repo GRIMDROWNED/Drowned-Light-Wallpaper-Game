@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Drowned Light Side View</title>
+<meta name="theme-color" content="#0a1420">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css?v=0.6.2">
+</head>
+<body>
+<!--BODY-->
+<canvas id="game"></canvas>
+
+<button id="pauseBtn" aria-label="Pause">II</button>
+<div id="stick"><div id="knob"></div></div>
+<div id="touch">
+  <button data-act="ability" class="tb ab">Ability</button>
+  <button data-act="dash" class="tb da">Dash</button>
+  <button data-act="jump" class="tb ju">Jump</button>
+  <button data-act="attack" class="tb at">Attack</button>
+</div>
+
+<section id="kits" class="menu" hidden>
+  <header>
+    <h1>Drowned Light <span>Side View</span></h1>
+    <p class="sub">Combat prototype. Pick a knight and fight your way through the drowned swamp to the Sovereign. Every kit keeps its attack and ability from the main game. <span id="ver"></span></p>
+  </header>
+  <div id="kitGrid"></div>
+  <p id="kitText"></p>
+  <div class="foot">
+    <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · Q next knight · Esc menu</p>
+    <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · LB next knight · Menu pause</p>
+    <button class="back opt small" hidden>Back</button>
+  </div>
+</section>
+
+<section id="pause" class="menu" hidden>
+  <header><h1>Paused</h1></header>
+  <div class="col">
+    <div class="row2">
+      <button id="btnResume" class="opt">Resume</button>
+      <button id="btnKits" class="opt">Change knight</button>
+      <button id="btnRestart" class="opt">Restart arena</button>
+    </div>
+    <h2>Spawn the Drowned</h2>
+    <div id="spawnRow" class="row2"></div>
+    <h2>Testing</h2>
+    <div class="row2">
+      <button id="btnWave" class="opt small">Next wave now</button>
+      <button id="btnClear" class="opt small">Clear foes</button>
+      <button id="btnWaves" class="opt small">Waves</button>
+      <button id="btnGod" class="opt small">God mode</button>
+      <button id="btnBoxes" class="opt small">Hitboxes</button>
+      <button id="btnWall" class="opt small">Wallpaper</button>
+      <button id="btnHelp" class="opt small">Controls</button>
+    </div>
+    <div id="help" hidden>
+      <p><b>Keys</b> A/D move · Space/W jump, again in the air for a double jump · J or left-click attack (press again for a 3-hit combo) · K or Shift dash (through enemies, also in the air) · L or right-click ability · hold W while attacking to swing upward · hold S and attack in the air to plunge · S + jump drops through a platform · Q swaps knight · Esc pauses</p>
+      <p><b>Xbox pad</b> Left stick or D-pad move · A jump · X or LT attack · B or RB dash · Y or RT ability · LB swaps knight · Menu pauses · in menus, A picks and B goes back</p>
+      <p><b>Touch</b> drag on the left half to move (push up and attack for an up-swing, down and attack in the air to plunge) · buttons on the right · II pauses</p>
+    </div>
+  </div>
+</section>
+
+<div id="rotate">Turn your phone sideways to play</div>
+<!--/BODY-->
+<script src="src/data.js?v=0.6.2"></script>
+<script src="src/pixscale.js?v=0.6.2"></script>
+<script src="src/sprites.js?v=0.6.2"></script>
+<script src="src/input.js?v=0.6.2"></script>
+<script src="src/world.js?v=0.6.2"></script>
+<script src="src/game.js?v=0.6.2"></script>
+<script src="src/kits.js?v=0.6.2"></script>
+<script src="src/render.js?v=0.6.2"></script>
+<script src="src/ui.js?v=0.6.2"></script>
+<script>DS.boot();</script>
+</body>
+</html>
