@@ -67,5 +67,6 @@ body.touch #touch, body.touch #pauseBtn { display: block; }
 #knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; border-radius: 50%; background: rgba(200, 240, 240, 0.35); transform: translate(-50%, -50%); }
 
 #rotate { display: none; position: fixed; inset: 0; z-index: 30; background: var(--ink); color: var(--text); font: 600 18px var(--display); place-items: center; text-align: center; padding: 24px; }
-@media (orientation: portrait) and (pointer: coarse) { #rotate { display: grid; } }
+/* portrait no longer asks to rotate: the knight fights on its own there (src/game.js autopilot) */
+body.auto #touch, body.auto #stick { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

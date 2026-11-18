@@ -15,7 +15,7 @@
     World.W = w; L && L.cache.clear();
   }
   function arena() {
-    frame(W0);
+    frame(W0); gen = null;
     solids.push({ x: 1100, y: 790, w: 200, h: 80, kind: "stone" }); // the dais
     plats.push( // one-way: stand on top, jump up through, hold down + jump to drop
       { x: 190, y: 755, w: 220 }, { x: 470, y: 655, w: 200 }, { x: 790, y: 745, w: 200 },
@@ -23,38 +23,71 @@
       { x: 1740, y: 655, w: 200 }, { x: 2010, y: 755, w: 220 });
   }
 
-  // A scrolling level: a run of 1200-wide stretches of swamp, each with an ambush of the Drowned, then the
-  // Sovereign's clearing at the far end. Returns { enc: [{x, foes, at}], bossX }.
+  // A scrolling level, generated a 1200-wide stretch of swamp at a time, each stretch with an ambush of the Drowned.
+  // begin() starts one; extend(x) builds on until x (the endless auto-fight run in portrait keeps calling it);
+  // finish() closes it with the Sovereign's clearing; unfinish() takes that away again (back to endless).
   const POOL = [["footman", 0], ["revenant", 0], ["squire", 1], ["archer", 1], ["defiler", 2], ["blackguard", 3], ["hexbearer", 3]];
-  function level(n, seed) {
-    const r = rng(seed), SEG = 1200, segs = 6 + Math.min(4, n), start = 700;
-    const bossX = start + segs * SEG, w = bossX + 1900;
-    frame(w);
-    const enc = [];
-    for (let i = 0; i < segs; i++) {
-      const x0 = start + i * SEG;
-      for (let k = 0; k < 4; k++) { // four slots of 300 per stretch
-        const sx = x0 + k * 300 + 30, roll = r();
-        if (roll < 0.22) continue;
-        if (roll < 0.42) { const sw = 120 + (r() * 3 | 0) * 40, sh = [60, 80, 80][r() * 3 | 0]; solids.push({ x: sx + 20, y: FLOOR - sh, w: sw, h: sh, kind: "stone" }); }
-        else if (roll < 0.52) { solids.push({ x: sx, y: FLOOR - 60, w: 100, h: 60, kind: "stone" }, { x: sx + 100, y: FLOOR - 120, w: 120, h: 120, kind: "stone" }); }
-        else if (roll < 0.78) { plats.push({ x: sx, y: r() < 0.5 ? 755 : 745, w: 200 + (r() * 3 | 0) * 20 }); if (r() < 0.5) plats.push({ x: sx + 40, y: 645, w: 180 }); }
-        else { plats.push({ x: sx, y: 655, w: 220 }); if (r() < 0.6) plats.push({ x: sx + 20, y: 545, w: 200 }); }
-      }
-      const avail = POOL.filter((t) => t[1] <= n + Math.floor(i / 2)).map((t) => t[0]);
-      const count = Math.min(9, 2 + Math.floor(i * 0.6) + n);
-      const foes = [], at = [];
-      for (let j = 0; j < count; j++) {
-        foes.push(avail[r() * avail.length | 0]);
-        const behind = n > 0 && j === count - 1 && r() < 0.5; // later levels: one comes from behind
-        at.push(behind ? x0 - 650 : x0 + 650 + r() * 500);
-      }
-      enc.push({ x: x0, foes, at });
+  const SEG = 1200, START = 700, BOSS_W = 1900;
+  let gen = null;
+  function begin(n, seed) {
+    frame(START + 2400);
+    gen = { r: rng(seed), n, i: 0, x: START, done: null };
+  }
+  function ends(w) { // move the floor's end and the right wall to w
+    solids[0].w = w + 400; solids[2].x = w - 40; spawns[1].x = w - 120; World.W = w;
+  }
+  function stretch() {
+    const r = gen.r, x0 = gen.x, n = gen.n, i = gen.i;
+    for (let k = 0; k < 4; k++) { // four slots of 300 per stretch
+      const sx = x0 + k * 300 + 30, roll = r();
+      if (roll < 0.22) continue;
+      if (roll < 0.42) { const sw = 120 + (r() * 3 | 0) * 40, sh = [60, 80, 80][r() * 3 | 0]; solids.push({ x: sx + 20, y: FLOOR - sh, w: sw, h: sh, kind: "stone" }); }
+      else if (roll < 0.52) { solids.push({ x: sx, y: FLOOR - 60, w: 100, h: 60, kind: "stone" }, { x: sx + 100, y: FLOOR - 120, w: 120, h: 120, kind: "stone" }); }
+      else if (roll < 0.78) { plats.push({ x: sx, y: r() < 0.5 ? 755 : 745, w: 200 + (r() * 3 | 0) * 20 }); if (r() < 0.5) plats.push({ x: sx + 40, y: 645, w: 180 }); }
+      else { plats.push({ x: sx, y: 655, w: 220 }); if (r() < 0.6) plats.push({ x: sx + 20, y: 545, w: 200 }); }
     }
-    // the Sovereign's clearing: flat, two ledges to dodge onto
-    plats.push({ x: bossX + 350, y: 700, w: 220 }, { x: bossX + 1250, y: 700, w: 220 });
-    enc.push({ x: bossX + 150, foes: ["champion"], at: [bossX + 1300], boss: true });
-    return { enc, bossX };
+    const avail = POOL.filter((t) => t[1] <= n + Math.floor(i / 2)).map((t) => t[0]);
+    const count = Math.min(9, 2 + Math.floor(i * 0.6) + n);
+    const foes = [], at = [];
+    for (let j = 0; j < count; j++) {
+      foes.push(avail[r() * avail.length | 0]);
+      const behind = (n > 0 || i > 6) && j === count - 1 && r() < 0.5; // later on, one comes from behind
+      at.push(behind ? x0 - 650 : x0 + 650 + r() * 500);
+    }
+    gen.i++; gen.x += SEG;
+    return { x: x0, foes, at };
+  }
+  function extend(toX) {
+    const enc = [];
+    if (!gen || gen.done) return enc;
+    while (gen.x < toX) enc.push(stretch());
+    ends(gen.x + 2400);
+    return enc;
+  }
+  function finish() { // the Sovereign's clearing: flat, two ledges to dodge onto
+    const bossX = gen.x, a = { x: bossX + 350, y: 700, w: 220 }, b = { x: bossX + 1250, y: 700, w: 220 };
+    plats.push(a, b); ends(bossX + BOSS_W);
+    gen.done = { bossX, plats: [a, b] };
+    return { x: bossX + 150, foes: ["champion"], at: [bossX + 1300], boss: true, bossX };
+  }
+  function unfinish() {
+    if (!gen || !gen.done) return;
+    for (const p of gen.done.plats) plats.splice(plats.indexOf(p), 1);
+    gen.done = null; ends(gen.x + 2400);
+  }
+  // the endless run: forget the swamp far behind and wall it off
+  function prune(beforeX) {
+    if (beforeX < 1000) return;
+    for (let i = solids.length - 1; i >= 3; i--) if (solids[i].x + solids[i].w < beforeX) { L && L.cache.delete(solids[i]); solids.splice(i, 1); }
+    for (let i = plats.length - 1; i >= 0; i--) if (plats[i].x + plats[i].w < beforeX) { L && L.cache.delete(plats[i]); plats.splice(i, 1); }
+    solids[1].x = Math.max(solids[1].x, beforeX - 240); spawns[0].x = solids[1].x + 360;
+  }
+  // a whole level at once (landscape play)
+  function level(n, seed, segs) {
+    begin(n, seed);
+    const enc = extend(START + (segs || 6 + Math.min(4, n)) * SEG);
+    const boss = finish(); enc.push(boss);
+    return { enc, bossX: boss.bossX };
   }
 
   // Move an entity (x = centre, y = feet) through the world. Sets e.onGround, e.hitWall, e.onPlat.
@@ -279,7 +312,7 @@ function reeds(){
     if (!L) build();
     const fy = Math.round((FLOOR - cam.y) / 2), cx = cam.x / 2, top = fy - GY;
     g.fillStyle = "#0d1422"; g.fillRect(0, 0, lw, lh);
-    g.drawImage(L.sky, 0, 0);
+    g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
     tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
     tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
     tiled(g, L.far, cx * 0.35, top * 0.7, lw);
@@ -318,6 +351,6 @@ function reeds(){
     for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => wood(p.w / 2)), X(p.x), Y(p.y));
   }
 
-  const World = DS.World = { W: W0, H, FLOOR, solids, plats, spawns, arena, level, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  const World = DS.World = { W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
   arena();
 })(window.DS = window.DS || {});

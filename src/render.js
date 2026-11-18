@@ -15,7 +15,7 @@
   function resize() {
     const dpr = Math.min(2, devicePixelRatio || 1), w = innerWidth, h = innerHeight, aspect = w / h;
     let vh = 470;
-    if (vh * aspect < 640) vh = Math.min(900, 640 / aspect);
+    if (vh * aspect < 640) vh = Math.min(760, 640 / aspect);
     R.vh = vh; R.vw = vh * aspect;
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     cv.style.width = w + "px"; cv.style.height = h + "px";
@@ -379,7 +379,7 @@
     ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;
     const rx = vw - 14 - (document.body.classList.contains("touch") ? 64 : 0);
-    ctx.fillText(G.scroll ? `Level ${G.level + 1}  ·  ${Math.min(100, Math.max(0, Math.round(G.player.x / (G.bossX + 150) * 100)))}%  ·  ${left} foes` : G.waves ? `Wave ${G.wave}  ·  ${left} left` : `Free play  ·  ${left} foes`, rx, y + 10);
+    ctx.fillText(G.scroll ? (G.endless ? `Level ${G.level + 1}  ·  auto  ·  ${Math.round(G.player.x / 100)} m` : `Level ${G.level + 1}  ·  ${Math.min(100, Math.max(0, Math.round(G.player.x / (G.bossX + 150) * 100)))}%  ·  ${left} foes`) : G.waves ? `Wave ${G.wave}  ·  ${left} left` : `Free play  ·  ${left} foes`, rx, y + 10);
     ctx.font = '600 11px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb";
     ctx.fillText(`Kills ${G.kills}   Best combo ${G.best}`, rx, y + 26);
     if (G.combo >= 3) { ctx.font = '900 22px "Pixelify Sans", monospace'; ctx.fillStyle = `rgba(255,220,140,${Math.min(1, G.comboT)})`; ctx.fillText(G.combo + " HITS", rx, y + 52); }
@@ -389,6 +389,11 @@
       ctx.fillText(`Dummy DPS ${(sum / span).toFixed(0)}  (last 5 s: ${sum})`, rx, y + 72);
     }
     if (G.god) { ctx.font = '600 11px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#ffd27a"; ctx.fillText("God mode", rx, y + 88); }
+    if (G.auto && G.scroll) { // portrait: the knight fights on its own
+      ctx.textAlign = "center"; ctx.font = '700 13px "Pixelify Sans", monospace';
+      ctx.fillStyle = `rgba(230,240,235,${0.55 + 0.35 * Math.sin(G.t * 3)})`;
+      ctx.fillText("Turn your phone sideways to take control", vw / 2, R.vh - (G.foes.some((e) => e.d.boss && !e.dead) ? 60 : 24));
+    }
     // boss bar
     const boss = G.foes.find((e) => e.d.boss && !e.dead);
     if (boss) {

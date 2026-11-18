@@ -5,7 +5,7 @@
   const P = DS.PHYS, Wd = DS.World, I = DS.Input;
   const G = DS.G = {
     mode: "title", t: 0, foes: [], shots: [], zones: [], fx: [], texts: [],
-    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, god: false, boxes: false,
+    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, auto: false, endless: false, autoT: 0, god: false, boxes: false,
     kills: 0, combo: 0, comboT: 0, best: 0, swingId: 0, dummyLog: [], kit: "lanternBlade",
   };
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -462,15 +462,41 @@
   }
 
   // ---------------- the scrolling level ----------------
+  // A level is generated as you go: in landscape it ends in the Sovereign's clearing; in portrait (the knight fights
+  // on its own, Robert 2026-11-18) it runs on forever until the phone is turned sideways.
   function loadLevel(n) {
     G.level = n; G.tok++;
-    const lv = Wd.level(n, 1000 + n * 7919);
-    G.enc = lv.enc; G.bossX = lv.bossX; G.checkpoint = 300; G.clearT = 0;
+    G.checkpoint = 300; G.clearT = 0;
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
-    G.banner = { txt: "Level " + (n + 1), t: 0 };
+    if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
+    else { const lv = Wd.level(n, 1000 + n * 7919); G.enc = lv.enc; G.bossX = lv.bossX; G.endless = false; }
+    G.banner = { txt: G.auto ? "Level " + (n + 1) + ": auto-fight" : "Level " + (n + 1), t: 0 };
+  }
+  // portrait <-> landscape in the middle of a level
+  function setAuto(on) {
+    if (G.auto === on) return;
+    G.auto = on; document.body.classList.toggle("auto", on);
+    if (!G.scroll || !G.player || G.mode === "title") return;
+    const bossEnc = G.enc.find((e) => e.boss);
+    if (on && bossEnc && !bossEnc.on) { // back to endless: take the clearing away
+      G.enc.splice(G.enc.indexOf(bossEnc), 1); Wd.unfinish(); G.endless = true; G.bossX = 0;
+      G.banner = { txt: "Auto-fight", t: 0 };
+    } else if (!on && G.endless) { // the knight is yours: two more stretches, then the Sovereign
+      G.enc.push(...Wd.extend(G.player.x + 2400));
+      const b = Wd.finish(); G.enc.push(b); G.bossX = b.bossX; G.endless = false;
+      G.banner = { txt: "You have the knight: reach the Sovereign", t: 0 };
+    }
   }
   function updateScroll(dt) {
     const p = G.player, tok = G.tok;
+    if (G.endless) {
+      G.enc.push(...Wd.extend(p.x + 3600));
+      if ((G.autoT += dt) > 2) { // tidy up far behind
+        G.autoT = 0; const cut = Math.min(p.x, G.checkpoint) - 2500;
+        Wd.prune(cut); G.enc = G.enc.filter((e) => e.x > cut - 1200);
+        G.foes = G.foes.filter((f) => f.d.dummy || f.x > cut);
+      }
+    }
     for (const e of G.enc) {
       if (e.on || p.x < e.x - 150) continue;
       e.on = true; G.checkpoint = Math.max(G.checkpoint, e.x - 250);
@@ -482,7 +508,7 @@
       if (e.boss) G.banner = { txt: "The Drowned Sovereign", t: 0 };
     }
     // the level is done once the Sovereign falls and his clearing is quiet
-    const bossEnc = G.enc[G.enc.length - 1];
+    const bossEnc = G.enc.find((e) => e.boss);
     if (bossEnc && bossEnc.on && !G.clearT && G.foes.some((f) => f.enc === bossEnc) && !G.foes.some((f) => !f.dead && !f.d.dummy)) {
       G.clearT = 3.5; G.banner = { txt: "Level " + (G.level + 1) + " cleared", t: 0 };
     }
@@ -493,17 +519,55 @@
   }
   function setScroll(on) {
     G.scroll = on; G.waves = !on;
-    if (on) loadLevel(0); else { Wd.arena(); G.enc = []; G.tok++; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
+    if (on) loadLevel(0); else { Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
   }
-  Object.assign(DS, { loadLevel, setScroll });
+
+  // ---------------- the knight fighting on its own (portrait) ----------------
+  // Writes into the input state as if a player pressed things: walk right, hop obstacles, fight what is near.
+  function autopilot(dt) {
+    const p = G.player, k = p.k, a = { x: 0, y: 0, jump: false, attack: false, dash: false, ability: false };
+    if (p.dead) return press(a);
+    let tgt = null, bd = 1e9;
+    for (const e of G.foes) {
+      if (e.dead || e.d.dummy || e.spawnT > 0) continue;
+      const d = Math.abs(e.x - p.x) + Math.max(0, Math.abs(e.y - p.y) - 60) * 2;
+      if (d < bd) { bd = d; tgt = e; }
+    }
+    const ranged = k.attack.range > 300;
+    const reach = ranged ? 360 : (k.attack.range || 70) + 6;
+    let move = 1;
+    if (tgt && bd < 900) {
+      const dx = tgt.x - p.x, adx = Math.abs(dx), s = Math.sign(dx) || 1;
+      move = adx > reach * 0.85 ? s : (p.dir !== s ? s * 0.5 : 0);
+      if (ranged && adx < 120) move = -s; // archers keep their distance
+      if (adx < reach + 10 && Math.abs(tgt.y - p.y) < 90) {
+        if (p.dir === s || ranged && adx < 120) a.attack = Math.random() < 0.5;
+        if (p.abilCd <= 0 && Math.random() < 0.04) a.ability = true;
+      }
+      if (tgt.y < p.y - 70 && p.onGround && adx < 220) a.jump = true;            // up to a ledge
+      if (tgt.state === "windup" && adx < 140 && p.dashCd <= 0 && Math.random() < 0.08) { a.dash = true; move = -s; }
+    }
+    // hop stones in the way, and the far side of a gap
+    const ahead = p.x + Math.sign(move || p.dir) * (p.w / 2 + 14);
+    if (move && (p.hitWall || Wd.solidAt(ahead, p.y - 8)) && (p.onGround || p.vy > 0)) a.jump = true;
+    a.x = move; press(a);
+  }
+  function press(a) {
+    I.x = a.x; I.y = a.y;
+    for (const n of ["jump", "attack", "dash", "ability"]) { I.p[n] = a[n]; I.h[n] = a[n]; I.r[n] = false; }
+    I.h.up = I.h.down = false;
+  }
+  Object.assign(DS, { loadLevel, setScroll, setAuto });
 
   // ---------------- main loop ----------------
   function step(dt) {
     I.poll();
+    setAuto(innerHeight > innerWidth); // portrait: the knight fights on its own
     DS.UI.update(dt);
     if (G.mode !== "play") return;
     if (I.p.pause) { DS.UI.open("pause"); return; }
     if (I.p.kit) { DS.UI.cycleKit(1); }
+    if (G.auto && G.scroll) autopilot(dt);
     G.t += dt;
     G.comboT -= dt; if (G.comboT <= 0) G.combo = 0;
     G.redT = Math.max(0, (G.redT || 0) - dt);
