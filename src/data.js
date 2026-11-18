@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.4.0";
+  DS.VERSION = "0.4.1";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -167,7 +167,8 @@
     archer: foe("archer", [44, 83], { name: "Tide Archer", ai: "archer", hp: 28, speed: 120, dmg: 9, reach: 560, keep: 300, windup: 0.7, cd: 1.8, w: 30, h: 76, shot: 620 }, { aimUp: "aimUp" }),
     blackguard: foe("blackguard", [61, 87], { name: "Bone Bulwark", ai: "shield", hp: 95, speed: 62, dmg: 17, reach: 70, windup: 0.8, cd: 1.6, w: 44, h: 82, shield: 0.2, poise: true }, { block: "block" }),
     hexbearer: foe("hexbearer", [55, 91], { name: "Marsh Hexbearer", ai: "caster", hp: 48, speed: 90, dmg: 11, reach: 500, keep: 260, windup: 0.8, cd: 2.4, w: 34, h: 86, orb: 230 }, { flinch: "flinch" }),
-    champion: foe("champion", [87, 128], { name: "Drowned Sovereign", ai: "boss", hp: 900, speed: 120, dmg: 20, reach: 110, windup: 0.7, cd: 1.0, w: 70, h: 124, boss: true, poise: true }),
+    champion: foe("champion", [87, 128], { name: "Drowned Sovereign", ai: "boss", hp: 900, speed: 120, dmg: 20, reach: 110, windup: 0.7, cd: 1.0, w: 70, h: 124, boss: true, poise: true },
+      { windup: "slamUp", strike: "slam", recover: "slam", knock: "stun", fall: null, jump: null, land: null, chargeWind: "chargeWind", charge: "charge", skid: "skid" }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 

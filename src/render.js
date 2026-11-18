@@ -142,6 +142,13 @@
     if (e.dead) rec = f("death", 0);
     else if (e.state === "hurt") rec = f(has("knock") && (!e.onGround || e.kbT > 0 || !has("flinch")) ? "knock" : has("flinch") ? "flinch" : "hurt", 0);
     else if (e.blockT > 0 && has("block") && e.state !== "windup" && e.state !== "strike") rec = f("block", 0);
+    else if (e.d.boss && has("charge") && e.state !== "hurt" && (e.state === "windup" || e.state === "strike" || e.state === "recover")) {
+      // the Sovereign: slam (mace overhead, then smashed down), charge (crouch, rush, skid), leap (crouch, mace up in the air, smash on landing)
+      const m = e.move;
+      if (e.state === "windup") rec = f(m === "slam" ? "windup" : "chargeWind", 0);
+      else if (e.state === "strike") rec = f(m === "charge" ? "charge" : m === "leap" && !e.onGround ? "windup" : "strike", 0);
+      else rec = f(m === "charge" ? "skid" : "recover", 0);
+    }
     else if (e.state === "windup") rec = has("aimUp") && G.player.y < e.y - 70 ? f("aimUp", 0) : has("windup") ? f("windup", 0) : f("attack", 0);
     else if (e.state === "strike") rec = e.leaping && !e.onGround && has("pounce") ? f("pounce", 0) : has("strike") ? f("strike", 0) : f("attack", 0.5);
     else if (e.state === "recover") rec = has("recover") ? f("recover", 0) : f("attack", 0.9);
