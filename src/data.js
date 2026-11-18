@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.4.1";
+  DS.VERSION = "0.4.2";
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -168,7 +168,7 @@
     blackguard: foe("blackguard", [61, 87], { name: "Bone Bulwark", ai: "shield", hp: 95, speed: 62, dmg: 17, reach: 70, windup: 0.8, cd: 1.6, w: 44, h: 82, shield: 0.2, poise: true }, { block: "block" }),
     hexbearer: foe("hexbearer", [55, 91], { name: "Marsh Hexbearer", ai: "caster", hp: 48, speed: 90, dmg: 11, reach: 500, keep: 260, windup: 0.8, cd: 2.4, w: 34, h: 86, orb: 230 }, { flinch: "flinch" }),
     champion: foe("champion", [87, 128], { name: "Drowned Sovereign", ai: "boss", hp: 900, speed: 120, dmg: 20, reach: 110, windup: 0.7, cd: 1.0, w: 70, h: 124, boss: true, poise: true },
-      { windup: "slamUp", strike: "slam", recover: "slam", knock: "stun", fall: null, jump: null, land: null, chargeWind: "chargeWind", charge: "charge", skid: "skid" }),
+      { windup: "slamUp", strike: "slam", recover: "slam", knock: "stun", fall: "airFall", jump: "leapRise", land: "leapLand", chargeWind: "chargeWind", charge: "charge", skid: "skid", leapCrouch: "leapCrouch", leapRise: "leapRise", leapApex: "leapApex", leapDive: "leapDive", leapLand: "leapLand" }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 

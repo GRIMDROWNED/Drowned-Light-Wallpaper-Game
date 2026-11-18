@@ -67,7 +67,7 @@
     set._frames = {};
     const base = "assets/" + set.folder + "/";
     set.px = (DS.PIXSCALE && DS.PIXSCALE[set.folder]) || 1;
-    for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard", "rise", "apex", "land", "flip", "airAtk", "upAtk", "plunge", "plungeLand", "windup", "strike", "recover", "knock", "flinch", "block", "aimUp", "pounce", "chargeWind", "charge", "skid"]) {
+    for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard", "rise", "apex", "land", "flip", "airAtk", "upAtk", "plunge", "plungeLand", "windup", "strike", "recover", "knock", "flinch", "block", "aimUp", "pounce", "chargeWind", "charge", "skid", "leapCrouch", "leapRise", "leapApex", "leapDive", "leapLand"]) {
       if (!set[anim]) continue;
       set._frames[anim] = set[anim].map((f) => load(base + f + ".png", set.feet && set.feet[f], set.px));
     }
