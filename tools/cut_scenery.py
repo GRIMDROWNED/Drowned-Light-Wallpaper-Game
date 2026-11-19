@@ -23,6 +23,10 @@ SHEETS = {
         "hanging-trees.png": (["hang1", "hang2", "hang3"], 118, 0.2),
         "graves.png": (["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"], 22, 0.0),
         "mid.png": (["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"], 92, 0.3),
+        # platforms (2026-11-19): the longest walkway is cut into ends + a middle in world.js, posts and blocks stretched
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
     "reaches": {
         "bridge-tower.png": (["bridge", "tower"], 128, 0.3),
@@ -35,6 +39,8 @@ SHEETS = {
 }
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
 STRIPS = {"mire": {"sky.png": 240, "far.png": 250}}
+# sheets drawn as rows stacked top to bottom: keep only the last (longest) row
+LAST_ROW = {("mire", "walkways.png")}
 # sheets whose pieces overlap in x (branches): rough cut columns, each moved to the emptiest column within 50 px
 SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705]}
 FOG = {"shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
@@ -104,6 +110,10 @@ for lv, sheets in SHEETS.items():
     pieces, info = [], {}
     for fn, (names, tall, fog) in sheets.items():
         rgba = key(Image.open(os.path.join(SRC, lv, fn)))
+        if (lv, fn) in LAST_ROW:
+            filled = np.where((rgba[..., 3] > 0).sum(1) > 0)[0]
+            gaps = np.where(np.diff(filled) > 20)[0]
+            rgba = rgba[filled[gaps[-1] + 1] if len(gaps) else filled[0]:]
         rs = runs(rgba[..., 3])
         if (lv, fn) in SPLIT:
             cols = (rgba[..., 3] > 0).sum(0); xs = [c - 50 + int(np.argmin(cols[c - 50:c + 50])) for c in SPLIT[(lv, fn)]]
