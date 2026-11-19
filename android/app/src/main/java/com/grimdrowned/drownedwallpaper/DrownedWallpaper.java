@@ -79,7 +79,7 @@ public class DrownedWallpaper extends WallpaperService {
         Presentation presentation;
         WebView web;
 
-        // Double-tap (or long-press, where the home screen passes it on) on empty home-screen space opens the game.
+        // Double-tap on empty home-screen space opens the game.
         // Home screens report taps on empty space as COMMAND_TAP; some also pass the raw touches.
         GestureDetector gestures;
         long lastTap, lastOpen;
