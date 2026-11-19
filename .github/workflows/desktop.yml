@@ -34,7 +34,10 @@ jobs:
           }
           Compress-Archive -Path "$tmp/*" -DestinationPath desktop/www.zip -Force
       - name: Build the exe
-        run: dotnet publish desktop/DrownedLight.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o out
+        run: dotnet publish desktop/DrownedLight.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:Version=1.0.${{ github.run_number }} -o out
+      - name: Write the build number the app's updater checks
+        shell: pwsh
+        run: Set-Content -NoNewline out/version.txt "${{ github.run_number }}"
       - uses: actions/upload-artifact@v4
         with: { name: DrownedLight-windows, path: out/DrownedLight.exe }
       - name: Publish as the latest release
@@ -43,6 +46,8 @@ jobs:
         with:
           tag_name: windows
           name: Windows desktop app
-          body: "Windows 10/11: download DrownedLight.exe and run it. If Windows SmartScreen warns, click More info -> Run anyway. The knights fight behind your desktop icons; right-click the knight by the clock to play, switch the wallpaper off, start with Windows or quit."
-          files: out/DrownedLight.exe
+          body: "Windows 10/11: download DrownedLight.exe and run it. If Windows SmartScreen warns, click More info -> Run anyway. The knights fight behind your desktop icons; right-click the knight by the clock to play, switch the wallpaper off, start with Windows or quit. The app updates itself: it checks this page every 6 hours and installs a new version when the game window is closed."
+          files: |
+            out/DrownedLight.exe
+            out/version.txt
           make_latest: "false"

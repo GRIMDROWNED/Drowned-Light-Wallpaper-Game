@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -16,16 +17,20 @@ namespace DrownedLight
 {
     static class Program
     {
+        static Mutex single;
         [STAThread]
         static void Main(string[] args)
         {
-            using var single = new Mutex(true, "DrownedLightDesktop", out bool first);
+            single = new Mutex(true, "DrownedLightDesktop", out bool first);
             // opening the app again while it runs (the wallpaper is going) brings up the game in the running copy
             using var show = new EventWaitHandle(false, EventResetMode.AutoReset, "DrownedLightDesktopShow");
             if (!first) { show.Set(); return; }
             ApplicationConfiguration.Initialize();
-            Application.Run(new TrayApp(Array.Exists(args, a => a == "--startup"), show));
+            Application.Run(new TrayApp(Array.Exists(args, a => a == "--startup"), Array.Exists(args, a => a == "--updated"), show));
         }
+
+        /// <summary>Lets go of the one-copy lock so the updated exe can start while this copy closes.</summary>
+        internal static void ReleaseLock() { try { single.ReleaseMutex(); } catch { } single.Dispose(); }
     }
 
     /// <summary>Unpacks the game, owns the tray icon, the wallpaper and the play window.</summary>
@@ -39,10 +44,12 @@ namespace DrownedLight
         readonly ToolStripMenuItem wallItem, startItem;
         WallpaperForm wall;
         PlayForm play;
+        readonly SynchronizationContext ui;
+        bool updateReady, updating;
 
-        public TrayApp(bool startup, EventWaitHandle show)
+        public TrayApp(bool startup, bool updated, EventWaitHandle show)
         {
-            var ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
             new Thread(() => { while (show.WaitOne()) ui.Post(_ => ShowPlay(), null); }) { IsBackground = true }.Start();
             Unpack();
             wallItem = new ToolStripMenuItem("Wallpaper on", null, (s, e) => SetWall(wall == null));
@@ -51,6 +58,8 @@ namespace DrownedLight
             menu.Items.Add("Play Drowned Light", null, (s, e) => ShowPlay());
             menu.Items.Add(wallItem);
             menu.Items.Add(startItem);
+            menu.Items.Add("Check for updates", null, async (s, e) => await CheckNow());
+            menu.Items.Add(new ToolStripMenuItem("Version " + Updater.Build) { Enabled = false });
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Quit", null, (s, e) => Quit());
             menu.Opening += (s, e) => { wallItem.Checked = wall != null; startItem.Checked = IsStartup(); };
@@ -58,7 +67,10 @@ namespace DrownedLight
             tray.DoubleClick += (s, e) => ShowPlay();
             SetWall(true);
             DesktopClicks.Start(() => { if (wall != null) ShowPlay(); }); // double-click empty desktop space: play
-            if (startup) return; // signing in to Windows: just the wallpaper
+            Updater.Cleanup();
+            _ = UpdateLoop();
+            if (updated) tray.ShowBalloonTip(4000, "Drowned Light", "Updated to version " + Updater.Build + ".", ToolTipIcon.None);
+            if (startup) return; // signing in to Windows (or restarting after an update): just the wallpaper
             ShowPlay(); // one app for everything: the wallpaper is set and the game opens
             tray.ShowBalloonTip(4000, "Drowned Light", "The knights fight behind your desktop icons. Double-click an empty spot on the desktop to play. Closing the game keeps the wallpaper; right-click the knight by the clock to switch it off or quit.", ToolTipIcon.None);
         }
@@ -90,7 +102,7 @@ namespace DrownedLight
 
         void ShowPlay()
         {
-            if (play == null || play.IsDisposed) { play = new PlayForm(); play.FormClosed += (s, e) => play = null; play.Show(); }
+            if (play == null || play.IsDisposed) { play = new PlayForm(); play.FormClosed += (s, e) => { play = null; if (updateReady) ui.Post(_ => Restart(), null); }; play.Show(); }
             else { if (play.WindowState == FormWindowState.Minimized) play.WindowState = FormWindowState.Normal; play.Activate(); }
         }
 
@@ -106,6 +118,57 @@ namespace DrownedLight
             else k.DeleteValue("DrownedLight", false);
         }
 
+        /// <summary>Soon after starting and then every 6 hours: fetch a newer build in the background.</summary>
+        async Task UpdateLoop()
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30));
+            while (!updateReady)
+            {
+                await Fetch(false);
+                await Task.Delay(TimeSpan.FromHours(6));
+            }
+        }
+
+        async Task CheckNow()
+        {
+            if (updateReady) { if (play == null) Restart(); else tray.ShowBalloonTip(4000, "Drowned Light", "The update installs when you close the game window.", ToolTipIcon.None); return; }
+            if (!await Fetch(true)) tray.ShowBalloonTip(3000, "Drowned Light", "You have the newest version (" + Updater.Build + ").", ToolTipIcon.None);
+        }
+
+        /// <summary>Downloads a newer exe if there is one. With the game window closed it swaps it in straight away; otherwise when the window closes.</summary>
+        async Task<bool> Fetch(bool asked)
+        {
+            if (updating || updateReady) return updateReady;
+            updating = true;
+            int got = 0;
+            try { got = await Updater.Fetch(); }
+            catch { if (asked) tray.ShowBalloonTip(3000, "Drowned Light", "Couldn't reach the update server. Try again later.", ToolTipIcon.None); }
+            updating = false;
+            if (got == 0) return false;
+            updateReady = true;
+            if (play == null) Restart();
+            else tray.ShowBalloonTip(5000, "Drowned Light", "Version " + got + " is downloaded. It installs when you close the game window.", ToolTipIcon.None);
+            return true;
+        }
+
+        /// <summary>Puts the downloaded exe in place of this one and starts it, keeping the wallpaper going.</summary>
+        void Restart()
+        {
+            if (!Updater.Swap())
+            {
+                updateReady = false;
+                tray.ShowBalloonTip(5000, "Drowned Light", "The update couldn't be installed in this folder. Move DrownedLight.exe to Documents or the desktop and it will update itself.", ToolTipIcon.Warning);
+                return;
+            }
+            DesktopClicks.Stop();
+            wall?.Close();
+            tray.Visible = false;
+            Program.ReleaseLock();
+            try { Process.Start(new ProcessStartInfo(Environment.ProcessPath, "--startup --updated") { UseShellExecute = false }); }
+            catch { Updater.Undo(); }
+            ExitThread();
+        }
+
         void Quit()
         {
             DesktopClicks.Stop();
@@ -113,6 +176,54 @@ namespace DrownedLight
             play?.Close();
             tray.Visible = false;
             ExitThread();
+        }
+    }
+
+    /// <summary>Self-update from the "windows" GitHub release: version.txt holds the newest build number, DrownedLight.exe the exe.
+    /// Windows lets a running exe be renamed, so the old one moves aside to .old and the new one takes its name.</summary>
+    static class Updater
+    {
+        const string Release = "https://github.com/GRIMDROWNED/Drowned-Light-Wallpaper-Game/releases/download/windows/";
+        internal static int Build => Assembly.GetExecutingAssembly().GetName().Version?.Build ?? 0;
+        static string Exe => Environment.ProcessPath;
+        static string NewExe => Exe + ".new";
+        static string OldExe => Exe + ".old";
+
+        internal static void Cleanup()
+        {
+            try { if (File.Exists(OldExe)) File.Delete(OldExe); } catch { }
+            try { if (File.Exists(NewExe)) File.Delete(NewExe); } catch { }
+        }
+
+        /// <summary>Returns the new build number once its exe is saved next to this one, or 0 when this is the newest.</summary>
+        internal static async Task<int> Fetch()
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("DrownedLight-desktop");
+            string txt = await http.GetStringAsync(Release + "version.txt");
+            if (!int.TryParse(txt.Trim(), out int latest) || latest <= Build) return 0;
+            using (var r = await http.GetStreamAsync(Release + "DrownedLight.exe"))
+            using (var f = File.Create(NewExe)) await r.CopyToAsync(f);
+            if (new FileInfo(NewExe).Length < 20_000_000) { File.Delete(NewExe); return 0; } // a cut-off download
+            return latest;
+        }
+
+        internal static bool Swap()
+        {
+            try
+            {
+                if (!File.Exists(NewExe)) return false;
+                if (File.Exists(OldExe)) File.Delete(OldExe);
+                File.Move(Exe, OldExe);
+                File.Move(NewExe, Exe);
+                return true;
+            }
+            catch { Undo(); return false; }
+        }
+
+        internal static void Undo()
+        {
+            try { if (!File.Exists(Exe) && File.Exists(OldExe)) File.Move(OldExe, Exe); } catch { }
         }
     }
 
