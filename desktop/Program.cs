@@ -17,8 +17,8 @@ namespace DrownedLight
 {
     static class Program
     {
-        [STAThread]
         static Mutex single;
+        [STAThread]
         static void Main(string[] args)
         {
             single = new Mutex(true, "DrownedLightDesktop", out bool first);
