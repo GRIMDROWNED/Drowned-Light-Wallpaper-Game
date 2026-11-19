@@ -89,7 +89,6 @@ public class DrownedWallpaper extends WallpaperService {
             setTouchEventsEnabled(true);
             gestures = new GestureDetector(DrownedWallpaper.this, new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDoubleTap(MotionEvent e) { openGame(); return true; }
-                @Override public void onLongPress(MotionEvent e) { openGame(); }
             });
         }
 
