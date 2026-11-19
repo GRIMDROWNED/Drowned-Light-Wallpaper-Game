@@ -49,7 +49,7 @@ public class DrownedWallpaper extends WallpaperService {
         return "application/octet-stream";
     }
 
-    static WebView makeWebView(Context ctx) {
+    static WebView makeWebView(Context ctx, String page) {
         WebView web = new WebView(ctx);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -64,7 +64,7 @@ public class DrownedWallpaper extends WallpaperService {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) { return true; }
         });
-        web.loadUrl(HOST + "wallpaper.html");
+        web.loadUrl(HOST + page);
         return web;
     }
 
@@ -89,14 +89,15 @@ public class DrownedWallpaper extends WallpaperService {
             display = dm.createVirtualDisplay("drowned-light-wallpaper", width, height,
                     getResources().getDisplayMetrics().densityDpi, holder.getSurface(), 0);
             presentation = new Presentation(DrownedWallpaper.this, display.getDisplay());
-            web = makeWebView(presentation.getContext());
+            web = makeWebView(presentation.getContext(), "wallpaper.html");
             presentation.setContentView(web);
             presentation.show();
         }
 
         @Override public void onVisibilityChanged(boolean visible) {
             if (web == null) return;
-            if (visible) { web.onResume(); web.resumeTimers(); } else { web.onPause(); web.pauseTimers(); }
+            // onPause/onResume act on this WebView only (pauseTimers would also freeze the game window, same process)
+            if (visible) web.onResume(); else web.onPause();
         }
 
         @Override public void onSurfaceDestroyed(SurfaceHolder holder) {

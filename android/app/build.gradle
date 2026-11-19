@@ -8,7 +8,7 @@ def www = layout.buildDirectory.dir("generated/www")
 tasks.register("copyGame", Sync) {
     into(www.map { it.dir("www") })
     from(gameRoot) {
-        include "wallpaper.html", "style.css", "src/**"
+        include "wallpaper.html", "index.html", "style.css", "src/**"
         include "assets/**/atlas.png", "assets/fx/**", "assets/ground/**", "assets/**/right.png"
     }
 }
