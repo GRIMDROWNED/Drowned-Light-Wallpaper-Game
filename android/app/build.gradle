@@ -9,7 +9,7 @@ tasks.register("copyGame", Sync) {
     into(www.map { it.dir("www") })
     from(gameRoot) {
         include "wallpaper.html", "index.html", "style.css", "src/**"
-        include "assets/**/atlas.png", "assets/fx/**", "assets/ground/**", "assets/**/right.png"
+        include "assets/**/atlas.png", "assets/fx/**", "assets/ground/**", "assets/scenery/**", "assets/**/right.png"
     }
 }
 
