@@ -317,7 +317,7 @@ function reeds(){
     shallows: { code: true, ground: "shallows", rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
     ] },
-    mire: { sky: true, far: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
+    mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
       { f: 1, ty: 1, sink: 2, gap: [90, 300], pick: ["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"] },
@@ -356,7 +356,8 @@ function reeds(){
     L = { sky: sky(), clouds: clouds(), hills: hills(), far: trees(5, true), mid: trees(8, false), reeds: reeds(), ground: groundFor(T), wall: wall(20, 600), cache: new Map() };
     const r = rng(77); L.wisps = []; for (let i = 0; i < 14; i++) L.wisps.push({ x: r() * TILE, y: 60 + r() * 80, p: r() * 6 });
   }
-  function art(o, make) { let c = L.cache.get(o); if (!c) { c = make(); L.cache.set(o, c); } return c; }
+  // a platform's drawing, made once; tag says which art it was made from, so it is redrawn once the theme's pictures load
+  function art(o, make, tag) { let e = L.cache.get(o); if (!e || e.tag !== tag) { e = { c: make(), tag }; L.cache.set(o, e); } return e.c; }
   function tiled(g, img, off, y, lw) { const tw = img.width || TILE, x0 = -((Math.round(off) % tw) + tw) % tw; for (let x = x0; x < lw; x += tw) g.drawImage(img, x, Math.round(y)); }
   // a picture that doesn't repeat seamlessly: every other copy mirrored, so the edges always meet
   function pingpong(g, img, off, y, lw) {
@@ -409,19 +410,57 @@ function reeds(){
   }
   function drawNear() { /* no foreground layer in the pixel style */ }
 
+  // ---- platforms from the theme's pictures (Robert's Mire walkways, posts and blocks, 2026-11-19) ----
+  const piece = (k) => T.rects[k];
+  // a walkway w px long: the picture's two ends with a stretch of its middle between, starting at a spot set by the seed
+  function walk(w, seed) {
+    const [sx, sy, W, H] = piece("walk"), cap = 14, c = mk(w, H), g = c.getContext("2d");
+    const mid = W - cap * 2, inner = Math.max(0, w - cap * 2);
+    let at = (Math.abs(seed | 0) * 7) % Math.max(1, mid - inner), x = cap;
+    while (x < cap + inner) { const n = Math.min(cap + inner - x, mid - at); g.drawImage(T.atlas, sx + cap + at, sy, n, H, x, 0, n, H); x += n; at = 0; }
+    g.drawImage(T.atlas, sx, sy, Math.min(cap, w), H, 0, 0, Math.min(cap, w), H);
+    g.drawImage(T.atlas, sx + W - cap, sy, cap, H, w - cap, 0, cap, H);
+    return c;
+  }
+  // a post from y0 down to y1, centred on x: its cap, the middle repeated, its rotten foot
+  function post(g, k, x, y0, y1) {
+    const [sx, sy, W, H] = piece(k), top = 8, foot = 12, left = Math.round(x - W / 2);
+    if (y1 - y0 < top + foot) return;
+    g.drawImage(T.atlas, sx, sy, W, top, left, y0, W, top);
+    const midH = H - top - foot;
+    for (let y = y0 + top; y < y1 - foot; y += midH) { const n = Math.min(midH, y1 - foot - y); g.drawImage(T.atlas, sx, sy + top, W, n, left, y, W, n); }
+    g.drawImage(T.atlas, sx, sy + H - foot, W, foot, left, y1 - foot, W, foot);
+  }
+  // a stone block of any size, nine-sliced from the big block: mossy top band, edge columns, the masonry repeated inside
+  function block(w, h) {
+    const [sx, sy, W, H] = piece("block3"), t = Math.min(12, h - 3), e = 3, b = 3, c = mk(w, h), g = c.getContext("2d");
+    const iw = W - e * 2, ih = H - t - b;
+    const fill = (srcY, srcH, dy, dh) => { // one band across: left edge, repeated middle, right edge
+      g.drawImage(T.atlas, sx, sy + srcY, e, srcH, 0, dy, e, dh);
+      for (let x = e; x < w - e; x += iw) { const n = Math.min(iw, w - e - x); g.drawImage(T.atlas, sx + e, sy + srcY, n, srcH, x, dy, n, dh); }
+      g.drawImage(T.atlas, sx + W - e, sy + srcY, e, srcH, w - e, dy, e, dh);
+    };
+    fill(0, t, 0, t);
+    for (let y = t; y < h - b; y += ih) { const n = Math.min(ih, h - b - y); fill(t, n, y, n); }
+    fill(H - b, b, h - b, b);
+    return c;
+  }
+
   // terrain, in low-res screen pixels
   function drawWorld(g, cam, lw, lh) {
     if (!L) build();
     const X = (wx) => Math.round((wx - cam.x) / 2), Y = (wy) => Math.round((wy - cam.y) / 2), fy = Y(FLOOR);
     const vis = (x, w) => X(x) < lw + 4 && X(x + w) > -4;
+    const pa = T.plats && T.atlas && T.atlas.complete && T.atlas.naturalWidth ? T : null, tag = pa ? themeName : "code";
     // posts first, then planks
     for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
+      if (pa) { post(g, ["post1", "post2", "post3", "post4"][((wx / 7) | 0) & 3], X(wx) + 2, y0 - 4, y1 + 2); continue; }
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
       g.fillStyle = "#4a3624"; g.fillRect(X(wx), y0, 4, y1 - y0);
       g.fillStyle = "#6b5034"; g.fillRect(X(wx), y0, 1, y1 - y0);
     }
-    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => stone(s.w / 2, s.h / 2)), X(s.x), Y(s.y));
+    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => pa ? block(Math.round(s.w / 2), Math.round(s.h / 2)) : stone(s.w / 2, s.h / 2), tag), X(s.x), Y(s.y));
     g.fillStyle = "#181210"; g.fillRect(0, fy + 60, lw, Math.max(0, lh - fy - 60));
     tiled(g, L.ground, cam.x / 2, fy - 8, lw);
     for (const s of solids) {
@@ -432,7 +471,7 @@ function reeds(){
       const ex = s.x < 0 ? x0 + w - 1 : x0;
       for (let y = Math.max(0, Y(s.y)); y < Math.min(lh, fy + 2); y++) { px(g, ex, y, y % 2 ? "#3b2c22" : "#16110f"); }
     }
-    for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => wood(p.w / 2)), X(p.x), Y(p.y));
+    for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
   }
 
   const World = DS.World = { theme, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
