@@ -193,6 +193,7 @@
   function kill(e) {
     e.dead = true; e.state = "dead"; e.st = 0; e.deadT = 0; e.vy = -260; e.vx = Math.sign(e.x - G.player.x) * 160;
     G.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
+    if (e.enc && e.enc.boss) e.enc.won = true; // remembered: his body is cleared away 1.4 s later
     const p = G.player, k = p.k;
     for (let i = 0; i < 14; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-14, 14), y: e.y - rnd(10, e.h), vx: rnd(-60, 60), vy: rnd(-160, -40), t: 0, life: rnd(0.5, 1), c: "rgba(110,230,220," });
     if (k.tithe) { p.stacks += e.d.boss ? k.tithe.boss : 1; p.stackT = k.tithe.hold; }
@@ -508,9 +509,12 @@
       }, e.boss ? 700 : i * 260));
       if (e.boss) G.banner = { txt: "The Drowned Sovereign", t: 0 };
     }
-    // the level is done once the Sovereign falls and his clearing is quiet
+    // the level is done once the Sovereign falls: the Drowned still standing crumble with him. (The old check needed his
+    // body still lying there AND no Drowned alive anywhere, so one leftover foe stopped the level for good once the body
+    // was cleared away: a friend of Robert's beat level 1 and stayed there, 2026-11-19.)
     const bossEnc = G.enc.find((e) => e.boss);
-    if (bossEnc && bossEnc.on && !G.clearT && G.foes.some((f) => f.enc === bossEnc) && !G.foes.some((f) => !f.dead && !f.d.dummy)) {
+    if (bossEnc && bossEnc.won && !G.clearT) {
+      for (const f of G.foes) if (!f.dead && !f.d.dummy) kill(f);
       G.clearT = 3.5; G.banner = { txt: "Level " + (G.level + 1) + " cleared", t: 0 };
     }
     if (G.clearT > 0) {
