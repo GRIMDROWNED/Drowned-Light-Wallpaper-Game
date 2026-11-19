@@ -520,7 +520,7 @@
   }
   function setScroll(on) {
     G.scroll = on; G.waves = !on;
-    if (on) loadLevel(0); else { Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
+    if (on) loadLevel(DS.START_LEVEL || 0); else { Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
   }
 
   // ---------------- the knight fighting on its own (portrait) ----------------
@@ -649,7 +649,7 @@
   }
   function restart() {
     G.foes = []; G.shots = []; G.zones = []; G.fx = []; G.texts = []; G.wave = 0; G.waveT = 2; G.kills = 0; G.combo = 0; G.best = 0;
-    if (G.scroll) loadLevel(0); else { Wd.arena(); G.tok++; }
+    if (G.scroll) loadLevel(DS.START_LEVEL || 0); else { Wd.arena(); G.tok++; }
     start(G.kit);
   }
   function switchKit(kitId) {

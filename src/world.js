@@ -15,7 +15,7 @@
     World.W = w; L && L.cache.clear();
   }
   function arena() {
-    frame(W0); gen = null;
+    frame(W0); gen = null; theme(0);
     solids.push({ x: 1100, y: 790, w: 200, h: 80, kind: "stone" }); // the dais
     plats.push( // one-way: stand on top, jump up through, hold down + jump to drop
       { x: 190, y: 755, w: 220 }, { x: 470, y: 655, w: 200 }, { x: 790, y: 745, w: 200 },
@@ -30,6 +30,7 @@
   const SEG = 1200, START = 700, BOSS_W = 1900;
   let gen = null;
   function begin(n, seed) {
+    theme(n);
     frame(START + 2400);
     gen = { r: rng(seed), n, i: 0, x: START, done: null };
   }
@@ -231,16 +232,22 @@ function trees(seed,dark){ // mid: drooping swamp trees
   }
   return c;
 }
-function ground(){
+// ground palettes per level: dirt bands, grass lip (top, mid, under), blades, highlight, flowers
+const GROUND={
+  shallows:{d:['#3b2c22','#33261e','#2a1f19','#211915','#181210'],g:['#4c7a3c','#3a6232','#24401f'],b:'#6c9a4a',hi:'#7aa654',f:['#c9d36a','#b07acb'],crack:['#1b1310','#4a3426']},
+  mire:{d:['#2c2a1c','#242218','#1d1c14','#171610','#11100c'],g:['#5f6a34','#4a5428','#2c3318'],b:'#7d8840',hi:'#8f9a4c',f:['#d6d860','#9fb04a'],crack:['#12110c','#3a3624']},
+};
+function ground(pal){
+  const P=GROUND[pal]||GROUND.shallows;
   const h=72,c=mk(TILE,h),g=c.getContext('2d'),r=rng(21),o=8; // y offset: row o == GY
   // dirt bands
-  const bands=[[o+5,'#3b2c22'],[o+16,'#33261e'],[o+28,'#2a1f19'],[o+40,'#211915'],[h,'#181210']];
+  const bands=[[o+5,P.d[0]],[o+16,P.d[1]],[o+28,P.d[2]],[o+40,P.d[3]],[h,P.d[4]]];
   for(let y=o;y<h;y++){let i=0;while(y>=bands[i][0])i++;
     for(let x=0;x<TILE;x++){let col=bands[i][1];
       if(i>0&&y-bands[i-1][0]<3&&(x+y)%2===0)col=bands[i-1][1];px(g,x,y,col);}}
   // cracks + roots
   for(let k=0;k<26;k++){let x=r()*TILE,y=o+6+r()*6;const len=6+r()*16|0;
-    for(let j=0;j<len;j++){px(g,(x|0+TILE)%TILE,y|0,k%3?'#1b1310':'#4a3426');x+=(r()-0.5)*1.6;y+=0.7;}}
+    for(let j=0;j<len;j++){px(g,(x|0+TILE)%TILE,y|0,k%3?P.crack[0]:P.crack[1]);x+=(r()-0.5)*1.6;y+=0.7;}}
   // stones
   for(let k=0;k<30;k++){const x=r()*TILE|0,y=o+8+r()*(h-o-12)|0,rw=1.5+r()*2.5,rh=rw*0.75;
     for(let Y=-3;Y<=3;Y++)for(let X=-5;X<=5;X++){const d=(X/rw)**2+(Y/rh)**2;if(d>1.35)continue;
@@ -248,13 +255,13 @@ function ground(){
   // grass edge: lip with blades on top and tufts hanging over the dirt
   for(let x=0;x<TILE;x++){
     const lip=3+(Math.sin(x*0.35)+Math.sin(x*0.13+2)>0.6?1:0)+(r()<0.25?1:0);
-    for(let y=o;y<o+lip+2;y++)px(g,x,y,y<o+2?'#4c7a3c':y<o+lip?'#3a6232':'#24401f');
-    if(r()<0.18)px(g,x,o+lip+2,'#24401f');
-    const bl=r()*4|0;for(let j=1;j<=bl;j++)px(g,x,o-j,j===bl?'#6c9a4a':'#4c7a3c');
+    for(let y=o;y<o+lip+2;y++)px(g,x,y,y<o+2?P.g[0]:y<o+lip?P.g[1]:P.g[2]);
+    if(r()<0.18)px(g,x,o+lip+2,P.g[2]);
+    const bl=r()*4|0;for(let j=1;j<=bl;j++)px(g,x,o-j,j===bl?P.b:P.g[0]);
   }
-  for(let x=0;x<TILE;x+=2)if(r()<0.35)px(g,x,o+1,'#7aa654');
+  for(let x=0;x<TILE;x+=2)if(r()<0.35)px(g,x,o+1,P.hi);
   // small flowers / glow caps
-  for(let k=0;k<18;k++){const x=r()*TILE|0;px(g,x,o-2,k%3?'#c9d36a':'#b07acb');px(g,x,o-1,'#3a6232');}
+  for(let k=0;k<18;k++){const x=r()*TILE|0;px(g,x,o-2,k%3?P.f[0]:P.f[1]);px(g,x,o-1,P.g[1]);}
   return c;
 }
 function reeds(){
@@ -301,26 +308,103 @@ function reeds(){
     for (let k = 0; k < h / 6; k++) { const x = r() * w | 0, y = r() * h | 0; px(g, x, y, "#3d3e45"); px(g, x + 1, y, "#5a5b62"); px(g, x, y + 1, "#16110f"); }
     return c;
   }
+  // ---------- each level's look (Robert 2026-11-19): code layers for the Shallows, Robert's GPT art for the rest ----------
+  // Levels walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
+  // cut-out pieces (tools/cut_scenery.py -> assets/scenery/<theme>/atlas.png, rects in DS.SCENERY) on parallax rows.
+  // Row: f = how fast it scrolls with the camera (1 = with the ground), ty = how far it follows the camera up and down,
+  // sink = px pushed into the ground, gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
+  const THEMES = {
+    shallows: { code: true, ground: "shallows", rows: [
+      { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
+    ] },
+    mire: { sky: true, far: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
+      { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
+      { f: 1, ty: 1, sink: 2, gap: [90, 300], pick: ["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"] },
+    ] },
+  };
+  const LEVEL_THEMES = ["shallows", "mire"];
+  let T = THEMES.shallows, themeName = "shallows";
+  const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
+  function theme(n) {
+    themeName = LEVEL_THEMES[((n | 0) % LEVEL_THEMES.length + LEVEL_THEMES.length) % LEVEL_THEMES.length];
+    T = THEMES[themeName];
+    if (!T.ready) { // load its pictures and lay out each row once: a loop of pieces long enough not to notice
+      const sc = (DS.SCENERY || {})[themeName];
+      T.atlas = sc && img(`assets/scenery/${themeName}/atlas.png`);
+      T.rects = sc ? sc.atlas : {};
+      if (T.sky) T.skyImg = img(`assets/scenery/${themeName}/sky.png`);
+      if (T.far) T.farImg = img(`assets/scenery/${themeName}/far.png`);
+      const r = rng(themeName.length * 131 + 7);
+      for (const row of T.rows) {
+        row.list = []; let x = 0;
+        const pool = row.pick.filter((k) => T.rects[k]);
+        for (let i = 0; pool.length && (i < pool.length * 2 || x < 1800); i++) {
+          const k = pool[r() * pool.length | 0];
+          if (row.list.length && row.list[row.list.length - 1].k === k) continue;
+          row.list.push({ k, x, flip: r() < 0.5 }); x += T.rects[k][2] + row.gap[0] + r() * (row.gap[1] - row.gap[0]);
+        }
+        row.len = Math.max(1, x);
+      }
+      T.ready = true;
+    }
+    if (L) L.ground = groundFor(T);
+  }
+  const grounds = {};
+  function groundFor(t) { return grounds[t.ground] || (grounds[t.ground] = ground(t.ground)); }
   function build() {
-    L = { sky: sky(), clouds: clouds(), hills: hills(), far: trees(5, true), mid: trees(8, false), reeds: reeds(), ground: ground(), wall: wall(20, 600), cache: new Map() };
+    L = { sky: sky(), clouds: clouds(), hills: hills(), far: trees(5, true), mid: trees(8, false), reeds: reeds(), ground: groundFor(T), wall: wall(20, 600), cache: new Map() };
     const r = rng(77); L.wisps = []; for (let i = 0; i < 14; i++) L.wisps.push({ x: r() * TILE, y: 60 + r() * 80, p: r() * 6 });
   }
   function art(o, make) { let c = L.cache.get(o); if (!c) { c = make(); L.cache.set(o, c); } return c; }
-  function tiled(g, img, off, y, lw) { const x0 = -((Math.round(off) % TILE) + TILE) % TILE; for (let x = x0; x < lw; x += TILE) g.drawImage(img, x, Math.round(y)); }
+  function tiled(g, img, off, y, lw) { const tw = img.width || TILE, x0 = -((Math.round(off) % tw) + tw) % tw; for (let x = x0; x < lw; x += tw) g.drawImage(img, x, Math.round(y)); }
+  // a picture that doesn't repeat seamlessly: every other copy mirrored, so the edges always meet
+  function pingpong(g, img, off, y, lw) {
+    const w = img.width; if (!w) return;
+    const o = Math.round(off), i0 = Math.floor(o / w);
+    for (let i = i0, x = i0 * w - o; x < lw; i++, x += w) {
+      if (i & 1) { g.save(); g.translate(x + w, Math.round(y)); g.scale(-1, 1); g.drawImage(img, 0, 0); g.restore(); }
+      else g.drawImage(img, x, Math.round(y));
+    }
+  }
+  function drawRow(g, row, cx, base, lw) {
+    if (!T.atlas || !T.atlas.complete || !T.atlas.naturalWidth) return;
+    const off = cx * row.f, n = Math.floor((off - 300) / row.len);
+    for (let rep = n; rep * row.len - off < lw; rep++) for (const p of row.list) {
+      const [sx, sy, w, h] = T.rects[p.k], x = Math.round(rep * row.len + p.x - off), y = Math.round(base - h + row.sink);
+      if (x > lw || x + w < 0) continue;
+      if (p.flip) { g.save(); g.translate(x + w, y); g.scale(-1, 1); g.drawImage(T.atlas, sx, sy, w, h, 0, 0, w, h); g.restore(); }
+      else g.drawImage(T.atlas, sx, sy, w, h, x, y, w, h);
+    }
+  }
 
   function drawBackdrop(g, cam, lw, lh, t) {
     if (!L) build();
     const fy = Math.round((FLOOR - cam.y) / 2), cx = cam.x / 2, top = fy - GY;
-    g.fillStyle = "#0d1422"; g.fillRect(0, 0, lw, lh);
-    g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
-    tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
-    tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
-    tiled(g, L.far, cx * 0.35, top * 0.7, lw);
-    tiled(g, L.mid, cx * 0.6, top * 0.85, lw);
+    if (T.code) {
+      g.fillStyle = "#0d1422"; g.fillRect(0, 0, lw, lh);
+      g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
+      tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
+      tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
+      tiled(g, L.far, cx * 0.35, top * 0.7, lw);
+      tiled(g, L.mid, cx * 0.6, top * 0.85, lw);
+    } else {
+      g.fillStyle = T.top; g.fillRect(0, 0, lw, lh);
+      const sy = Math.max(0, Math.round(top * 0.5));
+      if (T.skyImg && T.skyImg.naturalWidth) pingpong(g, T.skyImg, cx * 0.05 + t * 2, sy, lw);
+      if (T.farImg && T.farImg.naturalWidth) { // far silhouettes standing in a fog bank
+        const fb = top * 0.7 + GY - 6;
+        pingpong(g, T.farImg, cx * 0.3, fb - T.farImg.height, lw);
+        g.fillStyle = T.fog; g.fillRect(0, Math.round(fb) - 1, lw, lh);
+      }
+    }
+    const wc = T.wisp || ["#d7f08a", "#7f9a50"];
+    for (const row of T.rows) if (row.f < 1) drawRow(g, row, cx, top * row.ty + GY, lw);
     for (const w of L.wisps) {
       const x = ((w.x - cx * 0.7) % TILE + TILE) % TILE, y = Math.round(w.y + top * 0.8 + Math.sin(t * 1.5 + w.p) * 3);
-      if (x < lw) { const on = Math.sin(t * 3 + w.p) > -0.3; px(g, x, y, on ? "#d7f08a" : "#7f9a50"); if (on) { px(g, x + 1, y, "#5f7a3c"); px(g, x - 1, y, "#5f7a3c"); } }
+      if (x < lw) { const on = Math.sin(t * 3 + w.p) > -0.3; px(g, x, y, on ? wc[0] : wc[1]); if (on) { px(g, x + 1, y, "#5f7a3c"); px(g, x - 1, y, "#5f7a3c"); } }
     }
+    for (const row of T.rows) if (row.f >= 1) drawRow(g, row, cx, fy, lw);
     tiled(g, L.reeds, cx * 0.85, fy - 38, lw);
   }
   function drawNear() { /* no foreground layer in the pixel style */ }
@@ -351,6 +435,6 @@ function reeds(){
     for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => wood(p.w / 2)), X(p.x), Y(p.y));
   }
 
-  const World = DS.World = { W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  const World = DS.World = { theme, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
   arena();
 })(window.DS = window.DS || {});
