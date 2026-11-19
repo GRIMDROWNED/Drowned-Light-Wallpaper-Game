@@ -1,6 +1,12 @@
 package com.grimdrowned.drownedwallpaper;
 
 import android.app.Presentation;
+import android.app.WallpaperManager;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -73,9 +79,37 @@ public class DrownedWallpaper extends WallpaperService {
         Presentation presentation;
         WebView web;
 
+        // Double-tap (or long-press, where the home screen passes it on) on empty home-screen space opens the game.
+        // Home screens report taps on empty space as COMMAND_TAP; some also pass the raw touches.
+        GestureDetector gestures;
+        long lastTap, lastOpen;
+
         @Override public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
-            setTouchEventsEnabled(false);
+            setTouchEventsEnabled(true);
+            gestures = new GestureDetector(DrownedWallpaper.this, new GestureDetector.SimpleOnGestureListener() {
+                @Override public boolean onDoubleTap(MotionEvent e) { openGame(); return true; }
+                @Override public void onLongPress(MotionEvent e) { openGame(); }
+            });
+        }
+
+        @Override public void onTouchEvent(MotionEvent e) { if (gestures != null) gestures.onTouchEvent(e); }
+
+        @Override public Bundle onCommand(String action, int x, int y, int z, Bundle extras, boolean resultRequested) {
+            if (WallpaperManager.COMMAND_TAP.equals(action)) {
+                long now = SystemClock.uptimeMillis();
+                if (now - lastTap < 450) { lastTap = 0; openGame(); } else lastTap = now;
+            }
+            return null;
+        }
+
+        void openGame() {
+            long now = SystemClock.uptimeMillis();
+            if (isPreview() || now - lastOpen < 1500) return;
+            lastOpen = now;
+            Intent i = new Intent(DrownedWallpaper.this, GameActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            try { startActivity(i); } catch (Exception ignored) { /* the system refused: the icon still works */ }
         }
 
         @Override public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {

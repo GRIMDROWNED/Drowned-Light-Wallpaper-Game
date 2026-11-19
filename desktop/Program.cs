@@ -57,9 +57,10 @@ namespace DrownedLight
             tray = new NotifyIcon { Icon = LoadIcon(), Text = "Drowned Light", ContextMenuStrip = menu, Visible = true };
             tray.DoubleClick += (s, e) => ShowPlay();
             SetWall(true);
+            DesktopClicks.Start(() => { if (wall != null) ShowPlay(); }); // double-click empty desktop space: play
             if (startup) return; // signing in to Windows: just the wallpaper
             ShowPlay(); // one app for everything: the wallpaper is set and the game opens
-            tray.ShowBalloonTip(4000, "Drowned Light", "The knights fight behind your desktop icons. Closing the game keeps the wallpaper; right-click the knight by the clock to switch it off or quit.", ToolTipIcon.None);
+            tray.ShowBalloonTip(4000, "Drowned Light", "The knights fight behind your desktop icons. Double-click an empty spot on the desktop to play. Closing the game keeps the wallpaper; right-click the knight by the clock to switch it off or quit.", ToolTipIcon.None);
         }
 
         internal static Icon LoadIcon()
@@ -107,6 +108,7 @@ namespace DrownedLight
 
         void Quit()
         {
+            DesktopClicks.Stop();
             SetWall(false);
             play?.Close();
             tray.Visible = false;
@@ -257,5 +259,66 @@ namespace DrownedLight
             var s = Screen.FromHandle(fg).Bounds;
             return r.L <= s.Left && r.T <= s.Top && r.R >= s.Right && r.B >= s.Bottom;
         }
+    }
+    /// <summary>
+    /// Watches for a double-click on empty desktop space (not on an icon, the taskbar or a window) with a low-level
+    /// mouse hook, the way wallpaper apps do, and calls back. Icons are told apart through accessibility roles.
+    /// </summary>
+    static class DesktopClicks
+    {
+        delegate IntPtr HookProc(int code, IntPtr w, IntPtr l);
+        [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int id, HookProc f, IntPtr mod, uint thread);
+        [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr h);
+        [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr h, int code, IntPtr w, IntPtr l);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
+        [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
+        [DllImport("user32.dll")] static extern IntPtr GetParent(IntPtr h);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int n);
+        [DllImport("oleacc.dll")] static extern int AccessibleObjectFromPoint(Point p, [MarshalAs(UnmanagedType.Interface)] out Accessibility.IAccessible acc, out object child);
+        [StructLayout(LayoutKind.Sequential)] struct MSLL { public Point pt; public uint data, flags, time; public IntPtr extra; }
+
+        static IntPtr hook;
+        static HookProc proc; // kept alive while hooked
+        static Action onDouble;
+        static uint lastTime; static Point lastPt;
+
+        internal static void Start(Action action)
+        {
+            if (hook != IntPtr.Zero) return;
+            onDouble = action;
+            proc = Hook;
+            hook = SetWindowsHookEx(14 /* WH_MOUSE_LL */, proc, GetModuleHandle(null), 0);
+        }
+        internal static void Stop() { if (hook != IntPtr.Zero) { UnhookWindowsHookEx(hook); hook = IntPtr.Zero; } }
+
+        static IntPtr Hook(int code, IntPtr w, IntPtr l)
+        {
+            if (code >= 0 && (int)w == 0x0201 /* WM_LBUTTONDOWN */)
+            {
+                var m = Marshal.PtrToStructure<MSLL>(l);
+                var size = SystemInformation.DoubleClickSize;
+                bool dbl = m.time - lastTime <= (uint)SystemInformation.DoubleClickTime
+                    && Math.Abs(m.pt.X - lastPt.X) <= size.Width && Math.Abs(m.pt.Y - lastPt.Y) <= size.Height;
+                lastTime = dbl ? 0 : m.time; lastPt = m.pt;
+                // the icon check talks to Explorer, so it runs after the hook returns (a slow hook lags the mouse)
+                if (dbl) { var a = onDouble; var pt = m.pt; SynchronizationContext.Current?.Post(_ => { if (OnEmptyDesktop(pt)) a?.Invoke(); }, null); }
+            }
+            return CallNextHookEx(hook, code, w, l);
+        }
+
+        /// <summary>The point is on the desktop's icon view itself, not on one of its icons.</summary>
+        static bool OnEmptyDesktop(Point p)
+        {
+            IntPtr h = WindowFromPoint(p);
+            if (Cls(h) != "SysListView32" || Cls(GetParent(h)) != "SHELLDLL_DefView") return false;
+            try
+            {
+                if (AccessibleObjectFromPoint(p, out var acc, out object child) != 0 || acc == null) return false;
+                object role = acc.get_accRole(child);
+                return role is int r && r == 0x21; // ROLE_SYSTEM_LIST: the empty view (an icon is 0x22, a list item)
+            }
+            catch { return false; }
+        }
+        static string Cls(IntPtr h) { var b = new System.Text.StringBuilder(64); GetClassName(h, b, 64); return b.ToString(); }
     }
 }
