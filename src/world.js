@@ -323,7 +323,7 @@ function reeds(){
       { f: 1, ty: 1, sink: 2, gap: [90, 300], pick: ["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"] },
     ] },
   };
-  const LEVEL_THEMES = ["shallows", "mire"];
+  const LEVEL_THEMES = ["mire", "shallows"]; // Robert 2026-11-19: the new art from level 1
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
