@@ -309,7 +309,7 @@ function reeds(){
     return c;
   }
   // ---------- each level's look (Robert 2026-11-19): code layers for the Shallows, Robert's GPT art for the rest ----------
-  // Levels walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
+  // Maps walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
   // cut-out pieces (tools/cut_scenery.py -> assets/scenery/<theme>/atlas.png, rects in DS.SCENERY) on parallax rows.
   // Row: f = how fast it scrolls with the camera (1 = with the ground), ty = how far it follows the camera up and down,
   // sink = px pushed into the ground, gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
@@ -323,11 +323,13 @@ function reeds(){
       { f: 1, ty: 1, sink: 2, gap: [90, 300], pick: ["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"] },
     ] },
   };
-  const LEVEL_THEMES = ["mire", "shallows"]; // Robert 2026-11-19: the new art from level 1
+  // One map per 10 levels (Robert 2026-11-19): levels 1-10 the Mire, 11-20 the Shallows, then round again.
+  const LEVEL_THEMES = ["mire", "shallows"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
-    themeName = LEVEL_THEMES[((n | 0) % LEVEL_THEMES.length + LEVEL_THEMES.length) % LEVEL_THEMES.length];
+    const m = Math.floor(Math.max(0, n | 0) / MAP_LEVELS);
+    themeName = LEVEL_THEMES[m % LEVEL_THEMES.length];
     T = THEMES[themeName];
     if (!T.ready) { // load its pictures and lay out each row once: a loop of pieces long enough not to notice
       const sc = (DS.SCENERY || {})[themeName];
@@ -474,6 +476,6 @@ function reeds(){
     for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
   }
 
-  const World = DS.World = { theme, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  const World = DS.World = { theme, get themeName() { return themeName; }, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
   arena();
 })(window.DS = window.DS || {});
