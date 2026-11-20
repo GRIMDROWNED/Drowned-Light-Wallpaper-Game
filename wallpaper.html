@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.7.4">
+<link rel="stylesheet" href="style.css?v=0.9.0">
 </head>
 <body>
 <!--BODY-->
@@ -20,6 +20,7 @@
   <button data-act="dash" class="tb da">Dash</button>
   <button data-act="jump" class="tb ju">Jump</button>
   <button data-act="attack" class="tb at">Attack</button>
+  <button data-act="flare" class="tb fl">Flare</button>
 </div>
 
 <section id="kits" class="menu" hidden>
@@ -30,8 +31,8 @@
   <div id="kitGrid"></div>
   <p id="kitText"></p>
   <div class="foot">
-    <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · Q next knight · Esc menu</p>
-    <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · LB next knight · Menu pause</p>
+    <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · F flare · Q next knight · Esc menu</p>
+    <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · click a stick flare · LB next knight · Menu pause</p>
     <button class="back opt small" hidden>Back</button>
   </div>
 </section>
@@ -42,6 +43,7 @@
     <div class="row2">
       <button id="btnResume" class="opt">Resume</button>
       <button id="btnKits" class="opt">Change knight</button>
+      <button id="btnJournal" class="opt">Journal</button>
       <button id="btnRestart" class="opt">Restart arena</button>
     </div>
     <h2>Spawn the Drowned</h2>
@@ -56,6 +58,7 @@
       <button id="btnWall" class="opt small">Wallpaper</button>
       <button id="btnHelp" class="opt small">Controls</button>
     </div>
+    <div id="journal" hidden></div>
     <div id="help" hidden>
       <p><b>Keys</b> A/D move · Space/W jump, again in the air for a double jump · J or left-click attack (press again for a 3-hit combo) · K or Shift dash (through enemies, also in the air) · L or right-click ability · hold W while attacking to swing upward · hold S and attack in the air to plunge · S + jump drops through a platform · Q swaps knight · Esc pauses</p>
       <p><b>Xbox pad</b> Left stick or D-pad move · A jump · X or LT attack · B or RB dash · Y or RT ability · LB swaps knight · Menu pauses · in menus, A picks and B goes back</p>
@@ -66,16 +69,17 @@
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.7.4"></script>
-<script src="src/pixscale.js?v=0.7.4"></script>
-<script src="src/sprites.js?v=0.7.4"></script>
-<script src="src/input.js?v=0.7.4"></script>
-<script src="src/scenery.js?v=0.7.4"></script>
-<script src="src/world.js?v=0.7.4"></script>
-<script src="src/game.js?v=0.7.4"></script>
-<script src="src/kits.js?v=0.7.4"></script>
-<script src="src/render.js?v=0.7.4"></script>
-<script src="src/ui.js?v=0.7.4"></script>
+<script src="src/data.js?v=0.9.0"></script>
+<script src="src/pixscale.js?v=0.9.0"></script>
+<script src="src/sprites.js?v=0.9.0"></script>
+<script src="src/input.js?v=0.9.0"></script>
+<script src="src/scenery.js?v=0.9.0"></script>
+<script src="src/world.js?v=0.9.0"></script>
+<script src="src/game.js?v=0.9.0"></script>
+<script src="src/kits.js?v=0.9.0"></script>
+<script src="src/explore.js?v=0.9.0"></script>
+<script src="src/render.js?v=0.9.0"></script>
+<script src="src/ui.js?v=0.9.0"></script>
 <script>DS.boot();</script>
 </body>
 </html>

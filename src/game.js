@@ -17,7 +17,7 @@
     const k = DS.KITS[kitId];
     DS.Sprites.loadSet(k.sprite);
     (k.forms || []).forEach((f) => DS.Sprites.loadSet(f.sprite));
-    const max = Math.round(P.hp * (k.hpMult || 1));
+    const max = Math.round(P.hp * (k.hpMult || 1) * DS.Explore.hpMult(kitId));
     return {
       kitId, k, x: G.scroll ? G.checkpoint : Wd.W / 2, y: Wd.FLOOR - 200, vx: 0, vy: 0, w: 28, h: 74, dir: 1,
       hp: max, max, onGround: false, coyote: 0, buffer: 0, airJumps: 1, airDash: 1,
@@ -36,13 +36,13 @@
     if (k.momentum) m *= 1 + Math.min(1, p.moveT / k.momentum.full) * k.momentum.bonus;
     if (k.heat) m *= 1 + (p.heat / k.heat.max) * k.heat.dmg;
     if (k.tithe) m *= 1 + p.stacks * k.tithe.dmg;
-    return m;
+    return m * DS.Explore.dmgMult(p); // kit level from sigils, relics
   }
   function speedMult(p) {
     let m = p.k.speedMult || 1;
     if (p.rushT > 0) m *= p.k.rush.speed;
     if (p.k.tithe) m *= 1 + p.stacks * p.k.tithe.speed;
-    return m;
+    return m * DS.Explore.speedMult();
   }
   function atkSpeed(p) { return p.k.tithe ? 1 + p.stacks * p.k.tithe.atk : 1; }
   function spriteOf(p) {
@@ -139,6 +139,7 @@
 
   function respawn() {
     const kit = G.player.kitId;
+    DS.Explore.onDeath();
     G.player = newPlayer(kit);
     G.foes = G.foes.filter((f) => f.d.dummy);
     G.shots = []; G.zones = [];
@@ -164,6 +165,7 @@
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
     if (e.brittle) dmg *= 1.2;
+    if (!opt.noMult) dmg *= DS.Explore.strike(e, opt); else e.alerted = true; // unseen in the mist: the first blow lands harder
     dmg = Math.max(1, Math.round(dmg));
     e.hp -= dmg; e.flash = 0.1;
     if (e.d.dummy) { e.hp = e.max; G.dummyLog.push([G.t, dmg]); }
@@ -278,7 +280,7 @@
     e.st += dt * (busy ? 0 : slow);
     const dx = p.x - e.x, adx = Math.abs(dx), dy = p.y - e.y;
     let want = 0; // desired walking direction
-    const target = !p.dead;
+    const target = !p.dead && !DS.Explore.hidden(e); // in mist they can't see the knight past its light
 
     if (d.dummy) { e.vx = 0; }
     else if (busy) { /* frozen solid */ }
@@ -472,6 +474,7 @@
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
     else { const lv = Wd.level(n, 1000 + n * 7919); G.enc = lv.enc; G.bossX = lv.bossX; G.endless = false; }
+    DS.Explore.build(n, G.endless ? 0 : G.bossX); // mist, traps and pickups (played levels only)
     G.banner = { txt: G.auto ? "Level " + (n + 1) + ": auto-fight" : "Level " + (n + 1), t: 0 };
   }
   // portrait <-> landscape in the middle of a level
@@ -524,7 +527,7 @@
   }
   function setScroll(on) {
     G.scroll = on; G.waves = !on;
-    if (on) loadLevel(DS.START_LEVEL || 0); else { Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
+    if (on) loadLevel(DS.START_LEVEL || 0); else { DS.Explore.clear(); Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
   }
 
   // ---------------- the knight fighting on its own (portrait) ----------------
@@ -627,6 +630,7 @@
     updatePlayer(p, dt);
     for (const e of G.foes) updateFoe(e, dt);
     G.foes = G.foes.filter((e) => !e.dead || e.deadT < 1.4);
+    if (G.scroll) DS.Explore.update(dt);
     updateShots(dt);
     DS.Kits.updateZones(dt);
     updateFx(dt);
@@ -652,6 +656,7 @@
     try { localStorage.setItem("dl-side-kit", kitId); } catch (e) { /* storage blocked */ }
   }
   function restart() {
+    DS.Explore.reset();
     G.foes = []; G.shots = []; G.zones = []; G.fx = []; G.texts = []; G.wave = 0; G.waveT = 2; G.kills = 0; G.combo = 0; G.best = 0;
     if (G.scroll) loadLevel(DS.START_LEVEL || 0); else { Wd.arena(); G.tok++; }
     start(G.kit);

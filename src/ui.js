@@ -61,9 +61,18 @@
     $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
+    $("#btnJournal").onclick = () => { // Drowned pages found so far, in level order (src/explore.js)
+      const j = $("#journal"), X = DS.Explore;
+      if (!j.hidden) { j.hidden = true; return; }
+      const list = X.pages().sort((a, b) => { const [la, ia] = a.split(":").map(Number), [lb, ib] = b.split(":").map(Number); return la - lb || ia - ib; });
+      j.innerHTML = list.length ? list.map((k) => `<p><b>Level ${+k.split(":")[0] + 1}</b>${X.pageText(k)}</p>`).join("")
+        : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
+      j.hidden = false;
+    };
     syncToggles();
   }
   function syncToggles() {
+    $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
     $("#btnWave").textContent = G.scroll ? "Skip to the boss" : "Next wave now";
     $("#btnRestart").textContent = G.scroll ? "Restart level" : "Restart arena";
