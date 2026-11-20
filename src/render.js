@@ -39,6 +39,7 @@
     ctx.setTransform(0.5, 0, 0, 0.5, -cam.x / 2, -cam.y / 2);
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
+      DS.Explore.drawWorld(ctx);
       DS.Fam.draw(ctx, false); // walking familiars, Derek's walls, Fred's glowcaps
       for (const e of G.foes) drawFoe(e);
       DS.Fam.drawAura(ctx, G.player);
@@ -48,6 +49,7 @@
       for (const s of G.shots) drawShot(s);
       for (const f of G.fx) drawFx(f);
       if (G.boxes) drawBoxes();
+      DS.Explore.drawMist(ctx, cam, LW, LH);
     }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
     // blow it up
@@ -386,11 +388,12 @@
     const p = G.player, k = p.k, vw = R.vw;
     ctx.textAlign = "left";
     const x = 14, y = 14;
-    const fam = DS.Fam.form();
-    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, fam ? 88 : 72);
+    const fam = DS.Fam.form(), ex = DS.Explore.on ? (DS.Explore.relics.length ? 28 : 16) : 0;
+    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, (fam ? 88 : 72) + ex);
     ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = `rgb(${k.color})`;
     ctx.fillText(k.name.toUpperCase(), x, y + 10);
-    ctx.font = '600 10px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb"; ctx.fillText(k.tag, x + 170, y + 10);
+    ctx.font = '600 10px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb"; const klv = DS.Explore.kitLevel(p.kitId); // kit level from sigils (Robert 2026-11-20)
+    if (klv) { ctx.fillStyle = "#ffb060"; ctx.fillText("Lv " + klv, x + 170, y + 10); } else ctx.fillText(k.tag, x + 170, y + 10);
     // health
     bar(x, y + 18, 220, 9, p.hp / p.max, "#d24848", "#3a1212");
     ctx.fillStyle = "#e8eef0"; ctx.font = '600 9px "Inter", system-ui, sans-serif'; ctx.fillText(Math.ceil(p.hp) + " / " + p.max, x + 4, y + 26);
@@ -416,6 +419,7 @@
       ctx.fillText(t, x, y + 70);
     }
     if (meter) { ctx.fillStyle = "#cfd8dc"; ctx.fillText(meter[0], x + 130, y + 54); bar(x + 130, y + 58, 90, 4, meter[1], meter[2], "#141c22"); }
+    DS.Explore.hud(ctx, x, y + (fam ? 78 : 62), bar); // lantern, flares, pages, relics (under the familiar row)
     // top right: wave, kills, combo, dummy dps
     ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;
@@ -448,6 +452,7 @@
       ctx.textAlign = "center"; ctx.font = '700 26px "Pixelify Sans", monospace';
       ctx.fillStyle = `rgba(220,240,240,${a})`; ctx.fillText(G.banner.txt, vw / 2, R.vh * 0.28);
     }
+    DS.Explore.drawNote(ctx, vw, R.vh);
     if (p.dead) {
       ctx.textAlign = "center"; ctx.font = '700 28px "Pixelify Sans", monospace'; ctx.fillStyle = "#e8b0b0";
       ctx.fillText("The light gutters…", vw / 2, R.vh * 0.42);

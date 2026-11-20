@@ -156,7 +156,7 @@
         break;
       }
     }
-    p.abilCd = ab.cd;
+    p.abilCd = ab.cd * DS.Explore.cdMult(p);
   }
 
   function flare(x, y, dmg) {
@@ -254,7 +254,7 @@
       }
       if (I.h.ability) { p.charge += dt; return; }
       const charged = p.charge >= ab.charge;
-      p.charge = -1; p.abilCd = ab.cd;
+      p.charge = -1; p.abilCd = ab.cd * DS.Explore.cdMult(p);
       if (charged) { p.lunge = { kind: "rush", t: 0, dur: ab.rush, speed: ab.rushSpeed, hits: new Set(), lastSeg: p.x }; p.inv = Math.max(p.inv, ab.rush); }
       else {
         p.cast = { anim: "cast", t: 0, dur: 0.5, lock: true, at: 0.22, fn: () => tideLine(p.x + p.dir * 40, Wd.surfaceBelow(p.x, p.y - 2), p.dir, ab) };
@@ -271,7 +271,7 @@
       const erupt = p.heat >= p.k.heat.max;
       if (erupt) p.heat = 0;
       p.lunge = { kind: "brand", t: 0, dur: ab.dash, speed: ab.speed, hits: new Set(), startX: p.x, erupt };
-      p.abilCd = ab.cd;
+      p.abilCd = ab.cd * DS.Explore.cdMult(p);
     }
   }
 
