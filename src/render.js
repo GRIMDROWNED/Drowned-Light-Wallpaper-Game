@@ -40,8 +40,11 @@
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
       DS.Explore.drawWorld(ctx);
+      DS.Fam.draw(ctx, false); // walking familiars, Derek's walls, Fred's glowcaps
       for (const e of G.foes) drawFoe(e);
+      DS.Fam.drawAura(ctx, G.player);
       drawPlayer(G.player);
+      DS.Fam.draw(ctx, true);  // Abigail and David fly in front
       for (const z of G.zones) drawZone(z, false);
       for (const s of G.shots) drawShot(s);
       for (const f of G.fx) drawFx(f);
@@ -169,11 +172,15 @@
     else if (e.root > 0) tint = ["#a060ff", 0.3];
     else if (e.chill > 0) tint = ["#80c8ff", 0.25];
     else if (e.burn) tint = ["#ff8020", 0.15 + 0.1 * Math.sin(G.t * 25)];
+    else if (e.sleep > 0) tint = ["#b8f080", 0.3];
+    else if (e.spore > 0) tint = ["#a0e060", 0.2];
+    else if (e.curse) tint = ["#5af5cd", 0.15];
     else if (e.broken > 0) tint = ["#ffd27a", 0.2];
     if (!e.dead) { ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(e.x, e.y, e.w * 0.6, 4, 0, 0, TAU); ctx.fill(); }
     if (!S.draw(ctx, rec, e.x, e.y + 1, e.dir, 1, tint, alpha, rot)) { ctx.fillStyle = "#355"; ctx.fillRect(e.x - e.w / 2, e.y - e.h, e.w, e.h); }
     if (e.dead) return;
     if (e.root > 0) S.drawFx(ctx, "reaperSnared", e.x, e.y - 4, { scale: e.w / 30 });
+    if (e.bleed && Math.random() < 0.2) G.fx.push({ kind: "mote", x: e.x + (Math.random() - 0.5) * e.w * 0.6, y: e.y - e.h * (0.3 + Math.random() * 0.4), vx: 0, vy: 60, t: 0, life: 0.4, c: "rgba(200,30,40," });
     if (e.burn && Math.random() < 0.3) G.fx.push({ kind: "mote", x: e.x + (Math.random() - 0.5) * e.w, y: e.y - Math.random() * e.h, vx: 0, vy: -60, t: 0, life: 0.4, c: "rgba(255,150,50," });
     // the tell: an ! above an enemy about to strike
     if (e.state === "windup") {
@@ -227,6 +234,17 @@
     } else if (s.kind === "orb") {
       glowDot(s.x, s.y, 22, "120,255,200", 0.55);
       ctx.fillStyle = "#d8fff4"; ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill();
+    } else if (s.kind === "soul") { // Abigail's soul orb
+      glowDot(s.x, s.y, 20, "90,245,205", 0.55);
+      S.drawFx(ctx, "soulOrb", s.x, s.y, { scale: 0.45, rot: ang + Math.PI / 2 });
+    } else if (s.kind === "spore") { // Fred's spore glob
+      glowDot(s.x, s.y, 14, "170,230,110", 0.5);
+      ctx.fillStyle = "#c8f090"; ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#6a9a40"; ctx.fillRect(s.x - 1, s.y - 1, 3, 3);
+    } else if (s.kind === "wyvbolt") { // David's bolt of blood-red fire
+      glowDot(s.x, s.y, 22, "255,80,60", 0.6);
+      ctx.strokeStyle = "rgba(255,120,80,0.7)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.04, s.y - s.vy * 0.04); ctx.stroke();
+      ctx.fillStyle = "#ffe0c0"; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, TAU); ctx.fill();
     } else if (s.kind === "wave") {
       const a = Math.min(1, s.life * 3);
       ctx.fillStyle = `rgba(120,230,210,${0.75 * a})`;
@@ -299,6 +317,11 @@
         ctx.fillStyle = `rgba(5,20,25,${0.8 * a})`; ctx.beginPath(); ctx.ellipse(f.x, f.y, 34 * a, 8 * a, 0, 0, TAU); ctx.fill();
         return;
       }
+      case "zap": { // David's bolt leaping on
+        ctx.strokeStyle = `rgba(255,170,130,${1 - q})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f.x, f.y);
+        for (let i = 1; i < 5; i++) { const u = i / 5; ctx.lineTo(f.x + (f.x2 - f.x) * u + (Math.random() - 0.5) * 14, f.y + (f.y2 - f.y) * u + (Math.random() - 0.5) * 14); }
+        ctx.lineTo(f.x2, f.y2); ctx.stroke(); return;
+      }
       case "flare": S.drawFx(ctx, "arbFlare" + (1 + Math.min(3, Math.floor(q * 4))), f.x, f.y, { scale: f.scale, alpha: 1 - q * 0.6, add: true }); return;
       case "coil": { const p = f.follow; S.drawFx(ctx, "dragon" + (1 + Math.min(4, Math.floor(q * 5))), p.x + p.dir * 20, p.y - 60, { dir: p.dir, scale: 0.55, alpha: 0.85 }); return; }
       case "snare": S.drawFx(ctx, "reaperSnare", f.x, f.y, { scale: (f.r * 2 / 232) * (0.6 + 0.4 * Math.min(1, q * 3)), sy: 0.55, rot: q * 0.6, alpha: 1 - q * q }); return;
@@ -365,8 +388,8 @@
     const p = G.player, k = p.k, vw = R.vw;
     ctx.textAlign = "left";
     const x = 14, y = 14;
-    const ex = DS.Explore.on ? (DS.Explore.relics.length ? 28 : 16) : 0;
-    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, 72 + ex);
+    const fam = DS.Fam.form(), ex = DS.Explore.on ? (DS.Explore.relics.length ? 28 : 16) : 0;
+    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, (fam ? 88 : 72) + ex);
     ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = `rgb(${k.color})`;
     ctx.fillText(k.name.toUpperCase(), x, y + 10);
     ctx.font = '600 10px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb"; const klv = DS.Explore.kitLevel(p.kitId); // kit level from sigils (Robert 2026-11-20)
@@ -386,8 +409,17 @@
     if (k.momentum) meter = ["Momentum", Math.min(1, p.moveT / k.momentum.full), "#60e0a0"];
     if (k.stance) meter = ["Stable Form", Math.min(1, p.stillT / k.stance.after), p.stillT >= k.stance.after ? "#ff8090" : "#7a4a52"];
     if (k.rush) meter = ["Rush", p.rushT / k.rush.dur, "#c9a0ff"];
+    if (fam) { // the familiar: its form, the kills to its next one, the knight's blessing or fury
+      const fd = DS.Fam.def(), f = G.fam, next = fd.grow[f.form];
+      ctx.fillStyle = `rgb(${fd.color})`; ctx.font = '600 10px "Inter", system-ui, sans-serif';
+      let t = fam.name + (next != null ? "  ·  grows in " + Math.max(0, next - f.kills) : "");
+      if (f.down > 0) t = fam.name + "  ·  down " + f.down.toFixed(0) + " s";
+      if (p.bless > 0) t += "  ·  blessed";
+      if (p.fury > 0) t += "  ·  fury";
+      ctx.fillText(t, x, y + 70);
+    }
     if (meter) { ctx.fillStyle = "#cfd8dc"; ctx.fillText(meter[0], x + 130, y + 54); bar(x + 130, y + 58, 90, 4, meter[1], meter[2], "#141c22"); }
-    DS.Explore.hud(ctx, x, y + 62, bar); // lantern, flares, pages, relics
+    DS.Explore.hud(ctx, x, y + (fam ? 78 : 62), bar); // lantern, flares, pages, relics (under the familiar row)
     // top right: wave, kills, combo, dummy dps
     ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;

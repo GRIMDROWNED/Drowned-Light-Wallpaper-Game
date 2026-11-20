@@ -25,7 +25,7 @@
     if (imgs[url]) return imgs[url];
     const rec = { img: null, ok: false, sx: 0, sy: 0, w: 0, h: 0, fx: feet ? feet[0] * scale + (scale < 1 ? 1 : 0) : 0, fy: feet ? feet[1] * scale + (scale < 1 ? 1 : 0) : 0, guess: !feet };
     imgs[url] = rec;
-    const m = url.match(/^assets\/((?:knights|drowned)\/[^/]+)\/(.+)\.png$/);
+    const m = url.match(/^assets\/((?:knights|drowned|familiars)\/[^/]+)\/(.+)\.png$/);
     const r = m && DS.ATLAS && DS.ATLAS[m[1]] && DS.ATLAS[m[1]][m[2]];
     if (r) {
       const sh = sheet("assets/" + m[1] + "/atlas.png");

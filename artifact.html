@@ -22,11 +22,19 @@
   </header>
   <div id="kitGrid"></div>
   <p id="kitText"></p>
+  <div id="famPick" class="row2 famRow"></div>
+  <p id="famText"></p>
   <div class="foot">
     <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · F flare · Q next knight · Esc menu</p>
     <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · click a stick flare · LB next knight · Menu pause</p>
     <button class="back opt small" hidden>Back</button>
   </div>
+</section>
+
+<section id="famWin" class="menu" hidden>
+  <header><h1>Choose a familiar</h1><p class="sub">The boss is down. One familiar answers your light and fights beside you from now on. Choose well: the others wait for the next map's fifth level.</p></header>
+  <div id="famWinRow" class="famWinRow"></div>
+  <p id="famWinText"></p>
 </section>
 
 <section id="pause" class="menu" hidden>
@@ -38,6 +46,8 @@
       <button id="btnJournal" class="opt">Journal</button>
       <button id="btnRestart" class="opt">Restart arena</button>
     </div>
+    <h2>Familiar</h2>
+    <div id="famPause" class="row2 famRow" style="justify-content:flex-start"></div>
     <h2>Spawn the Drowned</h2>
     <div id="spawnRow" class="row2"></div>
     <h2>Testing</h2>
@@ -47,6 +57,8 @@
       <button id="btnWaves" class="opt small">Waves</button>
       <button id="btnGod" class="opt small">God mode</button>
       <button id="btnBoxes" class="opt small">Hitboxes</button>
+      <button id="btnGrow" class="opt small">Grow familiar</button>
+      <button id="btnWinFams" class="opt small">Unlock all familiars</button>
       <button id="btnWall" class="opt small">Wallpaper</button>
       <button id="btnHelp" class="opt small">Controls</button>
     </div>
@@ -68,6 +80,7 @@
 <script src="src/world.js?v=0.9.0"></script>
 <script src="src/game.js?v=0.9.0"></script>
 <script src="src/kits.js?v=0.9.0"></script>
+<script src="src/familiars.js?v=0.9.0"></script>
 <script src="src/explore.js?v=0.9.0"></script>
 <script src="src/render.js?v=0.9.0"></script>
 <script src="src/ui.js?v=0.9.0"></script>

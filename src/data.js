@@ -174,6 +174,86 @@
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 
+  /* The familiars from the main game, fighting beside the knight (src/familiars.js). One at a time, picked on the
+     knight screen or in the pause menu. Each grows into its next form after `grow` kills made while it is out
+     (counted from when it was picked). Sprites: the main game's side frames, shrunk by tools/pixelize.py into
+     assets/familiars/<folder>. `mult` scales a form's damage (and the hound's health). */
+  const famSet = (folder, extra = {}) => Object.assign({
+    folder: "familiars/" + folder, idle: ["right"], run: seq("side/walk", 4), jump: ["side/walk2"], fall: ["side/walk4"],
+  }, extra);
+  const hound = (f) => famSet(f, { attack: ["attackA", "attackB", "attackC"], hurt: ["side/hurt"], death: ["side/death"], jump: ["attackB"], fall: ["attackC"] });
+  const derek = (f) => famSet(f, { cast: ["side/castUp", "side/castSlam", "side/castSlam"] });
+  const wraith = (f) => famSet(f, { idle: ["right"], run: [1, 1, 3, 3].map((i) => "side/walk" + i), attack: ["side/castUp", "side/throw", "side/throw"], cast: ["bless"], hurt: ["side/hurt"] });
+  const fred = (f) => famSet(f, { attack: ["attackA", "attackB", "attackB"], cast: ["heal"], hurt: ["side/hurt"], death: ["side/death"] });
+  const wyv = (f) => famSet(f, { idle: seq("side/walk", 4), attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], hurt: ["side/hurt"] });
+  DS.FAMILIARS = {
+    hound: {
+      name: "Bone Hound", color: "230,200,150", ground: true, speed: 310, grow: [20, 50, 100],
+      text: "Runs down the Drowned and bites: archers and casters first. Bites bleed. Beaten down, it gets back up.",
+      forms: [
+        { name: "Bone Pup", sprite: hound("bone-hound-f0"), mult: 0.7, power: "Small and quick to fall" },
+        { name: "Bone Hound", sprite: hound("bone-hound"), mult: 1, power: "Leaps on the Drowned from afar" },
+        { name: "Ember Hound", sprite: hound("bone-hound-f2"), mult: 1.35, power: "Bites set the Drowned alight; bleed stacks 5 deep" },
+        { name: "Grave Warg", sprite: hound("bone-hound-f3"), mult: 1.7, power: "Howls every 16 s: Drowned near it freeze in terror; gets up twice as fast" },
+      ],
+      bite: { dmg: 7, cd: 0.75, reach: 34, dur: 0.3, at: 0.12, kb: 120 }, leap: { min: 70, max: 190, vx: 460, vy: -380 },
+      bleed: { dps: 2.5, dur: 4, max: [3, 3, 5, 5] }, burn: 4, howl: { every: 16, r: 170, stun: 1.4 },
+      hp: 60, down: 8, sight: 360,
+    },
+    golem: {
+      name: "Derek", color: "150,190,150", ground: true, speed: 260, grow: [20, 50, 100],
+      text: "Can't be hurt and doesn't fight: when the Drowned close in he raises a stone wall in their path. Drowned near a wall turn on it, and it stops their shots.",
+      forms: [
+        { name: "Pebble Derek", sprite: derek("derek-f0"), walls: 1, hits: 2, power: "One small wall at a time" },
+        { name: "Derek", sprite: derek("derek"), walls: 2, hits: 2, power: "Two walls, two hits each" },
+        { name: "Crystal Derek", sprite: derek("derek-f2"), walls: 2, hits: 3, cut: 6, power: "Crystal walls take three hits and cut whatever strikes them" },
+        { name: "Derek the Bastion", sprite: derek("derek-f3"), walls: 3, hits: 4, cut: 6, burst: { r: 110, dmg: 18, stun: 0.8 }, power: "Three great walls, four hits each, that burst and stagger the Drowned when they fall" },
+      ],
+      cd: 8, trigger: 320, gap: 95, life: 20, lure: 240, cast: 0.7, castAt: 0.4, wall: { w: 30, h: 58 },
+    },
+    kindle: {
+      name: "Kindle", color: "255,190,90", ground: true, speed: 300, grow: [],
+      text: "The walking lantern scuttles ahead to light the way, and every so often tips his fire into your lantern: your ability comes back sooner.",
+      forms: [{ name: "Kindle", sprite: famSet("kindle", { cast: ["pour"], attack: ["side/point"], hurt: ["side/crouch"], jump: ["side/hop"], fall: ["side/hop"] }), power: "Pours fire into your lantern" }],
+      every: 12, cut: 0.5, minLeft: 2.5, pour: 0.9, lead: 70, light: 120,
+    },
+    abigail: {
+      name: "Abigail", color: "90,245,205", fly: [-36, -64], speed: 330, grow: [30, 80],
+      text: "Floats at your shoulder throwing homing soul orbs: a Drowned an orb strikes is cursed for good (weaker, slower, softer). Now and then she blesses you.",
+      forms: [
+        { name: "Abigail", sprite: wraith("abigail"), mult: 1, curse: 0.1, bless: 0.1, power: "Blesses her knight" },
+        { name: "Mourning Abigail", sprite: wraith("abigail-f2"), mult: 1.3, curse: 0.15, bless: 0.1, leap: true, power: "Orbs leap to a second Drowned; curse 15%" },
+        { name: "Abigail, Queen of Sorrows", sprite: wraith("abigail-f3"), up: 6, mult: 1.6, curse: 0.15, bless: 0.15, leap: true, wail: { every: 22, r: 220, stun: 1.2 }, power: "Wails every 22 s: every Drowned near is cursed and stunned; blessing 15%" },
+      ],
+      cd: 1.6, dmg: 7, sight: 340, orbSpeed: 330, orbLife: 2.6, throwT: 0.45, throwAt: 0.2, blessEvery: 20, blessFor: 10,
+    },
+    fred: {
+      name: "Fred", color: "150,225,90", ground: true, speed: 260, grow: [20, 50, 100],
+      text: "The healer: spits slowing spores at the Drowned and sprouts glowcaps that heal you when you step on them.",
+      forms: [
+        { name: "Fred the Sprout", sprite: fred("fred-f0"), mult: 0.8, capEvery: 15, heal: 12, power: "Spits slowing spores and grows healing glowcaps" },
+        { name: "Fred", sprite: fred("fred-f1"), mult: 1, capEvery: 12, heal: 16, power: "Glowcaps come quicker and heal more" },
+        { name: "Weeping Fred", sprite: fred("fred-f2"), mult: 1.3, capEvery: 12, heal: 20, cloud: 60, power: "Spore globs burst into a cloud that slows every Drowned in it" },
+        { name: "Fred the Rotwalker", sprite: fred("fred-f3"), mult: 1.6, capEvery: 10, heal: 24, cloud: 70, storm: { every: 25, r: 230, sleep: 2.5 }, power: "Spore Storm every 25 s: every Drowned near you falls asleep (a blow wakes it)" },
+      ],
+      cd: 2.2, dmg: 5, sight: 300, slow: 0.25, slowFor: 3, globSpeed: 420, spit: 0.5, spitAt: 0.25, capMax: 3, capLife: 30,
+    },
+    wyvern: {
+      name: "David", color: "255,90,70", fly: [-30, -88], speed: 360, grow: [20, 50, 100],
+      text: "The skeletal wyvern flies at your shoulder spitting bolts of blood-red fire at the Drowned.",
+      forms: [
+        { name: "David the Hatchling", sprite: wyv("wyvern-f0"), mult: 0.8, cd: 2, power: "Spits bolts of blood-red fire" },
+        { name: "David", sprite: wyv("wyvern-f1"), mult: 1, cd: 1.8, burn: 4, power: "Searing bolts set the Drowned burning" },
+        { name: "Great David", sprite: wyv("wyvern-f2"), mult: 1.25, cd: 1.6, up: 14, burn: 4, chain: { n: 2, r: 150, dmg: 0.6 }, power: "His bolts leap to 2 more Drowned nearby" },
+        { name: "David the Bloodwing", sprite: wyv("wyvern-f3"), mult: 1.5, cd: 1.4, up: 26, burn: 5, chain: { n: 3, r: 160, dmg: 0.6 }, fury: { every: 40, dur: 20, dmg: 0.25 }, power: "War Fury every 40 s with Drowned near: you deal 25% more damage for 20 s" },
+      ],
+      dmg: 6, sight: 340, boltSpeed: 520, boltLife: 1.4, spit: 0.4, spitAt: 0.2,
+    },
+  };
+  DS.FAM_ORDER = Object.keys(DS.FAMILIARS);
+  // Familiars are won, one at a time, by beating the boss of level `at` of every `every`-level map (5, 15, 25...).
+  DS.FAM_UNLOCK = { every: 10, at: 5 };
+
   // Waves of the arena: enemy types per wave (repeat with more of them after the list ends).
   DS.WAVES = [
     ["footman", "footman", "footman"],
