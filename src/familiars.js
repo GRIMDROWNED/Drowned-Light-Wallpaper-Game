@@ -31,8 +31,24 @@
     G.fam = make(id, 0);
   };
   F.load = function () {
-    try { const id = localStorage.getItem("dl-side-fam"); if (id && DS.FAMILIARS[id]) pick = id; } catch (e) { /* storage blocked */ }
+    try { const u = JSON.parse(localStorage.getItem("dl-side-fam-won") || "[]"); if (Array.isArray(u)) won = new Set(u.filter((id) => DS.FAMILIARS[id])); } catch (e) { /* storage blocked */ }
+    try { const id = localStorage.getItem("dl-side-fam"); if (id && won.has(id)) pick = id; } catch (e) { /* storage blocked */ }
   };
+
+  // ---------------- winning them (Robert 2026-11-20) ----------------
+  // Every map is 10 levels; the boss of each map's level 5 lets the player choose one familiar to win, for good (kept on
+  // this device). Until won, a familiar stays a secret "???" in the pickers. The wallpaper still shows them all.
+  let won = new Set();
+  F.won = (id) => won.has(id);
+  F.locked = () => DS.FAM_ORDER.filter((id) => !won.has(id));
+  F.win = function (id) {
+    if (!DS.FAMILIARS[id]) return;
+    won.add(id);
+    try { localStorage.setItem("dl-side-fam-won", JSON.stringify([...won])); } catch (e) { /* storage blocked */ }
+  };
+  F.winAll = () => DS.FAM_ORDER.forEach(F.win);
+  // Does clearing level index n (0-based) earn a familiar? Level 5, 15, 25... (each map's middle boss), while any are left.
+  F.rewardLevel = (n) => (n + 1) % DS.FAM_UNLOCK.every === DS.FAM_UNLOCK.at && F.locked().length > 0;
   function make(id, formIx) {
     const d = DS.FAMILIARS[id], p = G.player;
     const x = p ? p.x - (p.dir || 1) * 40 : 300, y = p ? p.y + (d.fly ? d.fly[1] : 0) : Wd.FLOOR;

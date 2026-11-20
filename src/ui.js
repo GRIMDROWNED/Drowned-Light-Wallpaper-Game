@@ -39,12 +39,12 @@
     for (const row of [$("#famPick"), $("#famPause")]) {
       row.innerHTML = "";
       for (const id of [null].concat(DS.FAM_ORDER)) {
-        const d = id && DS.FAMILIARS[id];
         const b = el("button", "opt small fam");
         b.dataset.fam = id || "";
-        b.style.setProperty("--fc", d ? d.color : "160,180,185");
-        b.innerHTML = d ? `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}">${d.name}` : "No familiar";
-        b.addEventListener("click", () => { DS.Fam.set(id); syncFams(); flash(b); });
+        b.addEventListener("click", () => {
+          if (id && !DS.Fam.won(id)) { showFamText(id); return; } // still a secret
+          DS.Fam.set(id); syncFams(); flash(b);
+        });
         b.addEventListener("focus", () => showFamText(id));
         b.addEventListener("mouseenter", () => showFamText(id));
         row.appendChild(b);
@@ -52,14 +52,42 @@
     }
     syncFams();
   }
+  // a familiar not yet won shows as a dark "???" (the secrecy rule of the main game)
+  function famButton(b) {
+    const id = b.dataset.fam || null, d = id && DS.FAMILIARS[id], won = !id || DS.Fam.won(id);
+    b.classList.toggle("locked", !won);
+    b.style.setProperty("--fc", d && won ? d.color : "160,180,185");
+    b.innerHTML = d ? `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}">${won ? d.name : "???"}` : "No familiar";
+  }
   function showFamText(id) {
-    const d = id && DS.FAMILIARS[id];
-    $("#famText").innerHTML = d ? `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} Forms: ${d.forms.map((f) => f.name).join(" → ")}` : "Fight alone.";
+    const d = id && DS.FAMILIARS[id], at = DS.FAM_UNLOCK.at;
+    $("#famText").innerHTML = !d ? (DS.Fam.locked().length === DS.FAM_ORDER.length ? `Fight alone. Beat the boss of level ${at} to choose your first familiar.` : "Fight alone.")
+      : !DS.Fam.won(id) ? `<b>???</b> · Not yet won. Beat the boss of level ${at} of a map (${at}, ${at + 10}, ${at + 20}...) to choose a familiar.`
+        : `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} Forms: ${d.forms.map((f) => f.name).join(" → ")}`;
   }
   function syncFams() {
     const cur = G.wall && G.fam ? G.fam.id : DS.Fam.picked();
-    for (const b of document.querySelectorAll(".fam")) b.classList.toggle("sel", (b.dataset.fam || null) === (cur || null));
+    for (const b of document.querySelectorAll(".fam")) { famButton(b); b.classList.toggle("sel", (b.dataset.fam || null) === (cur || null)); }
     showFamText(cur);
+  }
+  // after a map's level 5 boss: the familiars still to win, one to choose
+  function buildFamWin() {
+    const row = $("#famWinRow"); row.innerHTML = "";
+    for (const id of DS.Fam.locked()) {
+      const d = DS.FAMILIARS[id];
+      const b = el("button", "opt famCard");
+      b.style.setProperty("--fc", d.color);
+      b.innerHTML = `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"><b>${d.name}</b><span>${d.text}</span>`;
+      b.addEventListener("click", () => {
+        DS.Fam.win(id); DS.Fam.set(id);
+        close(); G.mode = "play";
+        G.banner = { txt: d.name + " joins you", t: 0 };
+      });
+      b.addEventListener("focus", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
+      b.addEventListener("mouseenter", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
+      row.appendChild(b);
+    }
+    $("#famWinText").textContent = "";
   }
 
   function buildPause() {
@@ -88,6 +116,7 @@
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
     $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
+    $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
     syncToggles();
@@ -105,6 +134,7 @@
     for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name;
     open = name; focus = 0;
     if (name === "pause") syncToggles();
+    if (name === "famWin") buildFamWin();
     syncFams();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
@@ -148,6 +178,7 @@
     if (I.p.confirm && I.source !== "keys") { const o = opts(); if (o[focus]) o[focus].click(); }
     if (I.p.back || I.p.pause) {
       if (open === "kits" && G.mode === "title") return;
+      if (open === "famWin") return; // the reward has to be chosen
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
     }

@@ -1,0 +1,42 @@
+// The live wallpaper: the game's wallpaper page (wallpaper.html, style.css, src/, assets/ from the repo root)
+// is copied into the APK's assets at build time, so the wallpaper runs offline.
+plugins { id "com.android.application" }
+
+def gameRoot = rootProject.projectDir.parentFile
+def www = layout.buildDirectory.dir("generated/www")
+
+tasks.register("copyGame", Sync) {
+    into(www.map { it.dir("www") })
+    from(gameRoot) {
+        include "wallpaper.html", "index.html", "style.css", "src/**"
+        include "assets/**/atlas.png", "assets/fx/**", "assets/ground/**", "assets/scenery/**", "assets/**/right.png"
+    }
+}
+
+android {
+    namespace "com.grimdrowned.drownedwallpaper"
+    compileSdk 35
+    defaultConfig {
+        applicationId "com.grimdrowned.drownedwallpaper"
+        minSdk 24
+        targetSdk 35
+        versionCode = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+        versionName = "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+    }
+    signingConfigs {
+        // the standard Android debug key, kept in the repo so every build updates the installed app in place
+        shared {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+    buildTypes {
+        release { signingConfig signingConfigs.shared; minifyEnabled false }
+        debug { signingConfig signingConfigs.shared }
+    }
+    sourceSets { main { assets.srcDirs += www } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+tasks.named("preBuild") { dependsOn "copyGame" }

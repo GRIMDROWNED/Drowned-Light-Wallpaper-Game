@@ -1,0 +1,56 @@
+# Builds Drowned Light for Windows (desktop/): a live desktop wallpaper behind the icons plus a play window.
+# Every build on main replaces the exe on the "windows" release, so the newest exe is always at
+# https://github.com/GRIMDROWNED/Drowned-Light-Wallpaper-Game/releases/download/windows/DrownedLight.exe
+# (it never becomes the repo's "latest" release, which stays the Android app's).
+name: Windows desktop app
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["desktop/**", "src/**", "assets/**", "index.html", "wallpaper.html", "style.css", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - name: Pack the game into the app
+        shell: pwsh
+        run: |
+          $tmp = "www-stage"; New-Item -ItemType Directory $tmp | Out-Null
+          Copy-Item index.html, wallpaper.html, style.css $tmp
+          Copy-Item -Recurse src "$tmp/src"
+          New-Item -ItemType Directory "$tmp/assets" | Out-Null
+          Copy-Item -Recurse assets/fx, assets/ground, assets/scenery "$tmp/assets/"
+          foreach ($g in "knights", "drowned", "familiars") {
+            Get-ChildItem "assets/$g" -Directory | ForEach-Object {
+              $d = "$tmp/assets/$g/$($_.Name)"; New-Item -ItemType Directory -Force $d | Out-Null
+              Copy-Item "$($_.FullName)/atlas.png" $d
+              if (Test-Path "$($_.FullName)/right.png") { Copy-Item "$($_.FullName)/right.png" $d }
+            }
+          }
+          Compress-Archive -Path "$tmp/*" -DestinationPath desktop/www.zip -Force
+      - name: Build the exe
+        run: dotnet publish desktop/DrownedLight.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:Version=1.0.${{ github.run_number }} -o out
+      - uses: actions/upload-artifact@v4
+        with: { name: DrownedLight-windows, path: out/DrownedLight.exe }
+      - name: Publish as the latest release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows
+          name: Windows desktop app
+          body: "Windows 10/11: download DrownedLight.exe and run it. If Windows SmartScreen warns, click More info -> Run anyway. The knights fight behind your desktop icons; right-click the knight by the clock to play, switch the wallpaper off, start with Windows or quit. The app updates itself: it checks this page every 6 hours and installs a new version when the game window is closed."
+          files: out/DrownedLight.exe
+          make_latest: "false"
+      - name: Publish the build number the app's updater checks
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          printf '%s' "${{ github.run_number }}" > version.txt
+          cat version.txt
+          gh release upload windows version.txt --clobber --repo "${{ github.repository }}"

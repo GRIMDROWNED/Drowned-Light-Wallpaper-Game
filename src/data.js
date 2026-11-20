@@ -4,7 +4,9 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.7.0";
+  DS.VERSION = "0.8.0";
+  // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
+  DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -249,6 +251,8 @@
     },
   };
   DS.FAM_ORDER = Object.keys(DS.FAMILIARS);
+  // Familiars are won, one at a time, by beating the boss of level `at` of every `every`-level map (5, 15, 25...).
+  DS.FAM_UNLOCK = { every: 10, at: 5 };
 
   // Waves of the arena: enemy types per wave (repeat with more of them after the list ends).
   DS.WAVES = [
