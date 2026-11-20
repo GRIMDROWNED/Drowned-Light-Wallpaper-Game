@@ -235,6 +235,8 @@ function trees(seed,dark){ // mid: drooping swamp trees
 // ground palettes per level: dirt bands, grass lip (top, mid, under), blades, highlight, flowers
 const GROUND={
   shallows:{d:['#3b2c22','#33261e','#2a1f19','#211915','#181210'],g:['#4c7a3c','#3a6232','#24401f'],b:'#6c9a4a',hi:'#7aa654',f:['#c9d36a','#b07acb'],crack:['#1b1310','#4a3426']},
+  reaches:{d:['#3a3d42','#323439','#2a2c30','#222327','#1a1b1e'],g:['#6d6a52','#55533f','#34332a'],b:'#8a8466',hi:'#9c977a',f:['#c9c7b0','#8fa0b0'],crack:['#16171a','#4a4d54']},
+  abyss:{d:['#221a1c','#1c1517','#171113','#120d0f','#0c090a'],g:['#3a1c20','#2a1418','#1a0c0f'],b:'#5a2a30',hi:'#6e3238',f:['#4fa0ff','#a02030'],crack:['#0a0708','#3a2a2e']},
   mire:{d:['#2c2a1c','#242218','#1d1c14','#171610','#11100c'],g:['#5f6a34','#4a5428','#2c3318'],b:'#7d8840',hi:'#8f9a4c',f:['#d6d860','#9fb04a'],crack:['#12110c','#3a3624']},
 };
 function ground(pal){
@@ -309,7 +311,7 @@ function reeds(){
     return c;
   }
   // ---------- each level's look (Robert 2026-11-19): code layers for the Shallows, Robert's GPT art for the rest ----------
-  // Levels walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
+  // Maps walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
   // cut-out pieces (tools/cut_scenery.py -> assets/scenery/<theme>/atlas.png, rects in DS.SCENERY) on parallax rows.
   // Row: f = how fast it scrolls with the camera (1 = with the ground), ty = how far it follows the camera up and down,
   // sink = px pushed into the ground, gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
@@ -317,17 +319,29 @@ function reeds(){
     shallows: { code: true, ground: "shallows", rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
     ] },
+    reaches: { code: true, trees: false, tint: "rgba(30,34,44,0.35)", ground: "reaches", rows: [
+      { f: 0.7, ty: 0.88, sink: 3, gap: [180, 460], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
+    ] },
+    abyss: { code: true, trees: false, tint: "rgba(48,4,12,0.5)", ground: "abyss", wisp: ["#7fb8ff", "#3a5a8a"], rows: [
+      { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["briar1", "bellframe", "briar1"] },
+      { f: 1, ty: 1, sink: 2, gap: [70, 260], pick: ["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3", "briar2"] },
+    ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
       { f: 1, ty: 1, sink: 2, gap: [90, 300], pick: ["grave1", "grave2", "grave3", "grave4", "grave5", "grave6"] },
     ] },
   };
-  const LEVEL_THEMES = ["mire", "shallows"]; // Robert 2026-11-19: the new art from level 1
+  // One map per 10 levels (Robert 2026-11-19), then round again.
+  // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
+  // is dropped from the run. Reaches and Abyss use the code sky and trees with their own landmarks and ground until
+  // their sky/far/mid pictures come in.
+  const LEVEL_THEMES = ["mire", "reaches", "abyss"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
-    themeName = LEVEL_THEMES[((n | 0) % LEVEL_THEMES.length + LEVEL_THEMES.length) % LEVEL_THEMES.length];
+    const m = Math.floor(Math.max(0, n | 0) / MAP_LEVELS);
+    themeName = LEVEL_THEMES[m % LEVEL_THEMES.length];
     T = THEMES[themeName];
     if (!T.ready) { // load its pictures and lay out each row once: a loop of pieces long enough not to notice
       const sc = (DS.SCENERY || {})[themeName];
@@ -387,8 +401,8 @@ function reeds(){
       g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
       tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
       tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
-      tiled(g, L.far, cx * 0.35, top * 0.7, lw);
-      tiled(g, L.mid, cx * 0.6, top * 0.85, lw);
+      if (T.trees !== false) { tiled(g, L.far, cx * 0.35, top * 0.7, lw); tiled(g, L.mid, cx * 0.6, top * 0.85, lw); }
+      if (T.tint) { g.fillStyle = T.tint; g.fillRect(0, 0, lw, lh); } // stand-in mood until the map's own sky comes in
     } else {
       g.fillStyle = T.top; g.fillRect(0, 0, lw, lh);
       const sy = Math.max(0, Math.round(top * 0.5));
@@ -474,6 +488,6 @@ function reeds(){
     for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
   }
 
-  const World = DS.World = { theme, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
+  const World = DS.World = { theme, get themeName() { return themeName; }, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
   arena();
 })(window.DS = window.DS || {});
