@@ -34,7 +34,7 @@ def guesses():
     wallpaper app) where the canvas can't be read still stands every frame right. Pixel-sprite px."""
     import glob
     out = {}
-    for group in ("knights", "drowned"):
+    for group in ("knights", "drowned", "familiars"):
         for d in sorted(glob.glob(os.path.join(ROOT, "assets", group, "*"))):
             t = {}
             for f in sorted(glob.glob(d + "/**/*.png", recursive=True)):
