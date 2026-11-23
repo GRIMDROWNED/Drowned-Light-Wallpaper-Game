@@ -2,15 +2,15 @@
    DS.Input.poll() once a frame; then read held (I.x, I.down, I.jump...) and pressed-this-frame (I.p.jump...). */
 "use strict";
 (function (DS) {
-  const ACTIONS = ["jump", "attack", "dash", "ability", "pause", "kit", "up", "down", "left", "right", "confirm", "back"];
+  const ACTIONS = ["jump", "attack", "dash", "ability", "pause", "kit", "up", "down", "left", "right", "confirm", "back", "flare"];
   const KEYS = {
     jump: ["Space", "KeyW", "ArrowUp", "KeyZ"], attack: ["KeyJ", "KeyX"], dash: ["KeyK", "ShiftLeft", "ShiftRight", "KeyC"],
     ability: ["KeyL", "KeyV", "KeyE"], pause: ["Escape", "KeyP"], kit: ["Tab", "KeyQ"],
     up: ["KeyW", "ArrowUp"], down: ["KeyS", "ArrowDown"], left: ["KeyA", "ArrowLeft"], right: ["KeyD", "ArrowRight"],
-    confirm: ["Enter", "Space", "KeyJ"], back: ["Escape", "Backspace"],
+    confirm: ["Enter", "Space", "KeyJ"], back: ["Escape", "Backspace"], flare: ["KeyF", "KeyR"],
   };
   // pad buttons: 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 View, 9 Menu, 12-15 D-pad
-  const PAD = { jump: [0], attack: [2, 6], dash: [1, 5], ability: [3, 7], pause: [9], kit: [4, 8], up: [12], down: [13], left: [14], right: [15], confirm: [0], back: [1] };
+  const PAD = { jump: [0], attack: [2, 6], dash: [1, 5], ability: [3, 7], pause: [9], kit: [4, 8], up: [12], down: [13], left: [14], right: [15], confirm: [0], back: [1], flare: [10, 11] }; // flare: click either stick
 
   const keys = new Set(), tapped = new Set(); // tapped latches a key pressed and released within one frame
   const touch = { x: 0, y: 0, b: {}, tap: {} }; // tap latches a press so a very quick tap is never missed between frames // virtual stick and buttons
