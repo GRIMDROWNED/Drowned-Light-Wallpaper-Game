@@ -41,19 +41,25 @@ def crop(im):
     return im.crop(bb) if bb else im
 
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else "/mnt/project-files/art-prompts/returned/side-view/pickups/pickups.png"
+DIR = sys.argv[1] if len(sys.argv) > 1 else "/mnt/project-files/art-prompts/returned/side-view/pickups"
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 # grid cell -> (name, target height in low-res px). The knight stands ~42 px.
-CELLS = [("oil", 17), ("ember", 17), ("flare", 18), ("page", 17), ("sigil", 18), ("sigil2", 18)]
+SHEETS = {
+    "pickups.png": [("oil", 17), ("ember", 17), ("flare", 18), ("page", 17), ("sigil", 18), ("sigil2", 18)],
+    # relic icons (returned 2026-11-23): shown rising from the cache and in the HUD
+    "relic-icons.png": [("relic_wick", 16), ("relic_heart", 16), ("relic_stone", 12), ("relic_hood", 16), ("relic_greave", 15), ("relic_flask", 16)],
+}
 
-im = Image.open(SRC).convert("RGB"); W, H = im.size; cw, ch = W // 3, H // 2
 pieces = []
-for i, (name, tall) in enumerate(CELLS):
-    cell = im.crop(((i % 3) * cw, (i // 3) * ch, (i % 3 + 1) * cw, (i // 3 + 1) * ch))
-    rgba = key(cell)
-    bb = Image.fromarray(rgba, "RGBA").getbbox()
-    rgba = rgba[bb[1]:bb[3], bb[0]:bb[2]]
-    pieces.append((name, crop(shrink(rgba, tall / rgba.shape[0], 0, (0, 0, 0)))))
+for sheet, CELLS in SHEETS.items():
+  if not os.path.exists(os.path.join(DIR, sheet)): continue
+  im = Image.open(os.path.join(DIR, sheet)).convert("RGB"); W, H = im.size; cw, ch = W // 3, H // 2
+  for i, (name, tall) in enumerate(CELLS):
+      cell = im.crop(((i % 3) * cw, (i // 3) * ch, (i % 3 + 1) * cw, (i // 3 + 1) * ch))
+      rgba = key(cell)
+      bb = Image.fromarray(rgba, "RGBA").getbbox()
+      rgba = rgba[bb[1]:bb[3], bb[0]:bb[2]]
+      pieces.append((name, crop(shrink(rgba, tall / rgba.shape[0], 0, (0, 0, 0)))))
 x = 0; rects = {}; hmax = max(p.height for _, p in pieces)
 atlas = Image.new("RGBA", (sum(p.width + 1 for _, p in pieces), hmax), (0, 0, 0, 0))
 for name, p in pieces:

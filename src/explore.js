@@ -264,6 +264,7 @@
     }
     E.thrown = E.thrown.filter((f) => !f.landed || f.burn > 0);
     for (const it of E.items) it.t += dt;
+    if (E.pop && (E.pop.t += dt) > 2.4) E.pop = null;
     if (E.note) { E.note.t += dt; if (E.note.t > 6) E.note = null; }
   };
 
@@ -336,6 +337,7 @@
           if (k === "heart") { p.max = Math.round(p.max * 1.25); p.hp += p.max - hp0; }
           if (k === "flask") { E.flares++; syncFlareBtn(); }
           G.banner = { txt: R.name, t: 0 }; note(R.text);
+          E.pop = { k, x: it.x, y: it.y - 30, t: 0 }; // the relic rises out of its cache
         } else { E.light = LIGHT.max; say("the cache is empty: oil", "#ffc060"); }
       } else if (it.kind === "page") {
         if (!pages.includes(it.key)) { pages.push(it.key); save("dl-side-pages", pages); }
@@ -372,6 +374,12 @@
     for (const w of E.wells) drawWell(g, w);
     for (const t of E.traps) drawTrap(g, t);
     for (const it of E.items) drawItem(g, it);
+    const A = pickArt(), pr = E.pop && DS.PICKART && DS.PICKART["relic_" + E.pop.k];
+    if (A && pr) { // Robert's relic icon rising from the cache, at double size
+      const t = E.pop.t, x = E.pop.x, y = E.pop.y - Math.min(1, t / 0.8) * 50, a = Math.min(1, (2.4 - t) * 2);
+      glow(g, x, y, 60, "255,210,120", 0.5 * a);
+      g.globalAlpha = a; g.drawImage(A, pr[0], pr[1], pr[2], pr[3], Math.round(x - pr[2] * 2), Math.round(y - pr[3] * 2), pr[2] * 4, pr[3] * 4); g.globalAlpha = 1;
+    }
     for (const f of E.thrown) {
       glow(g, f.x, f.y - 8, f.landed ? 60 : 24, "160,220,255", 0.6);
       g.fillStyle = "#e8f8ff"; g.fillRect(f.x - 3, f.y - 10, 6, 8);
@@ -522,7 +530,16 @@
     ctx.fillStyle = E.flares ? "#a0dcff" : "#5a6870"; ctx.fillText("Flares " + E.flares, x + 138, y + 8);
     const here = pages.filter((k) => k.split(":")[0] === String(G.level)).length;
     if (!E.scenic) { ctx.fillStyle = "#d8d0b0"; ctx.fillText("Pages " + here + "/3", x + 182, y + 8); }
-    if (E.relics.length) { ctx.fillStyle = "#ffd27a"; ctx.fillText("Relics: " + E.relics.map((k) => RELICS[k].name).join(", "), x, y + 22); return 26; }
+    if (E.relics.length) {
+      ctx.fillStyle = "#ffd27a"; ctx.fillText("Relics", x, y + 24);
+      const A = pickArt(); let ix = x + 40;
+      for (const k of E.relics) {
+        const r = A && DS.PICKART["relic_" + k];
+        if (r) { const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false; ctx.drawImage(A, r[0], r[1], r[2], r[3], ix, y + 12, r[2], r[3]); ctx.imageSmoothingEnabled = sm; ix += r[2] + 6; }
+        else { ctx.fillText(RELICS[k].name, ix, y + 24); ix += ctx.measureText(RELICS[k].name).width + 8; }
+      }
+      return 30;
+    }
     return 14;
   };
   E.drawNote = function (ctx, vw, vh) {
