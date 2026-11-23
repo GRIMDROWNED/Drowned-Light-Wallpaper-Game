@@ -377,9 +377,25 @@
       g.fillStyle = "#e8f8ff"; g.fillRect(f.x - 3, f.y - 10, 6, 8);
     }
   };
+  // Robert's pickup art (2026-11-23), cut by tools/cut_pickups.py; the code shapes below stay for anything not drawn yet
+  let pickImg = null;
+  const GLOW = { oil: "255,190,90", ember: "255,90,70", flare: "140,210,255", page: "220,230,210", sigil: "255,170,80" };
+  function pickArt() {
+    if (!pickImg && DS.PICKART) { pickImg = new Image(); pickImg.src = "assets/pickups/atlas.png?v=" + DS.VERSION; }
+    return pickImg && pickImg.complete && pickImg.naturalWidth ? pickImg : null;
+  }
   function drawItem(g, it) {
     const b = Math.sin(it.t * 2.4) * 4, x = Math.round(it.x), y = Math.round(it.y - 22 + b);
     const box = (c, x0, y0, w, h) => { g.fillStyle = c; g.fillRect(x0, y0, w, h); };
+    const A = pickArt();
+    if (A && DS.PICKART[it.kind]) {
+      glow(g, x, y, it.kind === "sigil" ? 40 : 28, GLOW[it.kind], it.kind === "sigil" || it.kind === "ember" ? 0.5 : 0.35);
+      let r = DS.PICKART[it.kind], sx = 1;
+      if (it.kind === "sigil") { const c = Math.cos(it.t * 1.6); sx = Math.max(0.3, Math.abs(c)); if (Math.abs(c) < 0.6 && DS.PICKART.sigil2) { r = DS.PICKART.sigil2; sx = 1; } }
+      const w = r[2] * 2 * sx, h = r[3] * 2; // 1 atlas px = 2 world units
+      g.drawImage(A, r[0], r[1], r[2], r[3], Math.round(x - w / 2), Math.round(y - h / 2), Math.round(w), h);
+      return;
+    }
     if (it.kind === "oil") {
       glow(g, x, y, 26, "255,190,90", 0.35);
       box("#2a1a10", x - 7, y - 9, 14, 18); box("#d08a30", x - 5, y - 5, 10, 12); box("#ffd27a", x - 3, y - 3, 3, 6); box("#5a4030", x - 3, y - 13, 6, 5);
