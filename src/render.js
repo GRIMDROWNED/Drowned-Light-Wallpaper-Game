@@ -141,6 +141,8 @@
 
   // ---------------- the Drowned ----------------
   function drawFoe(e) {
+    if (e.boss && e.boss.rubble) for (const r of e.boss.rubble) // the Colossus's fallen stones (cover from its surge)
+      S.drawFx(ctx, "boulder11", r.x, r.y - 15, { scale: 1.3, alpha: Math.min(1, r.t) });
     if (e.d.dummy) return drawDummy(e);
     const set = e.d.sprite, f = (a, p) => S.frame(set, a, p);
     let rec, rot = 0;
@@ -215,7 +217,7 @@
   // ---------------- shots ----------------
   function drawShot(s) {
     if (s.warn && s.delay > 0) { // a boulder about to fall: a blinking mark where it lands
-      ctx.fillStyle = s.kind === "crystal" || s.kind === "beam" ? `rgba(210,110,255,${0.35 + 0.3 * Math.sin(G.t * 30)})` : `rgba(255,80,60,${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(${s.c && s.kind === "beam" ? s.c : s.kind === "crystal" || s.kind === "beam" ? "210,110,255" : "255,80,60"},${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
     }
     if (s.delay > 0) return;
     if (s.kind === "thorn") { // the Rose's briar: thorns burst up from the ground
@@ -242,11 +244,25 @@
     if (s.kind === "beam") { // the Seraph's pillar of light
       const k = Math.min(1, (s.t || 0) / 0.06), fade = Math.min(1, s.life * 4);
       const g = ctx.createLinearGradient(s.x - s.r, 0, s.x + s.r, 0);
-      g.addColorStop(0, "rgba(200,90,255,0)"); g.addColorStop(0.5, `rgba(255,210,255,${0.9 * fade})`); g.addColorStop(1, "rgba(200,90,255,0)");
+      const c = s.c || "200,90,255", core = s.c ? "255,250,235" : "255,210,255"; // the Seraph's light; water (Colossus) or lava (Golem) with s.c
+      g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(0.3, `rgba(${c},${0.8 * fade})`); g.addColorStop(0.5, `rgba(${core},${0.9 * fade})`); g.addColorStop(0.7, `rgba(${c},${0.8 * fade})`); g.addColorStop(1, `rgba(${c},0)`);
       ctx.fillStyle = g; ctx.fillRect(s.x - s.r * 1.6 * k, s.warn - s.h, s.r * 3.2 * k, s.h);
       return;
     }
-    if (s.kind === "rock") { if (s.hot) glowDot(s.x, s.y, 30, "255,140,50", 0.5); S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
+    if (s.kind === "rock") { if (s.hot) glowDot(s.x, s.y, 30 * (s.sc || 1), "255,140,50", 0.5); S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 * (s.sc || 1) }); return; }
+    if (s.kind === "pool") { // the Wyrm's burning lava pool
+      const k = Math.min(1, (s.t || 0) / 0.15), fade = Math.min(1, s.life * 2), fl = 0.85 + 0.15 * Math.sin(G.t * 9 + s.x);
+      glowDot(s.x, s.y, 60, "255,120,40", 0.45 * fade);
+      ctx.fillStyle = `rgba(255,${Math.round(110 + 40 * fl)},40,${0.85 * fade})`; ctx.beginPath(); ctx.ellipse(s.x, s.y + 4, s.r * k, 7, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(255,230,140,${0.7 * fade * fl})`; ctx.beginPath(); ctx.ellipse(s.x, s.y + 3, s.r * 0.5 * k, 3, 0, 0, TAU); ctx.fill();
+      return;
+    }
+    if (s.kind === "crack") { // the Golem's fissure: a glowing crack running along the floor
+      glowDot(s.x, s.gy - 4, 34, "255,120,40", 0.6);
+      ctx.strokeStyle = "rgba(255,200,90,0.95)"; ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = -3; i <= 3; i++) { const x = s.x + i * 9, y = s.gy - 2 + ((i + Math.floor(G.t * 20)) % 2 ? -3 : 1); i === -3 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+      ctx.stroke(); return;
+    }
     if (s.kind === "flame") { // the dragons' breath: fire that swells then dies away
       const k = (s.t || 0) / s.life0;
       glowDot(s.x, s.y, 30, "255,140,50", 0.4 * (1 - k));
