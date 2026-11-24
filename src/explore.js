@@ -92,6 +92,35 @@
 
   E.clear = function () { E.on = false; E.scenic = false; E.genX = 0; E.patches = []; E.items = []; E.traps = []; E.wells = []; E.thrown = []; E.opened = []; syncFlareBtn(); };
   E.reset = function () { E.relics = []; E.flares = FLARE.start; E.light = LIGHT.max; }; // a fresh run
+  /* Each well in a played level is guarded (Robert 2026-11-24, so the knight can't just run through to it) by the minions
+     of the map's next boss (DS.GUARDS): `n` keepers from level 1's 2 up to 5 (+1 every 4 levels and
+     deeper wells), mostly its swarm, then one of its middle kind, its heavy one, and a 2nd middle. Health +2% a level. They rise round the well when the knight comes near, keep
+     to it while they can't see him, and the well won't take his light until they have all fallen. */
+  const GUARD = { near: 650, hp: 0.02, spread: [70, 60] };
+  function keepers(n, qi, r) {
+    const kinds = DS.GUARDS[DS.nextBoss(n)] || DS.GUARDS.champion;
+    const c = Math.min(5, 2 + Math.floor((n + qi) / 4)), out = [];
+    if (c >= 3) out.push(kinds[1]);
+    if (c >= 4) out.push(kinds[2]);
+    if (c >= 5) out.push(kinds[1]);
+    while (out.length < c) out.push(kinds[0]);
+    for (const t of out) if (DS.ENEMIES[t]) DS.Sprites.loadSet(DS.ENEMIES[t].sprite);
+    return { kinds: out.filter((t) => DS.ENEMIES[t]), foes: [], up: false, free: false };
+  }
+  function raiseKeepers(w) {
+    const k = w.guard; k.up = true; k.free = false;
+    k.foes = k.kinds.map((type, i) => {
+      const side = i % 2 ? 1 : -1, x = w.x + side * (GUARD.spread[0] + Math.floor(i / 2) * GUARD.spread[1]);
+      const e = DS.spawnFoe(type, x, floorAt(x));
+      e.hp = e.max = Math.round(e.d.hp * (1 + GUARD.hp * G.level)); e.post = w.x; e.dir = -side;
+      return e;
+    });
+    if (!E.warned) { E.warned = true; note("Keepers rise round the Mist Well. It won't take your light while one of them stands."); }
+    G.banner = { txt: "The well's keepers rise", t: 0 };
+  }
+  const keepersLeft = (w) => w.guard && w.guard.up ? w.guard.foes.filter((f) => !f.dead && G.foes.includes(f)).length : 0;
+  E.guarded = (w) => !!(w.guard && !w.guard.free && w.guard.kinds.length);
+
   E.build = function (n, bossX) {
     E.clear();
     if (!bossX) return; // the endless run: none of it
@@ -127,7 +156,7 @@
     E.patches.forEach((q, qi) => {
       const L = q.b - q.a;
       const wx = q.a + L * 0.62;
-      E.wells.push({ x: wx, y: floorAt(wx), patch: q, charge: 0, lit: false });
+      E.wells.push({ x: wx, y: floorAt(wx), patch: q, charge: 0, lit: false, guard: keepers(n, qi, r) });
       item("oil", q.a + 90);                    // a drop of oil just inside the edge
       if (qi % 2 === 0) item("flare", q.a - 160); // a flare waiting before every other patch
       const traps = 2 + (n >= 3 ? 1 : 0) + (n >= 7 ? 1 : 0);
@@ -193,6 +222,7 @@
   E.onDeath = function () { // relics are lost; the lantern refills
     if (E.relics.length) fx().text(G.player.x, G.player.y - 120, "Relics lost to the mist", "#c0a0ff", 14);
     E.relics = []; E.light = LIGHT.max; E.flares = Math.max(E.flares, FLARE.start); syncFlareBtn();
+    for (const w of E.wells) if (!w.lit && w.guard) { w.guard.up = false; w.guard.free = false; w.guard.foes = []; } // they rise again
   };
 
   // ---------------- the mist and the knight ----------------
@@ -305,6 +335,19 @@
   function wells(p, dt) {
     for (const w of E.wells) {
       if (w.lit) continue;
+      const k = w.guard;
+      if (k && !E.scenic && k.kinds.length && !k.free) {
+        if (!k.up) { if (Math.abs(p.x - w.x) < GUARD.near) raiseKeepers(w); }
+        else if (keepersLeft(w) === 0) { k.free = true; fx().text(w.x, w.y - 110, "The well is free", "#ffd27a", 14); fx().ring(w.x, w.y - 30, "rgba(255,210,120,0.6)"); }
+        else {
+          if (k.foes.some((f) => f.alerted)) for (const f of k.foes) f.alerted = true; // one sees you, they all do
+          if (Math.abs(p.x - w.x) < 46 && Math.abs(p.y - w.y) < 30) {
+            w.charge = Math.max(0, w.charge - dt);
+            if ((w.sealT = (w.sealT || 0) - dt) <= 0) { w.sealT = 1.6; fx().text(w.x, w.y - 110, keepersLeft(w) + " keeper" + (keepersLeft(w) > 1 ? "s" : "") + " still stand", "#c8a0ff", 12); }
+            continue;
+          }
+        }
+      }
       const near = Math.abs(p.x - w.x) < (E.scenic ? 70 : 46) && Math.abs(p.y - w.y) < (E.scenic ? 200 : 30);
       w.charge = near ? Math.min(1, w.charge + dt / (E.scenic ? 0.5 : 1.2)) : Math.max(0, w.charge - dt * (E.scenic ? 0.2 : 1));
       if (w.charge >= 1) {

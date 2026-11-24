@@ -332,6 +332,10 @@
       // drop down through a platform toward a knight below
       if (e.onPlat && dy > 60 && adx < 120) { e.dropT = 0.3; e.y += 2; }
     }
+    else if (e.post != null && e.root <= 0) { // a well's keeper that hasn't seen the knight walks back to its well
+      const off = e.post - e.x;
+      if (Math.abs(off) > 140) { want = Math.sign(off) * 0.5; e.dir = Math.sign(off); }
+    }
     e.blinkCd = Math.max(0, (e.blinkCd || 0) - dt);
     // movement
     const spd = d.speed * slow;
@@ -713,7 +717,7 @@
     DS.Render.init(document.getElementById("game"));
     DS.UI.init();
     for (const id of DS.KIT_ORDER) DS.Sprites.loadSet(DS.KITS[id].sprite);
-    for (const id of DS.ENEMY_ORDER) DS.Sprites.loadSet(DS.ENEMIES[id].sprite);
+    for (const id of DS.ENEMY_ORDER) if (!DS.ENEMIES[id].minion) DS.Sprites.loadSet(DS.ENEMIES[id].sprite); // minions load with their level
     DS.Fam.load();
     if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); DS.Maps.wallStart(); setWall(true); }
     requestAnimationFrame(frame);

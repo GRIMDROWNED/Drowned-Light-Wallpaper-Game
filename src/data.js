@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.1";
+  DS.VERSION = "0.12.2";
   // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
   DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
 
@@ -206,12 +206,48 @@
       ["breath", "lob", "strike", "strikeUp", "roar", "hurt", "cut1", "cut2", "regrow", "sink", "rise"],
       { name: "Furnace Hydra", title: "The Furnace Hydra", fallen: "THE HYDRA SINKS INTO THE LAVA", hp: 1900, speed: 0, dmg: 24, reach: 250, windup: 0.6, cd: 0.9, w: 140, h: 120 }),
   };
+  /* The bosses' minions (Robert 2026-11-24): they guard the Mist Wells of the levels before their boss (src/explore.js,
+     DS.GUARDS). Art = the main game's minion sprites shrunk by tools/pixelize.py. Each borrows one of the side view's AIs. */
+  const minion = (type, extra) => Object.assign(foe(type, null), { minion: true }, extra);
+  Object.assign(DS.ENEMIES, {
+    cairn: minion("cairn", { name: "Cairn Crawler", ai: "walker", hp: 60, speed: 70, dmg: 11, reach: 60, windup: 0.55, cd: 1.4, w: 44, h: 48 }),
+    servitor: minion("servitor", { name: "Bog Totem Servitor", ai: "shield", hp: 150, speed: 48, dmg: 14, reach: 80, windup: 0.8, cd: 2.0, w: 56, h: 110, shield: 0.25, poise: true }),
+    siltfist: minion("siltfist", { name: "Silt Fist Fragment", ai: "walker", hp: 200, speed: 55, dmg: 20, reach: 110, windup: 0.8, cd: 2.0, w: 90, h: 100, lunge: 220, poise: true }),
+    drakeling: minion("drakeling", { name: "Carrion Drakeling", ai: "leaper", hp: 18, speed: 170, dmg: 7, reach: 200, windup: 0.35, cd: 1.5, w: 36, h: 48, leap: [460, -380], jumpy: true }),
+    raptor: minion("raptor", { name: "Bonepicker Raptor", ai: "leaper", hp: 38, speed: 180, dmg: 10, reach: 240, windup: 0.4, cd: 1.5, w: 50, h: 56, leap: [520, -360] }),
+    screecher: minion("screecher", { name: "Red Marrow Screecher", ai: "caster", hp: 60, speed: 80, dmg: 10, reach: 480, keep: 260, windup: 0.8, cd: 2.4, w: 60, h: 80, orb: 240 }),
+    skitterer: minion("skitterer", { name: "Chapel Skitterer", ai: "walker", hp: 18, speed: 180, dmg: 6, reach: 50, windup: 0.28, cd: 0.8, w: 40, h: 48, jumpy: true }),
+    leech: minion("leech", { name: "Clapper Leech", ai: "leaper", hp: 24, speed: 140, dmg: 7, reach: 200, windup: 0.35, cd: 1.4, w: 40, h: 44, leap: [420, -300] }),
+    tollwretch: minion("tollwretch", { name: "Toll Wretch", ai: "caster", hp: 50, speed: 85, dmg: 9, reach: 480, keep: 260, windup: 0.8, cd: 2.4, w: 40, h: 84, orb: 220 }),
+    handmaiden: minion("handmaiden", { name: "Briar Handmaiden", ai: "walker", hp: 85, speed: 100, dmg: 12, reach: 110, windup: 0.55, cd: 1.5, w: 40, h: 96, lunge: 320 }),
+    rosewretch: minion("rosewretch", { name: "Rose Wretch", ai: "walker", hp: 48, speed: 120, dmg: 9, reach: 60, windup: 0.4, cd: 1.2, w: 46, h: 56 }),
+    thornling: minion("thornling", { name: "Thornling Swarm Stalker", ai: "walker", hp: 12, speed: 190, dmg: 4, reach: 44, windup: 0.22, cd: 0.75, w: 28, h: 34, jumpy: true }),
+    mite: minion("mite", { name: "Rift Mite", ai: "walker", hp: 18, speed: 175, dmg: 8, reach: 50, windup: 0.3, cd: 0.9, w: 36, h: 40, jumpy: true }),
+    swisp: minion("swisp", { name: "Shard Wisp", ai: "caster", hp: 40, speed: 90, dmg: 8, reach: 480, keep: 280, windup: 0.7, cd: 2.2, w: 30, h: 56, orb: 240 }),
+    warden: minion("warden", { name: "Throne Warden", ai: "shield", hp: 120, speed: 75, dmg: 15, reach: 90, windup: 0.6, cd: 1.6, w: 40, h: 96, lunge: 280, shield: 0.25, poise: true }),
+    wretch: minion("wretch", { name: "Molten Wretch", ai: "walker", hp: 28, speed: 170, dmg: 7, reach: 52, windup: 0.32, cd: 1.0, w: 42, h: 52, jumpy: true }),
+    ashguard: minion("ashguard", { name: "Ash Guard", ai: "shield", hp: 150, speed: 55, dmg: 18, reach: 80, windup: 0.8, cd: 2.0, w: 60, h: 80, shield: 0.2, poise: true }),
+    acolyte: minion("acolyte", { name: "Cinder Acolyte", ai: "caster", hp: 55, speed: 90, dmg: 12, reach: 500, keep: 260, windup: 0.6, cd: 2.4, w: 40, h: 72, orb: 230 }),
+  });
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 
   // Which boss ends level n (0-based). Robert 2026-11-20: a map is 10 levels; its level 5 boss lets you choose a familiar,
   // its level 10 boss wins a kit. The plan, map by map (bosses not built yet stay the Sovereign until they are):
   DS.MAP_BOSSES = [["drowned-colossus", "champion"], ["mother-wyvern", "crucible-wyrm"], ["starved-bell", "deadly-rose"],
     ["seething-seraph", "rift-throne"], ["magma-golem", "furnace-hydra"], ["cinder-colossus", "ashen-sovereign"]];
+  // Who guards the Mist Wells of level n: the minions of the next boss on its map ([swarm, middle, heavy]). The Sovereign
+  // brings no brood of his own, so his levels' wells keep the Drowned's best; the mines' four bosses share the mines' Drowned.
+  const MINES = ["wretch", "acolyte", "ashguard"];
+  DS.GUARDS = {
+    champion: ["defiler", "hexbearer", "blackguard"], "drowned-colossus": ["cairn", "servitor", "siltfist"],
+    "mother-wyvern": ["drakeling", "screecher", "raptor"], "crucible-wyrm": MINES, "starved-bell": ["skitterer", "tollwretch", "leech"],
+    "deadly-rose": ["thornling", "rosewretch", "handmaiden"], "seething-seraph": MINES, "rift-throne": ["mite", "swisp", "warden"],
+    "magma-golem": MINES, "furnace-hydra": MINES,
+  };
+  DS.nextBoss = function (n) { // the next map boss (level 5 or 10 of the map), whether it is built yet or not
+    const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length];
+    return m[n % 10 <= 4 ? 0 : 1];
+  };
   DS.bossFor = function (n) {
     const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length], at = n % 10;
     const t = at === 4 ? m[0] : at === 9 ? m[1] : "champion";
