@@ -4,7 +4,7 @@ A side-on Drowned Light game that doubles as a live wallpaper: plain JavaScript 
 Open `index.html` through any static server, or play it on GitHub Pages.
 
 - **Portrait:** the knight fights on its own through an endless drowned swamp.
-- **Landscape:** you take the knight, and the Drowned Sovereign waits ahead.
+- **Landscape:** you take the knight, and a boss waits at the end of the level (the Drowned Sovereign, or a map's own boss on its levels 5 and 10).
 - **Wallpaper:** `wallpaper.html` (or `index.html?wallpaper`, or Pause → Wallpaper) hides every button and HUD, swaps in a random knight every 75 s and runs at 30 fps.
   For Lively Wallpaper on Windows, zip `LivelyInfo.json`, `wallpaper.html`, `style.css`, `src/` and `assets/`; on Android, point a web-page live-wallpaper app at the Pages address of `wallpaper.html`.
 - All 10 knight kits with their main-game attacks and abilities, 3-hit combos, up-swings, air plunge, double jump, air dash.
@@ -12,7 +12,8 @@ Open `index.html` through any static server, or play it on GitHub Pages.
 - **Upgrades and loot:** fallen Drowned drop Gold and materials (Robert's loot icons). Gold plus one material buys ranks in Might, Vitality, Guard, Swiftness, Focus and Lantern, for every knight; ranks 6-10 also take Amethyst (bosses). `src/loot.js`, numbers at its top (`dl-side-wallet`, `dl-side-ranks`).
 - **The wallpaper farms:** while it runs, the wallpaper gathers 40% of what its fights drop into a satchel (`dl-side-haul`, capped at `HAUL_CAP`). The next time the game opens, a "While you were away" screen hands it over. The Android and Windows apps load the wallpaper and the game from the same origin, so they share the satchel.
 - **Map select:** Robert's spiked badges on the knight screen (lantern = the Mire, trident = Reaches, rose = Abyss, crystal = Spires, stone face = Molten Mines, winged skull = Crucible Throne). A map opens once a played run reaches it; the wallpaper starts on a random open map. `src/maps.js`. Art cut by `tools/cut_loot.py`.
-- 8 Drowned types (the Drowned Sovereign as a boss); keyboard + mouse, Xbox pad and touch.
+- 8 Drowned types and the bosses: the Drowned Sovereign, the Drowned Colossus (level 5), the Mother Wyvern (level 15), the Crucible Wyrm (level 20), the Starved Bell (level 25), The Deadly Rose (level 30), the Seething Seraph (level 35, recoloured violet by `tools/recolor_seraph.py`), the Lord of the Rift Throne (level 40), the Magma Golem (level 45) and the Furnace Hydra (level 50); `src/bosses.js` holds their moves, `DS.bossFor` in `src/data.js` places them. Keyboard + mouse, Xbox pad and touch.
+- Boss art: Robert's two side-view move sheets per boss, cut by `tools/cut_boss.py` (3 across, 2 down), colour-matched by `tools/foe_color.py`, then shrunk with the rest.
 - Pause menu: spawn any enemy, skip to the boss, god mode, hitboxes, arena mode with waves.
 
 Art: Robert's side-view sheets cut by `tools/cut_side.py` into `art/` (full size), shrunk to pixel sprites and packed into one

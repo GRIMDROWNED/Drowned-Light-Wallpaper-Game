@@ -157,7 +157,7 @@
   // ---------------- damage ----------------
   // The knight hits a foe. opt: {dmg, kb, kbY, dir, heavy, burn, chill, freeze, root, stun, hitstop, noMult, src, fromX}
   function hitFoe(e, opt) {
-    if (e.dead || e.spawnT > 0) return false;
+    if (e.dead || e.spawnT > 0 || e.under) return false; // e.under: the Starved Bell, buried in the mud
     const p = G.player;
     let dmg = opt.dmg * (opt.noMult ? 1 : dmgMult(p));
     const dir = opt.dir || Math.sign(e.x - (opt.fromX != null ? opt.fromX : p.x)) || 1;
@@ -169,6 +169,7 @@
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
     if (e.brittle) dmg *= 1.2;
+    if (e.vuln) dmg *= e.vuln; // a boss's weak spot is open (the Magma Golem's core, the Hydra's stumps)
     if (e.curse) dmg *= 1 + e.curse; // cursed by Abigail's soul orbs
     if (!opt.noMult) dmg *= DS.Explore.strike(e, opt); else e.alerted = true; // unseen in the mist: the first blow lands harder
     dmg = Math.max(1, Math.round(dmg));
@@ -205,7 +206,7 @@
     for (let i = 0; i < 14; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-14, 14), y: e.y - rnd(10, e.h), vx: rnd(-60, 60), vy: rnd(-160, -40), t: 0, life: rnd(0.5, 1), c: "rgba(110,230,220," });
     if (k.tithe) { p.stacks += e.d.boss ? k.tithe.boss : 1; p.stackT = k.tithe.hold; }
     if (k.rush) { p.dashCd = 0; p.airDash = 1; p.rushT = k.rush.dur; text(p.x, p.y - p.h - 14, "RUSH", "#c9a0ff", 12); }
-    if (e.d.boss) { shake(12); text(e.x, e.y - e.h - 30, "SOVEREIGN FALLEN", "#ffd27a", 20); }
+    if (e.d.boss) { shake(12); text(e.x, e.y - e.h - 30, e.d.fallen || "SOVEREIGN FALLEN", "#ffd27a", 20); }
   }
 
   // A foe hits the knight. src = the foe (for thorns and the guard's facing), by = a name for the log
@@ -341,7 +342,8 @@
     }
     if (busy || e.root > 0) e.vx *= 0.8;
     if (e.state === "windup" || e.state === "recover" || e.state === "hurt") e.vx *= e.onGround ? 0.85 : 1;
-    e.vy = Math.min(P.maxFall, e.vy + P.gravity * dt);
+    if (d.ai === "boss") DS.Boss.frame(e, dt); // a boss's every-frame steering (the fliers hold their height)
+    if (!e.fly) e.vy = Math.min(P.maxFall, e.vy + P.gravity * dt);
     e.dropT = Math.max(0, (e.dropT || 0) - dt);
     const air = !e.onGround, fallV = e.vy;
     Wd.move(e, dt, DS.Kits.walls().concat(DS.Fam.walls()));
@@ -401,8 +403,9 @@
   DS.boxHitsPlayer = boxHitsPlayer;
 
   // a shockwave running along the ground (boss slams, the Bulwark's stomp)
-  function groundWave(e, x, dir, delay, speed, life, dmg) {
-    G.shots.push({ team: "f", kind: "wave", x, y: e.y - 14, vx: dir * speed, vy: 0, r: 16, h: 30, dmg: Math.round(dmg), life, delay, src: e, by: e.d.name, ground: e.y });
+  function groundWave(e, x, dir, delay, speed, life, dmg, opt) {
+    const s = Object.assign({ team: "f", kind: "wave", x, y: e.y - 14, vx: dir * speed, vy: 0, r: 16, h: 30, dmg: Math.round(dmg), life, delay, src: e, by: e.d.name, ground: e.y }, opt);
+    G.shots.push(s); return s;
   }
   DS.groundWave = groundWave;
 
@@ -505,8 +508,8 @@
       G.banner = { txt: "Auto-fight", t: 0 };
     } else if (!on && G.endless) { // the knight is yours: two more stretches, then the Sovereign
       G.enc.push(...Wd.extend(G.player.x + 2400));
-      const b = Wd.finish(); G.enc.push(b); G.bossX = b.bossX; G.endless = false;
-      G.banner = { txt: "You have the knight: reach the Sovereign", t: 0 };
+      const b = Wd.finish(DS.bossFor(G.level)); G.enc.push(b); G.bossX = b.bossX; G.endless = false;
+      G.banner = { txt: "You have the knight: reach " + (DS.ENEMIES[b.foes[0]].title || "the boss"), t: 0 };
     }
   }
   function updateScroll(dt) {
@@ -528,7 +531,7 @@
         const x = clamp(e.at[i], 100, Wd.W - 100);
         const f = spawnFoe(type, x, Wd.surfaceBelow(x, -2000)); f.enc = e;
       }, e.boss ? 700 : i * 260));
-      if (e.boss) G.banner = { txt: "The Drowned Sovereign", t: 0 };
+      if (e.boss) G.banner = { txt: DS.ENEMIES[e.foes[0]].title || DS.ENEMIES[e.foes[0]].name, t: 0 };
     }
     // the level is done once the Sovereign falls: the Drowned still standing crumble with him. (The old check needed his
     // body still lying there AND no Drowned alive anywhere, so one leftover foe stopped the level for good once the body

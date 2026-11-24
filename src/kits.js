@@ -363,7 +363,9 @@
   DS.Kits = { update, updateZones, walls, dashStrike, lungeTick, plungeLand, canAct };
 
   // ---------------- the Drowned Sovereign ----------------
-  DS.Boss = {
+  // (the later levels' bosses are in src/bosses.js, which also hands each boss its own moves: DS.Boss)
+  DS.BOSS_AI = DS.BOSS_AI || {};
+  DS.BOSS_AI.champion = {
     think(e, dx, adx) {
       if (e.boss.phase === 1 && e.hp < e.max * 0.5) { e.boss.phase = 2; DS.fx.text(e.x, e.y - e.h - 30, "The Sovereign rages", "#ff9a6a", 16); }
       e.dir = Math.sign(dx) || e.dir;

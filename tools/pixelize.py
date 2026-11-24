@@ -9,10 +9,15 @@ SRC = os.path.join(sys.argv[1] if len(sys.argv) > 1 else "../Drowned-Light", "as
 OUT = os.path.join(os.path.dirname(__file__), "..", "assets")
 ART = os.path.join(os.path.dirname(__file__), "..", "art")
 KNIGHT_H, FOE_H, BOSS_H = 42, 36, 56
-VIOLET = {"chain-reaper"}  # his purple turns neon magenta at 1.35
-CRIMSON = {"pike-warden", "rose-paladin", "bloodsworn", "bloodsworn-f2", "bloodsworn-f3", "cinderbrand", "flame-bastion"}
+VIOLET = {"chain-reaper", "rift-throne", "seething-seraph"}  # his purple turns neon magenta at 1.35
+CRIMSON = {"deadly-rose", "pike-warden", "rose-paladin", "bloodsworn", "bloodsworn-f2", "bloodsworn-f3", "cinderbrand", "flame-bastion"}
 # the frame whose height sets each folder's scale
-REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1"}
+REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1", "mother-wyvern": "side/fly1", "furnace-hydra": "idle1"}
+# The later levels' bosses (2026-11-24): drowned/<folder> here, but their main-game frames live elsewhere; height in pixel px
+BOSSES = {"drowned-colossus": ("colossus", 64), "mother-wyvern": ("wyvern-mother", 70), "crucible-wyrm": ("mines-bosses/wyrm", 66),
+           "starved-bell": ("starved-bell", 58), "deadly-rose": ("deadly-rose", 74),
+           "rift-throne": ("rift-throne", 62), "seething-seraph": ("mines-bosses/seraph", 64),
+           "magma-golem": ("mines-bosses/golem", 66), "furnace-hydra": ("mines-bosses/hydra", 74)}
 
 def pixelize(im, scale, colors=10, outline=(14, 10, 18), sat=1.35, bright=1.1):
     w, h = im.size; nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
@@ -63,10 +68,10 @@ def fam_frames(src):
 for fam in FAMILIARS: os.makedirs(os.path.join(OUT, "familiars", fam), exist_ok=True)
 for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H), ("familiars", None)):
     for folder in sorted(os.listdir(os.path.join(OUT, group))):
-        src = SRC + ("drowned/" + folder if group == "drowned" else folder) + "/"
+        src = SRC + (BOSSES[folder][0] if folder in BOSSES else "drowned/" + folder if group == "drowned" else folder) + "/"
         ref = Image.open(src + REF.get(folder, "side/walk1") + ".png").convert("RGBA")
         bb = ref.getbbox(); hgt = bb[3] - bb[1]
-        s = (BOSS_H if folder == "champion" else target) / hgt if target else FAM_X / FAMILIARS[folder]
+        s = (BOSS_H if folder == "champion" else BOSSES[folder][1] if folder in BOSSES else target) / hgt if target else FAM_X / FAMILIARS[folder]
         scales[group + "/" + folder] = round(s, 4)
         sat = 1.0 if group == "familiars" else 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
         art = os.path.join(ART, group, folder) + "/"  # frames cut from the side-view sheets (tools/cut_side.py)
