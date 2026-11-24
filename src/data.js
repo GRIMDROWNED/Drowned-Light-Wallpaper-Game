@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.9.5";
+  DS.VERSION = "0.9.6";
   // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
   DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
 
