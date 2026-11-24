@@ -206,9 +206,50 @@
         : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
       j.hidden = false;
     };
+    buildCodePad();
+    syncToggles();
+  }
+
+  // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
+  let code = "";
+  function buildCodePad() {
+    const row = $("#codePad .keyRow"); row.innerHTML = "";
+    for (const k of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Clear", "OK"]) {
+      const b = el("button", "opt small key", k);
+      b.addEventListener("click", () => press(k));
+      row.appendChild(b);
+    }
+    $("#btnCode").onclick = () => {
+      if (DS.TESTER) { setTester(false); return; }
+      const pad = $("#codePad"); pad.hidden = !pad.hidden; code = ""; showCode("Enter the tester code");
+    };
+    addEventListener("keydown", (e) => {
+      if (open !== "pause" || $("#codePad").hidden) return;
+      if (/^Digit\d$|^Numpad\d$/.test(e.code)) press(e.code.slice(-1));
+      else if (e.code === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); press("OK"); }
+      else if (e.code === "Backspace") { e.stopPropagation(); code = code.slice(0, -1); showCode(); } // not "back" (closes the menu)
+    }, true); // capture, so it runs before src/input.js sees the key
+  }
+  function showCode(msg) { $("#codeShow").textContent = msg || (code ? "• ".repeat(code.length).trim() : "Enter the tester code"); }
+  function press(k) {
+    if (k === "Clear") { code = ""; showCode(); return; }
+    if (k !== "OK") { if (code.length < 8) code += k; showCode(); if (code.length < DS.TESTER_CODE.length) return; }
+    if (code === DS.TESTER_CODE) { setTester(true); return; }
+    if (k === "OK" || code.length >= DS.TESTER_CODE.length) { code = ""; showCode("Wrong code"); }
+  }
+  function setTester(on) {
+    DS.TESTER = on;
+    try { if (on) localStorage.setItem("dl-side-tester", "1"); else localStorage.removeItem("dl-side-tester"); } catch (e) { /* storage blocked */ }
+    code = ""; $("#codePad").hidden = true;
+    if (!on) { // put the run back the way a player has it
+      G.god = false; G.boxes = false;
+      if (!G.scroll) { DS.setScroll(true); DS.restart(); }
+    }
     syncToggles();
   }
   function syncToggles() {
+    $("#devTools").hidden = !DS.TESTER;
+    $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
     $("#btnWave").textContent = G.scroll ? "Skip to the boss" : "Next wave now";

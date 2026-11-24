@@ -1,7 +1,7 @@
 /* The map select (Robert 2026-11-24): one spiked badge per 10-level map, from Robert's emblem sheet (tools/cut_loot.py ->
    assets/maps). Lantern = the Mire, trident = the Reaches, rose = the Abyss, crystal = the Spires, stone face = the
    Molten Mines, winged skull = the Crucible Throne. A map opens once a played run reaches its first level
-   (dl-side-best); the chosen map (dl-side-map) is where a run starts. ?level=N in the address still wins.
+   (dl-side-best); the chosen map (dl-side-map) is where a run starts. ?level=N in the address still wins for testers.
    The wallpaper starts on a random open map, so farming moves around the maps you have reached. */
 "use strict";
 (function (DS) {
@@ -16,7 +16,7 @@
   const LEVELS = 10;
   const get = (k, d) => { try { const v = parseInt(localStorage.getItem(k), 10); return isNaN(v) ? d : v; } catch (e) { return d; } };
   const set = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) { /* storage blocked */ } };
-  const fromUrl = /[?&]level=/.test(location.search);
+  const fromUrl = DS.TESTER && /[?&]level=/.test(location.search); // the ?level= jump is a tester tool (src/data.js)
   let best = get("dl-side-best", 0), pick = get("dl-side-map", 0);
 
   const M = DS.Maps = {
