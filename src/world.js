@@ -337,11 +337,17 @@ function reeds(){
       { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["arch", "cpillar", "wall", "chpillar"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [220, 520], pick: ["portal", "pylon", "pylonBroken"] },
     ] },
-    mines: { sky: true, far: true, plats: true, ground: "mines", top: "#1a0c08", fog: "#341a0c", wisp: ["#ffb040", "#a04010"],
+    mines: { reeds: false, sky: true, far: true, plats: true, ground: "mines", top: "#1a0c08", fog: "#341a0c", wisp: ["#ffb040", "#a04010"],
       posts: ["post1", "post3"], post: [10, 14], rows: [ // the lantern posts' arms would repeat when stretched
       { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["headframe", "lavafall", "pillar", "gate"] },
       { f: 1, ty: 1, sink: 2, gap: [260, 620], pick: ["cart", "brazier"] },
+    ] },
+    throne: { reeds: false, sky: true, far: true, plats: true, ground: "mines", top: "#0a0606", fog: "#2a1210", wisp: ["#ffcf60", "#a0401a"],
+      posts: ["post1", "post2", "post4"], post: [12, 12], rows: [ // post3's banner would repeat when stretched
+      { f: 0.6, ty: 0.84, sink: 2, gap: [10, 90], pick: ["tpillar1", "tbanner1", "tbrazier1", "tbroken1", "tbanner2", "tbrazier2",
+        "tpillar2", "tbanner3", "tbrazier3", "tpillar3", "tbanner4", "tbrazier4", "tbroken2"] },
+      { f: 0.75, ty: 0.9, sink: 3, gap: [240, 560], pick: ["throne", "curtain", "statue", "statue"] },
     ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
@@ -353,7 +359,7 @@ function reeds(){
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
   // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
   // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
-  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines"], MAP_LEVELS = 10;
+  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines", "throne"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
@@ -444,7 +450,7 @@ function reeds(){
       if (x < lw) { const on = Math.sin(t * 3 + w.p) > -0.3; px(g, x, y, on ? wc[0] : wc[1]); if (on) { px(g, x + 1, y, "#5f7a3c"); px(g, x - 1, y, "#5f7a3c"); } }
     }
     for (const row of T.rows) if (row.f >= 1) drawRow(g, row, cx, fy, lw);
-    tiled(g, L.reeds, cx * 0.85, fy - 38, lw);
+    if (T.reeds !== false) tiled(g, L.reeds, cx * 0.85, fy - 38, lw); // no marsh reeds indoors or by the lava
   }
   function drawNear() { /* no foreground layer in the pixel style */ }
 
