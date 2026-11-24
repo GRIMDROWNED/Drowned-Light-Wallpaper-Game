@@ -52,15 +52,22 @@ SHEETS = {
         "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
         "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
+    "mines": {  # blocks.png still to come: platforms fall back to the code stone until then
+        "headframe-cart.png": (["headframe", "cart", "brazier"], 100, 0.25),
+        "lavafalls-pillars.png": (["lavafall", "pillar", "gate"], 110, 0.25),
+        "mid.png": (["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"], 92, 0.3),
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+    },
 }
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
-STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}, "spires": {"sky.png": 240, "far.png": 250}}
-GREEN = {"spires"}  # maps drawn on a green key
+STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}, "spires": {"sky.png": 240, "far.png": 250}, "mines": {"sky.png": 240, "far.png": 250}}
+GREEN = {"spires", "mines"}  # maps drawn on a green key
 # sheets drawn as rows stacked top to bottom: keep only the last (longest) row
-LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png"), ("spires", "walkways.png")}
+LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png"), ("spires", "walkways.png"), ("mines", "walkways.png")}
 # sheets whose pieces overlap in x (branches): rough cut columns, each moved to the emptiest column within 50 px
-SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782], ("abyss", "mid.png"): [375, 770, 1068, 1469, 1808]}
-FOG = {"spires": (44, 22, 60), "shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
+SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782], ("abyss", "mid.png"): [375, 770, 1068, 1469, 1808], ("mines", "lavafalls-pillars.png"): [712, 1278]}
+FOG = {"spires": (44, 22, 60), "mines": (40, 20, 14), "shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
 
 
 def key(im, green=False):

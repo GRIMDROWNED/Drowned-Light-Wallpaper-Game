@@ -237,6 +237,7 @@ const GROUND={
   shallows:{d:['#3b2c22','#33261e','#2a1f19','#211915','#181210'],g:['#4c7a3c','#3a6232','#24401f'],b:'#6c9a4a',hi:'#7aa654',f:['#c9d36a','#b07acb'],crack:['#1b1310','#4a3426']},
   reaches:{d:['#3a3d42','#323439','#2a2c30','#222327','#1a1b1e'],g:['#6d6a52','#55533f','#34332a'],b:'#8a8466',hi:'#9c977a',f:['#c9c7b0','#8fa0b0'],crack:['#16171a','#4a4d54']},
   abyss:{d:['#221a1c','#1c1517','#171113','#120d0f','#0c090a'],g:['#3a1c20','#2a1418','#1a0c0f'],b:'#5a2a30',hi:'#6e3238',f:['#4fa0ff','#a02030'],crack:['#0a0708','#3a2a2e']},
+  mines:{d:['#2a1f1a','#231a16','#1c1512','#16100e','#0f0b09'],g:['#4a2a18','#3a2014','#24140c'],b:'#7a3a18',hi:'#a84a1a',f:['#ff8a2a','#ffc040'],crack:['#0a0706','#5a2a12']},
   mire:{d:['#2c2a1c','#242218','#1d1c14','#171610','#11100c'],g:['#5f6a34','#4a5428','#2c3318'],b:'#7d8840',hi:'#8f9a4c',f:['#d6d860','#9fb04a'],crack:['#12110c','#3a3624']},
 };
 function ground(pal){
@@ -336,6 +337,12 @@ function reeds(){
       { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["arch", "cpillar", "wall", "chpillar"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [220, 520], pick: ["portal", "pylon", "pylonBroken"] },
     ] },
+    mines: { sky: true, far: true, plats: true, ground: "mines", top: "#1a0c08", fog: "#341a0c", wisp: ["#ffb040", "#a04010"],
+      posts: ["post1", "post3"], post: [10, 14], rows: [ // the lantern posts' arms would repeat when stretched
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"] },
+      { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["headframe", "lavafall", "pillar", "gate"] },
+      { f: 1, ty: 1, sink: 2, gap: [260, 620], pick: ["cart", "brazier"] },
+    ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
@@ -346,7 +353,7 @@ function reeds(){
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
   // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
   // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
-  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires"], MAP_LEVELS = 10;
+  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
@@ -491,7 +498,7 @@ function reeds(){
       g.fillStyle = "#4a3624"; g.fillRect(X(wx), y0, 4, y1 - y0);
       g.fillStyle = "#6b5034"; g.fillRect(X(wx), y0, 1, y1 - y0);
     }
-    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => pa ? block(Math.round(s.w / 2), Math.round(s.h / 2)) : stone(s.w / 2, s.h / 2), tag), X(s.x), Y(s.y));
+    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => pa && pa.rects.block3 ? block(Math.round(s.w / 2), Math.round(s.h / 2)) : stone(s.w / 2, s.h / 2), pa && pa.rects.block3 ? tag : "code"), X(s.x), Y(s.y)); // a map without its blocks yet keeps the code stone
     g.fillStyle = "#181210"; g.fillRect(0, fy + 60, lw, Math.max(0, lh - fy - 60));
     tiled(g, L.ground, cam.x / 2, fy - 8, lw);
     for (const s of solids) {
