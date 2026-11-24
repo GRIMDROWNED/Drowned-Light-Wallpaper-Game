@@ -314,7 +314,7 @@ function reeds(){
   // Maps walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
   // cut-out pieces (tools/cut_scenery.py -> assets/scenery/<theme>/atlas.png, rects in DS.SCENERY) on parallax rows.
   // Row: f = how fast it scrolls with the camera (1 = with the ground), ty = how far it follows the camera up and down,
-  // sink = px pushed into the ground, gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
+  // sink = px pushed into the ground, lift = px floated above it (islands), gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
   const THEMES = {
     shallows: { code: true, ground: "shallows", rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
@@ -330,6 +330,12 @@ function reeds(){
       { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["briar1", "bellframe", "briar1"] },
       { f: 1, ty: 1, sink: 2, gap: [70, 260], pick: ["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3", "briar2"] },
     ] },
+    spires: { sky: true, far: true, plats: true, ground: "abyss", top: "#0a0410", fog: "#2c1640", wisp: ["#d890ff", "#6a3a9a"],
+      posts: ["post1", "post2", "post3"], rows: [ // post4's crystal crown would be cut by stretching
+      { f: 0.5, ty: 0.8, sink: 0, lift: 70, gap: [120, 320], pick: ["fisle1", "fisle2", "isle1", "isle2", "isle3"] },
+      { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["arch", "cpillar", "wall", "chpillar"] },
+      { f: 0.75, ty: 0.9, sink: 3, gap: [220, 520], pick: ["portal", "pylon", "pylonBroken"] },
+    ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
@@ -340,7 +346,7 @@ function reeds(){
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
   // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
   // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
-  const LEVEL_THEMES = ["mire", "reaches", "abyss"], MAP_LEVELS = 10;
+  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
@@ -390,7 +396,7 @@ function reeds(){
     if (!T.atlas || !T.atlas.complete || !T.atlas.naturalWidth) return;
     const off = cx * row.f, n = Math.floor((off - 300) / row.len);
     for (let rep = n; rep * row.len - off < lw; rep++) for (const p of row.list) {
-      const [sx, sy, w, h] = T.rects[p.k], x = Math.round(rep * row.len + p.x - off), y = Math.round(base - h + row.sink);
+      const [sx, sy, w, h] = T.rects[p.k], x = Math.round(rep * row.len + p.x - off), y = Math.round(base - h + row.sink - (row.lift || 0));
       if (x > lw || x + w < 0) continue;
       if (p.flip) { g.save(); g.translate(x + w, y); g.scale(-1, 1); g.drawImage(T.atlas, sx, sy, w, h, 0, 0, w, h); g.restore(); }
       else g.drawImage(T.atlas, sx, sy, w, h, x, y, w, h);
