@@ -144,7 +144,10 @@
     const set = e.d.sprite, f = (a, p) => S.frame(set, a, p);
     let rec, rot = 0;
     const has = (a) => set[a] && set[a].length;
+    const bp = e.d.boss && !e.dead ? DS.Boss.pose(e) : null; // a later boss's move frame (src/bosses.js)
     if (e.dead) rec = f("death", 0);
+    else if (bp) rec = f(bp, 0);
+    else if (e.fly) rec = f(has("fly") ? "fly" : "idle", (G.t * 4) % 1); // the fliers flap
     else if (e.state === "hurt") rec = f(has("knock") && (!e.onGround || e.kbT > 0 || !has("flinch")) ? "knock" : has("flinch") ? "flinch" : "hurt", 0);
     else if (e.blockT > 0 && has("block") && e.state !== "windup" && e.state !== "strike") rec = f("block", 0);
     else if (e.d.boss && has("charge") && e.state !== "hurt" && (e.state === "windup" || e.state === "strike" || e.state === "recover")) {
@@ -210,7 +213,17 @@
 
   // ---------------- shots ----------------
   function drawShot(s) {
+    if (s.warn && s.delay > 0) { // a boulder about to fall: a blinking mark where it lands
+      ctx.fillStyle = `rgba(255,80,60,${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
+    }
     if (s.delay > 0) return;
+    if (s.kind === "rock") { S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
+    if (s.kind === "flame") { // the dragons' breath: fire that swells then dies away
+      const k = s.t / s.life0;
+      glowDot(s.x, s.y, 30, "255,140,50", 0.4 * (1 - k));
+      S.drawFx(ctx, "fire" + (1 + (Math.floor(s.t * 16 + s.x) % 6)), s.x, s.y + 14, { ay: 1, scale: 0.5 + k * 0.6, alpha: 1 - k * k, add: true });
+      return;
+    }
     const ang = Math.atan2(s.vy, s.vx);
     if (s.kind === "bolt" || s.kind === "frost") {
       S.drawFx(ctx, s.img, s.x, s.y, { rot: ang });
@@ -246,9 +259,9 @@
       ctx.strokeStyle = "rgba(255,120,80,0.7)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.04, s.y - s.vy * 0.04); ctx.stroke();
       ctx.fillStyle = "#ffe0c0"; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, TAU); ctx.fill();
     } else if (s.kind === "wave") {
-      const a = Math.min(1, s.life * 3);
-      ctx.fillStyle = `rgba(120,230,210,${0.75 * a})`;
-      ctx.beginPath(); ctx.moveTo(s.x - 22, s.ground); ctx.quadraticCurveTo(s.x - Math.sign(s.vx) * 4, s.ground - 44, s.x + 22, s.ground); ctx.fill();
+      const a = Math.min(1, s.life * 3), k = s.big ? 1.9 : 1;
+      ctx.fillStyle = `rgba(${s.c || "120,230,210"},${0.75 * a})`;
+      ctx.beginPath(); ctx.moveTo(s.x - 22 * k, s.ground); ctx.quadraticCurveTo(s.x - Math.sign(s.vx) * 4, s.ground - 44 * k, s.x + 22 * k, s.ground); ctx.fill();
       ctx.fillStyle = `rgba(20,40,40,${0.6 * a})`; ctx.fillRect(s.x - 20, s.ground - 3, 40, 3);
     }
   }

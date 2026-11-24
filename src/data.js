@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.9.3";
+  DS.VERSION = "0.10.0";
   // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
   DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
 
@@ -161,6 +161,11 @@
     }, mv && Object.fromEntries(Object.entries(Object.assign({ knock: "knock", fall: "fall", jump: "fall", land: "land", windup: "windup", strike: "strike", recover: "strike" }, mv))
       .filter(([, v]) => v).map(([k, v]) => [k, ["side/" + v]]))),
   }, extra);
+  // a boss from the later levels: its folder's frames plus one animation per move (side/<move>)
+  const boss = (type, frames, moves, extra) => Object.assign({
+    sprite: Object.assign({ folder: "drowned/" + type, hurt: ["side/hurt"], jump: ["side/jump"], fall: ["side/fall"] }, frames,
+      Object.fromEntries(moves.map((m) => [m, ["side/" + m]]))),
+  }, { ai: "boss", boss: true, poise: true }, extra);
   DS.ENEMIES = {
     footman: foe("footman", [56, 78], { name: "Drowned Wretch", ai: "walker", hp: 42, speed: 95, dmg: 10, reach: 60, windup: 0.45, cd: 1.1, w: 34, h: 74 }, { recover: "slash" }),
     revenant: foe("revenant", [54, 79], { name: "Swarming Revenant", ai: "walker", hp: 20, speed: 175, dmg: 6, reach: 50, windup: 0.3, cd: 0.8, w: 30, h: 70, jumpy: true }, { windup: "crouch", jump: "jump" }),
@@ -171,8 +176,29 @@
     hexbearer: foe("hexbearer", [55, 91], { name: "Marsh Hexbearer", ai: "caster", hp: 48, speed: 90, dmg: 11, reach: 500, keep: 260, windup: 0.8, cd: 2.4, w: 34, h: 86, orb: 230 }, { flinch: "flinch" }),
     champion: foe("champion", [87, 128], { name: "Drowned Sovereign", ai: "boss", hp: 900, speed: 120, dmg: 20, reach: 110, windup: 0.7, cd: 1.0, w: 70, h: 124, boss: true, poise: true },
       { windup: "slamUp", strike: "slam", recover: "slam", knock: "stun", fall: "airFall", jump: "leapRise", land: "leapLand", chargeWind: "chargeWind", charge: "charge", skid: "skid", leapCrouch: "leapCrouch", leapRise: "leapRise", leapApex: "leapApex", leapDive: "leapDive", leapLand: "leapLand" }),
+    // The later levels' bosses, ported from the main game (Robert 2026-11-18/20): their moves are in src/bosses.js. Frames:
+    // the main game's side frames plus Robert's two side-view move sheets each (tools/cut_boss.py), named after the moves.
+    "drowned-colossus": boss("drowned-colossus", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk2"], death: ["death"] },
+      ["slamUp", "slam", "surgeWind", "surge", "callUp", "stun", "rise", "crouch", "jump", "fall", "land", "knock"],
+      { name: "Drowned Colossus", title: "The Drowned Colossus", fallen: "THE COLOSSUS CRUMBLES", hp: 1300, speed: 85, dmg: 22, reach: 140, windup: 0.8, cd: 1.1, w: 120, h: 112 }),
+    "mother-wyvern": boss("mother-wyvern", { idle: ["side/hoverUp", "side/fly1", "side/hoverDown", "side/fly3"], run: ["side/hoverUp", "side/fly1", "side/hoverDown", "side/fly3"], ground: ["right"], jump: ["side/climb"], fall: ["side/hoverDown"], death: ["side/death"] },
+      ["hoverUp", "hoverDown", "swoop", "glide", "climb", "knockAir", "land", "rakeUp", "rake", "breathWind", "breath", "roar"],
+      { name: "Mother Wyvern", title: "The Mother Wyvern", fallen: "THE MOTHER FALLS", hp: 1050, speed: 230, dmg: 18, reach: 130, windup: 0.6, cd: 1.0, w: 100, h: 92 }),
+    "crucible-wyrm": boss("crucible-wyrm", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], fly: ["side/hoverUp", "side/fly1", "side/hoverDown", "side/fly3"], jump: ["side/takeoff"], fall: ["side/dive"], death: ["side/death"] },
+      ["breathWind", "breath", "tail", "gust", "bite", "stun", "takeoff", "hoverUp", "hoverDown", "dive", "land", "knockAir"],
+      { name: "Crucible Wyrm", title: "The Crucible Wyrm", fallen: "THE WYRM IS SLAIN", hp: 1600, speed: 110, dmg: 22, reach: 170, windup: 0.6, cd: 1.0, w: 140, h: 110 }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
+
+  // Which boss ends level n (0-based). Robert 2026-11-20: a map is 10 levels; its level 5 boss lets you choose a familiar,
+  // its level 10 boss wins a kit. The plan, map by map (bosses not built yet stay the Sovereign until they are):
+  DS.MAP_BOSSES = [["drowned-colossus", "champion"], ["mother-wyvern", "crucible-wyrm"], ["starved-bell", "deadly-rose"],
+    ["seething-seraph", "rift-throne"], ["magma-golem", "furnace-hydra"], ["cinder-colossus", "ashen-sovereign"]];
+  DS.bossFor = function (n) {
+    const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length], at = n % 10;
+    const t = at === 4 ? m[0] : at === 9 ? m[1] : "champion";
+    return DS.ENEMIES[t] ? t : "champion";
+  };
 
   /* The familiars from the main game, fighting beside the knight (src/familiars.js). One at a time, picked on the
      knight screen or in the pause menu. Each grows into its next form after `grow` kills made while it is out

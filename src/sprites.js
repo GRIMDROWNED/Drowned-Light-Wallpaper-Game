@@ -69,7 +69,8 @@
     set._frames = {};
     const base = "assets/" + set.folder + "/";
     set.px = (DS.PIXSCALE && DS.PIXSCALE[set.folder]) || 1;
-    for (const anim of ["idle", "run", "jump", "fall", "attack", "hurt", "death", "dash", "cast", "charge", "guard", "rise", "apex", "land", "flip", "airAtk", "upAtk", "plunge", "plungeLand", "windup", "strike", "recover", "knock", "flinch", "block", "aimUp", "pounce", "chargeWind", "charge", "skid", "leapCrouch", "leapRise", "leapApex", "leapDive", "leapLand"]) {
+    // every list of frame names in the set is an animation (the bosses each have their own move names)
+    for (const anim of Object.keys(set).filter((k) => Array.isArray(set[k]))) {
       if (!set[anim]) continue;
       const run = DS.RUNFEET && DS.RUNFEET[set.folder];  // steady run-cycle feet (tools/runfeet.py)
       set._frames[anim] = set[anim].map((f) => load(base + f + ".png", (set.feet && set.feet[f]) || (run && run[f]), set.px));

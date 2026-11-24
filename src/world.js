@@ -65,11 +65,11 @@
     ends(gen.x + 2400);
     return enc;
   }
-  function finish() { // the Sovereign's clearing: flat, two ledges to dodge onto
+  function finish(type) { // the boss's clearing: flat, two ledges to dodge onto
     const bossX = gen.x, a = { x: bossX + 350, y: 700, w: 220 }, b = { x: bossX + 1250, y: 700, w: 220 };
     plats.push(a, b); ends(bossX + BOSS_W);
     gen.done = { bossX, plats: [a, b] };
-    return { x: bossX + 150, foes: ["champion"], at: [bossX + 1300], boss: true, bossX };
+    return { x: bossX + 150, foes: [type || "champion"], at: [bossX + 1300], boss: true, bossX };
   }
   function unfinish() {
     if (!gen || !gen.done) return;
@@ -87,7 +87,7 @@
   function level(n, seed, segs) {
     begin(n, seed);
     const enc = extend(START + (segs || 6 + Math.min(4, n)) * SEG);
-    const boss = finish(); enc.push(boss);
+    const boss = finish(DS.bossFor(n)); enc.push(boss);
     return { enc, bossX: boss.bossX };
   }
 
