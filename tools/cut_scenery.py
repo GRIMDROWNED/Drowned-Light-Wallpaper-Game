@@ -52,12 +52,13 @@ SHEETS = {
         "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
         "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
-    "mines": {  # blocks.png still to come: platforms fall back to the code stone until then
+    "mines": {
         "headframe-cart.png": (["headframe", "cart", "brazier"], 100, 0.25),
         "lavafalls-pillars.png": (["lavafall", "pillar", "gate"], 110, 0.25),
         "mid.png": (["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"], 92, 0.3),
         "walkways.png": (["walk"], 17, 0.0),
         "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
 }
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
