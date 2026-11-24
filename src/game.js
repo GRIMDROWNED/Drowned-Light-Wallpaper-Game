@@ -433,7 +433,7 @@
         if (boxHitsPlayer(s.x - s.r, s.y - h / 2, s.x + s.r, s.y + h / 2)) {
           // the Cinderbrand's guard eats shots from the front
           if (p.guard && Math.sign(s.vx) === -p.dir && s.kind !== "wave") { hurtPlayer(s.dmg, null, s.by, s.x); s.life = 0; continue; }
-          if (hurtPlayer(s.dmg, s.kind === "wave" ? s.src : null, s.by, s.x - s.vx * 0.05) && s.kind !== "wave") s.life = 0;
+          if (hurtPlayer(s.dmg, s.kind === "wave" ? s.src : null, s.by, s.x - s.vx * 0.05) && s.kind !== "wave" && !s.stay) s.life = 0; // s.stay: lava pools stay
         }
       } else {
         for (const e of G.foes) {
