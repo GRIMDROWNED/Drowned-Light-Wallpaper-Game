@@ -47,19 +47,28 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SHEETS = {
     "pickups.png": [("oil", 17), ("ember", 17), ("flare", 18), ("page", 17), ("sigil", 18), ("sigil2", 18)],
     # relic icons (returned 2026-11-23): shown rising from the cache and in the HUD
+    # two across, one row: (cols, rows) given as the first entry
+    "mist-well.png": [(2, 1), ("well", 48), ("wellLit", 48)],
+    "relic-cache.png": [(2, 1), ("cache", 15), ("cacheOpen", 20)],
     "relic-icons.png": [("relic_wick", 16), ("relic_heart", 16), ("relic_stone", 12), ("relic_hood", 16), ("relic_greave", 15), ("relic_flask", 16)],
 }
 
 pieces = []
 for sheet, CELLS in SHEETS.items():
   if not os.path.exists(os.path.join(DIR, sheet)): continue
-  im = Image.open(os.path.join(DIR, sheet)).convert("RGB"); W, H = im.size; cw, ch = W // 3, H // 2
+  grid = CELLS[0] if isinstance(CELLS[0][0], int) else (3, 2)
+  CELLS = [c for c in CELLS if not isinstance(c[0], int)]
+  im = Image.open(os.path.join(DIR, sheet)).convert("RGB"); W, H = im.size; cw, ch = W // grid[0], H // grid[1]
   for i, (name, tall) in enumerate(CELLS):
-      cell = im.crop(((i % 3) * cw, (i // 3) * ch, (i % 3 + 1) * cw, (i // 3 + 1) * ch))
+      cell = im.crop(((i % grid[0]) * cw, (i // grid[0]) * ch, (i % grid[0] + 1) * cw, (i // grid[0] + 1) * ch))
       rgba = key(cell)
       bb = Image.fromarray(rgba, "RGBA").getbbox()
       rgba = rgba[bb[1]:bb[3], bb[0]:bb[2]]
-      pieces.append((name, crop(shrink(rgba, tall / rgba.shape[0], 0, (0, 0, 0)))))
+      out = np.asarray(crop(shrink(rgba, tall / rgba.shape[0], 0, (0, 0, 0)))).copy()
+      r, g, b = (out[..., i].astype(int) for i in range(3))
+      pink = (out[..., 3] > 0) & (((r > g + 12) & (b > g + 12)) | ((r > 200) & (g > 110) & (abs(b - g) < 25) & (r > g + 30)))  # key left in glowing wisps (the lit well's swirl): make it gold
+      out[pink, 1] = np.maximum(g[pink], (r[pink] * 0.78).astype(int)); out[pink, 2] = (g[pink] * 0.5).astype(int)
+      pieces.append((name, Image.fromarray(out, "RGBA")))
 x = 0; rects = {}; hmax = max(p.height for _, p in pieces)
 atlas = Image.new("RGBA", (sum(p.width + 1 for _, p in pieces), hmax), (0, 0, 0, 0))
 for name, p in pieces:
