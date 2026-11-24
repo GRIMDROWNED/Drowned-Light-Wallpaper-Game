@@ -96,3 +96,41 @@ body.wall { cursor: none; }
 #journal { max-height: 40vh; overflow-y: auto; text-align: left; margin: 8px 0; }
 #journal p { margin: 6px 0; font-style: italic; color: var(--text); }
 #journal p b { font-style: normal; color: var(--gold); margin-right: 6px; }
+
+/* the map select: Robert's spiked badges (src/maps.js) */
+.mapRow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 1100px; margin: 0 auto 4px; }
+.menu button.opt.map { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 112px; padding: 6px 4px 8px; background: rgba(12, 24, 32, 0.85); }
+.map img { height: 64px; width: auto; image-rendering: pixelated; }
+.map span { font: 600 11.5px/1.2 var(--display); color: var(--text); }
+.menu button.map.sel { border-color: rgb(var(--mc)); box-shadow: inset 0 0 0 1px rgb(var(--mc)), 0 0 14px rgba(var(--mc), 0.35); }
+.menu button.map.sel span { color: rgb(var(--mc)); }
+.map.locked img { filter: brightness(0.12) saturate(0); opacity: 0.8; }
+.map.locked span { color: var(--dim); }
+#mapText { max-width: 820px; margin: 4px auto 12px; text-align: center; color: var(--dim); font-size: 12.5px; min-height: 1.4em; }
+
+/* upgrades and the wallpaper's haul (src/loot.js) */
+.upRow { justify-content: center; margin-top: 10px; }
+.wallet { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; max-width: 820px; margin: 0 auto 12px; }
+.coin { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--dim); }
+.coin img { height: 26px; image-rendering: pixelated; }
+.coin b { font: 700 15px var(--display); color: rgb(var(--cc)); }
+.coin i { font-style: normal; }
+.haulList { gap: 10px 22px; margin-top: 18px; }
+.haulList .coin img { height: 44px; }
+.haulList .coin b { font-size: 22px; }
+.upList { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; max-width: 900px; margin: 0 auto; }
+.menu button.opt.upg { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; }
+.upg .mat { height: 40px; width: 40px; object-fit: contain; image-rendering: pixelated; flex: none; }
+.upg .un { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.upg .un b { font: 700 14px var(--display); }
+.upg .ef { font-size: 11.5px; color: var(--dim); font-weight: 400; }
+.pips { display: flex; gap: 2px; }
+.pips i { width: 9px; height: 5px; background: rgba(255, 255, 255, 0.12); }
+.pips i.on { background: var(--gold); }
+.upg .cost { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; flex: none; }
+.chip { display: inline-flex; align-items: center; gap: 3px; font: 600 12px var(--body); color: var(--text); }
+.chip img { height: 18px; image-rendering: pixelated; }
+.chip.short { color: #e07a70; }
+.menu button.upg.can { border-color: rgba(230, 194, 122, 0.55); }
+.menu button.upg.max { opacity: 0.75; }
+#upText { max-width: 820px; margin: 10px auto 0; text-align: center; color: var(--text); min-height: 1.4em; font-size: 13px; }

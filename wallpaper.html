@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.9.9">
+<link rel="stylesheet" href="style.css?v=0.11.0">
 </head>
 <body>
 <!--BODY-->
@@ -28,10 +28,13 @@
     <h1>Drowned Light <span>Side View</span></h1>
     <p class="sub">Combat prototype. Pick a knight and fight your way through the drowned swamp to the Sovereign. Every kit keeps its attack and ability from the main game. <span id="ver"></span></p>
   </header>
+  <div id="mapPick" class="mapRow"></div>
+  <p id="mapText"></p>
   <div id="kitGrid"></div>
   <p id="kitText"></p>
   <div id="famPick" class="row2 famRow"></div>
   <p id="famText"></p>
+  <div class="row2 upRow"><button id="btnUpKits" class="opt small upBtn">Upgrades</button></div>
   <div class="foot">
     <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · F flare · Q next knight · Esc menu</p>
     <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · click a stick flare · LB next knight · Menu pause</p>
@@ -45,6 +48,20 @@
   <p id="famWinText"></p>
 </section>
 
+<section id="upgrades" class="menu" hidden>
+  <header><h1>Upgrades</h1><p class="sub">Spend what the Drowned drop on lasting upgrades for every knight. Ranks 6 to 10 also take Amethyst. Your wallpaper gathers more while you're away.</p></header>
+  <div id="wallet" class="wallet"></div>
+  <div id="upList" class="upList"></div>
+  <p id="upText"></p>
+  <div class="row2 upRow"><button id="btnUpBack" class="opt">Back</button></div>
+</section>
+
+<section id="haul" class="menu" hidden>
+  <header><h1>While you were away</h1><p class="sub" id="haulSub">Your wallpaper kept fighting and gathered this for you.</p></header>
+  <div id="haulList" class="wallet haulList"></div>
+  <div class="row2 upRow"><button id="btnHaulUp" class="opt">Spend it</button><button id="btnHaulOk" class="opt">Collect</button></div>
+</section>
+
 <section id="pause" class="menu" hidden>
   <header><h1>Paused</h1></header>
   <div class="col">
@@ -52,6 +69,7 @@
       <button id="btnResume" class="opt">Resume</button>
       <button id="btnKits" class="opt">Change knight</button>
       <button id="btnJournal" class="opt">Journal</button>
+      <button id="btnUpPause" class="opt">Upgrades</button>
       <button id="btnRestart" class="opt">Restart arena</button>
     </div>
     <h2>Familiar</h2>
@@ -67,6 +85,9 @@
       <button id="btnBoxes" class="opt small">Hitboxes</button>
       <button id="btnGrow" class="opt small">Grow familiar</button>
       <button id="btnWinFams" class="opt small">Unlock all familiars</button>
+      <button id="btnRich" class="opt small">Give 500 of each currency</button>
+      <button id="btnMaps" class="opt small">Open all maps</button>
+      <button id="btnUpReset" class="opt small">Reset upgrades</button>
       <button id="btnWall" class="opt small">Wallpaper</button>
       <button id="btnHelp" class="opt small">Controls</button>
     </div>
@@ -81,19 +102,22 @@
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.9.9"></script>
-<script src="src/pixscale.js?v=0.9.9"></script>
-<script src="src/sprites.js?v=0.9.9"></script>
-<script src="src/input.js?v=0.9.9"></script>
-<script src="src/scenery.js?v=0.9.9"></script>
-<script src="src/world.js?v=0.9.9"></script>
-<script src="src/game.js?v=0.9.9"></script>
-<script src="src/kits.js?v=0.9.9"></script>
-<script src="src/familiars.js?v=0.9.9"></script>
-<script src="src/pickart.js?v=0.9.9"></script>
-<script src="src/explore.js?v=0.9.9"></script>
-<script src="src/render.js?v=0.9.9"></script>
-<script src="src/ui.js?v=0.9.9"></script>
+<script src="src/data.js?v=0.11.0"></script>
+<script src="src/pixscale.js?v=0.11.0"></script>
+<script src="src/sprites.js?v=0.11.0"></script>
+<script src="src/input.js?v=0.11.0"></script>
+<script src="src/scenery.js?v=0.11.0"></script>
+<script src="src/world.js?v=0.11.0"></script>
+<script src="src/game.js?v=0.11.0"></script>
+<script src="src/kits.js?v=0.11.0"></script>
+<script src="src/familiars.js?v=0.11.0"></script>
+<script src="src/pickart.js?v=0.11.0"></script>
+<script src="src/explore.js?v=0.11.0"></script>
+<script src="src/lootart.js?v=0.11.0"></script>
+<script src="src/loot.js?v=0.11.0"></script>
+<script src="src/maps.js?v=0.11.0"></script>
+<script src="src/render.js?v=0.11.0"></script>
+<script src="src/ui.js?v=0.11.0"></script>
 <script>DS.boot();</script>
 </body>
 </html>
