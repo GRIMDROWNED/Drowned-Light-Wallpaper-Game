@@ -199,6 +199,12 @@
     "rift-throne": boss("rift-throne", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/leap"], fall: ["side/dive"], death: ["side/death"] },
       ["sweepWind", "sweep", "overWind", "over", "blink", "stun", "crouch", "leap", "float", "dive", "land", "knock"],
       { name: "Lord of the Rift Throne", title: "The Lord of the Rift Throne", fallen: "THE THRONE STANDS EMPTY", hp: 1800, speed: 130, dmg: 22, reach: 190, windup: 0.6, cd: 0.9, w: 64, h: 124 }),
+    "magma-golem": boss("magma-golem", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], hurt: ["side/hurt"], death: ["side/death"] },
+      ["slamUp", "slam", "hurlWind", "hurl", "core", "regrow", "charge", "crouch", "jump", "fall", "land", "knock"],
+      { name: "Magma Golem", title: "The Magma Golem", fallen: "THE GOLEM COOLS TO STONE", hp: 1700, speed: 100, dmg: 24, reach: 150, windup: 0.6, cd: 1.0, w: 90, h: 118 }),
+    "furnace-hydra": boss("furnace-hydra", { idle: ["side/hurt"], run: ["side/hurt"], jump: ["side/rise"], fall: ["side/rise"], death: ["side/dying"] },
+      ["breath", "lob", "strike", "strikeUp", "roar", "hurt", "cut1", "cut2", "regrow", "sink", "rise"],
+      { name: "Furnace Hydra", title: "The Furnace Hydra", fallen: "THE HYDRA SINKS INTO THE LAVA", hp: 1900, speed: 0, dmg: 24, reach: 250, windup: 0.6, cd: 0.9, w: 140, h: 120 }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 

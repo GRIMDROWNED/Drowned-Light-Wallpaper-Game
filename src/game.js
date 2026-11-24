@@ -169,6 +169,7 @@
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
     if (e.brittle) dmg *= 1.2;
+    if (e.vuln) dmg *= e.vuln; // a boss's weak spot is open (the Magma Golem's core, the Hydra's stumps)
     if (e.curse) dmg *= 1 + e.curse; // cursed by Abigail's soul orbs
     if (!opt.noMult) dmg *= DS.Explore.strike(e, opt); else e.alerted = true; // unseen in the mist: the first blow lands harder
     dmg = Math.max(1, Math.round(dmg));

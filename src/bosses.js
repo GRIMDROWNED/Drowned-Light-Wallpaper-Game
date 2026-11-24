@@ -1,6 +1,7 @@
 /* The later levels' bosses, ported from the main game (Robert 2026-11-18/20): the Drowned Colossus (map 1, level 5),
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
-   The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35) and the Lord of the Rift Throne (level 40). DS.bossFor in data.js puts them at the
+   The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35), the Lord of the Rift Throne (level 40), the Magma Golem (map 5, level 45)
+   and the Furnace Hydra (level 50). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -586,6 +587,192 @@
       if (e.state === "windup") return { sweep: "sweepWind", over: "overWind", blink: "blink", leap: "crouch" }[m];
       if (e.state === "strike") return m === "leap" ? ({ up: "leap", hang: e.boss.phase > 1 ? "float" : "leap", dive: "dive", land: "land" }[e.boss.air]) : { sweep: "sweep", over: "over", blink: "blink" }[m];
       if (e.state === "recover") return { sweep: "sweep", over: "over", blink: "sweepWind", leap: "land" }[m];
+      return null;
+    },
+  };
+
+  const LAVA = "255,140,50";
+  // a lump thrown in an arc that lands on (tx, ty) after T seconds
+  function lobAt(sx, sy, tx, ty, T, g) { return { vx: (tx - sx) / T, vy: (ty - sy - 0.5 * g * T * T) / T }; }
+
+  // ---------------- the Magma Golem (map 5, level 45: wins a familiar) ----------------
+  // Fist slam (lava waves both ways), molten boulders hurled in an arc, a shoulder charge, a leap that cracks the floor.
+  // Every fourth move its chest opens: the glowing core takes half again the damage until the rocks drift back.
+  AI["magma-golem"] = {
+    think(e, dx, adx, dy) {
+      const hot = rage(e, "The Golem's core blazes");
+      e.vuln = 0;
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const m = e.boss.count % 4 === 3 ? "core"
+          : adx < 170 ? pick([["slam", 5], ["leap", 1], ["charge", 1]])
+          : adx < 480 ? pick([["hurl", 3], ["charge", 3], ["leap", 2]])
+          : pick([["hurl", 4], ["leap", 3], ["charge", 1]]);
+        start(e, m, { slam: 0.75, hurl: 0.7, charge: 0.55, leap: 0.5, core: 0.3 }[m]);
+        return 0;
+      }
+      return adx > 120 ? Math.sign(dx) : 0;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "slam") {
+        e.strikeDur = 0.4; fx().shake(11);
+        for (const s of [1, -1]) {
+          DS.groundWave(e, e.x + s * 60, s, 0, 460, 1.6, d.dmg * 0.6, { c: LAVA });
+          if (hot) DS.groundWave(e, e.x + s * 60, s, 0.35, 460, 1.6, d.dmg * 0.6, { c: LAVA });
+        }
+      } else if (e.move === "hurl") {
+        e.strikeDur = 0.45;
+        const n = hot ? 3 : 1, sx = e.x + e.dir * 40, sy = e.y - e.h * 0.95, g = 1100;
+        for (let i = 0; i < n; i++) {
+          const tx = clamp(p.x + (i ? (i % 2 ? 1 : -1) * 140 : 0), 60, Wd.W - 60), ty = groundY(tx, p.y - 40) - 14;
+          const T = clamp(Math.abs(tx - sx) / 520, 0.6, 1.15), v = lobAt(sx, sy, tx, ty, T, g);
+          G.shots.push({ team: "f", kind: "rock", hot: 1, x: sx, y: sy, vx: v.vx, vy: v.vy, g, r: 18, dmg: Math.round(d.dmg * 0.75), life: 3, land: true, src: e, by: d.name,
+            onEnd: (s) => {
+              fx().puff(s.x, s.y, 8, "rgba(255,140,60,0.6)"); fx().shake(3);
+              if (hot) for (const k of [1, -1]) DS.groundWave(e, s.x + k * 20, k, 0, 360, 0.7, d.dmg * 0.45, { y: s.y - 14, ground: s.y, c: LAVA });
+            } });
+        }
+      } else if (e.move === "charge") {
+        e.strikeDur = 0.8; e.dir = Math.sign(p.x - e.x) || e.dir; e.vx = e.dir * 620;
+      } else if (e.move === "leap") {
+        e.strikeDur = 2.6; e.vy = -880; e.onGround = false;
+        e.vx = clamp((p.x - e.x) / 0.85, -620, 620);
+      } else if (e.move === "core") {
+        e.strikeDur = 2.4; e.vuln = 1.5; e.vx = 0;
+        fx().text(e.x, e.y - e.h - 30, "CORE OPEN", "#ffb070", 14);
+        if (hot) for (const s of [1, -1]) DS.groundWave(e, e.x + s * 50, s, 0.2, 420, 1.4, d.dmg * 0.5, { c: LAVA });
+      }
+    },
+    tick(e) {
+      const d = e.d;
+      if (e.move === "slam") {
+        if (!e.hitDone && e.st < 0.12 && front(e, d.reach, 0.9, 30)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "charge") {
+        if (!e.hitDone && front(e, e.w * 0.7, 1, e.w * 0.3)) { e.hitDone = true; hurt(e, d.dmg); G.player.vx = e.dir * 420; }
+        if (e.st > 0.55) e.vx *= 0.85;
+      } else if (e.move === "leap") {
+        if (e.onGround && e.st > 0.2) {
+          e.st = 9; e.vx = 0; fx().shake(12);
+          for (const s of [1, -1]) DS.groundWave(e, e.x + s * 60, s, 0, 500, 1.4, d.dmg * 0.6, { c: LAVA });
+          if (DS.boxHitsPlayer(e.x - 120, e.y - e.h, e.x + 120, e.y)) hurt(e, d.dmg);
+          fx().puff(e.x, e.y, 18, "rgba(255,140,60,0.55)");
+        }
+      } else if (e.move === "core") {
+        e.vx = 0;
+        if (e.st > 1.9) e.vuln = 0;
+      }
+    },
+    pose(e) {
+      const m = e.move;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "regrow" : null;
+      if (e.state === "windup") return { slam: "slamUp", hurl: "hurlWind", charge: "charge", leap: "crouch", core: "regrow" }[m];
+      if (e.state === "strike") {
+        if (m === "leap") return e.onGround ? (e.st > 0.2 ? "land" : "crouch") : e.vy < 0 ? "jump" : "fall";
+        if (m === "core") return e.st > 1.9 ? "regrow" : "core";
+        return { slam: "slam", hurl: "hurl", charge: "charge" }[m];
+      }
+      if (e.state === "recover") return { slam: "slam", hurl: "hurl", charge: "charge", leap: "land", core: "regrow" }[m];
+      return null;
+    },
+  };
+
+  // ---------------- the Furnace Hydra (map 5, level 50: wins a kit) ----------------
+  // Three lava heads on a rock mound. It never walks: it breathes fire along the ground, lobs fireballs, snaps a head far
+  // forward or straight up, and sinks into the lava to come up again in front of the knight. At 70%, 45% and 20% health
+  // a head is cut down (a breather, its stumps take more damage) and then bursts back. Below half it roars fire from above.
+  const CUTS = [0.7, 0.45, 0.2];
+  AI["furnace-hydra"] = {
+    think(e, dx, adx, dy) {
+      const hot = rage(e, "The Hydra's heads blaze white");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const m = dy > 90 || adx > 650 || e.boss.count % 5 === 4 ? "sink" // stranded on a ledge or far off: it moves pits
+          : dy < -70 && adx < 220 ? "strikeUp"
+          : adx < 230 ? pick([["strike", 4], ["breath", 3], ["strikeUp", 1]])
+          : adx < 420 ? pick([["breath", 3], ["lob", 3], ["strike", 2], ["roar", hot ? 2 : 0]])
+          : pick([["lob", 4], ["sink", 2], ["roar", hot ? 3 : 0]]);
+        start(e, m, { breath: 0.7, lob: 0.6, strike: 0.5, strikeUp: 0.45, roar: 0.8, sink: 0.35 }[m]);
+      }
+      return 0;
+    },
+    frame(e, dt) {
+      const b = e.boss;
+      if (!(e.state === "strike" && e.move === "sink")) e.vx = 0;
+      b.cut = b.cut || 0;
+      if (!e.dead && !(b.cutT > 0) && !(b.regT > 0) && b.cut < CUTS.length && e.hp < e.max * CUTS[b.cut]) { // a head falls
+        b.cutN = b.cut === 1 ? 2 : 1; b.cut++; b.cutT = b.cutN === 2 ? 3.4 : 2.8; b.regT = 0;
+        e.under = false; e.vuln = 1.3;
+        fx().text(e.x, e.y - e.h - 30, b.cutN === 2 ? "TWO HEADS DOWN" : "A HEAD FALLS", "#ffd27a", 15); fx().shake(7);
+        fx().puff(e.x + e.dir * 30, e.y - e.h * 0.7, 14, "rgba(90,80,80,0.6)");
+      }
+      if (b.cutT > 0) {
+        e.state = "hurt"; e.st = 0; e.stun = 9; b.cutT -= dt;
+        if (b.cutT <= 0) { b.regT = 0.8; e.vuln = 0; fx().text(e.x, e.y - e.h - 30, "IT REGROWS", "#ff9a6a", 14); }
+      } else if (b.regT > 0) {
+        e.state = "hurt"; e.st = 0; e.stun = 9; b.regT -= dt;
+        if (b.regT <= 0) { e.state = "move"; e.cd = 0.3; }
+      }
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "breath") { e.strikeDur = 1.0; e.boss.puff = 0; }
+      else if (e.move === "strike") e.strikeDur = 0.4;
+      else if (e.move === "strikeUp") e.strikeDur = 0.4;
+      else if (e.move === "lob") {
+        e.strikeDur = 0.5;
+        const n = hot ? 4 : 3, sx = e.x + e.dir * 10, sy = e.y - e.h * 1.05, g = 900;
+        for (let i = 0; i < n; i++) {
+          const tx = clamp(p.x + (i - (n - 1) / 2) * 130 + rnd(-30, 30), 60, Wd.W - 60), ty = groundY(tx, p.y - 40) - 8;
+          const T = clamp(Math.abs(tx - sx) / 480, 0.7, 1.3) + i * 0.08, v = lobAt(sx, sy, tx, ty, T, g);
+          G.shots.push({ team: "f", kind: "orb", c: LAVA, x: sx, y: sy, vx: v.vx, vy: v.vy, g, r: 12, dmg: Math.round(d.dmg * 0.6), life: 3, land: true, src: e, by: d.name,
+            onEnd: (s) => { for (const k of [1, -1]) flame(e, s.x, s.y - 12, k * 90, 0, d.dmg * 0.35, 0.6); } });
+        }
+      } else if (e.move === "roar") { // fire rains around the knight
+        e.strikeDur = 0.7; fx().shake(6);
+        const n = hot ? 7 : 5;
+        for (let i = 0; i < n; i++) {
+          const x = clamp(p.x + (i ? (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 120 : 0), 60, Wd.W - 60), gy = groundY(x, p.y - 40);
+          G.shots.push({ team: "f", kind: "orb", c: LAVA, x, y: gy - 520, vx: 0, vy: 250, g: 1100, r: 12, dmg: Math.round(d.dmg * 0.6), life: 3, delay: 0.45 + i * 0.14, warn: gy, land: true, src: e, by: d.name,
+            onEnd: (s) => flame(e, s.x, s.y - 12, 0, 0, d.dmg * 0.3, 0.5) });
+        }
+      } else if (e.move === "sink") { // under the lava, and up again in front of the knight
+        e.strikeDur = 1.5; e.under = true; e.boss.rose = false;
+        fx().puff(e.x, e.y, 16, "rgba(255,140,60,0.5)");
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, hot = e.boss.phase > 1;
+      if (e.move === "breath") {
+        e.boss.puff -= dt;
+        if (e.st < 0.85 && e.boss.puff <= 0) {
+          e.boss.puff = 0.06;
+          flame(e, e.x + e.dir * 100, e.y - e.h * 0.5, e.dir * rnd(380, 560), rnd(30, 90), d.dmg * 0.45, hot ? 0.9 : 0.75);
+        }
+      } else if (e.move === "strike") {
+        if (!e.hitDone && e.st < 0.2 && front(e, d.reach, 0.55, 0)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "strikeUp") {
+        if (!e.hitDone && e.st < 0.2 && DS.boxHitsPlayer(e.x - 40 + e.dir * 40, e.y - e.h * 2.1, e.x + 40 + e.dir * 40, e.y - e.h * 0.4)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "sink") {
+        if (e.st > 0.8 && !e.boss.rose) {
+          e.boss.rose = true; e.under = false;
+          const side = e.x < p.x ? -1 : 1;
+          e.x = clamp(p.x + side * 230, 100, Wd.W - 100); e.y = groundY(e.x, p.y - 40); e.dir = -side; e.vy = 0;
+          fx().puff(e.x, e.y, 18, "rgba(255,140,60,0.55)"); fx().shake(7);
+          if (hot) for (const s of [1, -1]) DS.groundWave(e, e.x + s * 60, s, 0, 440, 1.4, d.dmg * 0.55, { c: LAVA });
+        }
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (b.cutT > 0) return "cut" + b.cutN;
+      if (b.regT > 0) return "regrow";
+      if (e.state === "hurt") return "hurt";
+      if (e.state === "windup") return { breath: "roar", lob: "roar", strike: "hurt", strikeUp: "rise", roar: "rise", sink: "sink" }[m];
+      if (e.state === "strike") return m === "sink" ? (b.rose ? "rise" : "sink") : { breath: "breath", lob: "lob", strike: "strike", strikeUp: "strikeUp", roar: "roar" }[m];
+      if (e.state === "recover") return { breath: "breath", lob: "lob", strike: "strike", strikeUp: "strikeUp", roar: "roar", sink: "rise" }[m];
       return null;
     },
   };

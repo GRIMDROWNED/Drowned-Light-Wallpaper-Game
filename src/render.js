@@ -245,7 +245,7 @@
       ctx.fillStyle = g; ctx.fillRect(s.x - s.r * 1.6 * k, s.warn - s.h, s.r * 3.2 * k, s.h);
       return;
     }
-    if (s.kind === "rock") { S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
+    if (s.kind === "rock") { if (s.hot) glowDot(s.x, s.y, 30, "255,140,50", 0.5); S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
     if (s.kind === "flame") { // the dragons' breath: fire that swells then dies away
       const k = (s.t || 0) / s.life0;
       glowDot(s.x, s.y, 30, "255,140,50", 0.4 * (1 - k));
@@ -274,7 +274,7 @@
       ctx.restore();
     } else if (s.kind === "orb") {
       glowDot(s.x, s.y, 22, s.c || "120,255,200", 0.55);
-      ctx.fillStyle = s.c ? "#ffe0ff" : "#d8fff4"; ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill();
+      ctx.fillStyle = s.c === "255,140,50" ? "#ffe9a0" : s.c ? "#ffe0ff" : "#d8fff4"; ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill();
     } else if (s.kind === "soul") { // Abigail's soul orb
       glowDot(s.x, s.y, 20, "90,245,205", 0.55);
       S.drawFx(ctx, "soulOrb", s.x, s.y, { scale: 0.45, rot: ang + Math.PI / 2 });
