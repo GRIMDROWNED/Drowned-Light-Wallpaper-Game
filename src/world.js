@@ -237,6 +237,7 @@ const GROUND={
   shallows:{d:['#3b2c22','#33261e','#2a1f19','#211915','#181210'],g:['#4c7a3c','#3a6232','#24401f'],b:'#6c9a4a',hi:'#7aa654',f:['#c9d36a','#b07acb'],crack:['#1b1310','#4a3426']},
   reaches:{d:['#3a3d42','#323439','#2a2c30','#222327','#1a1b1e'],g:['#6d6a52','#55533f','#34332a'],b:'#8a8466',hi:'#9c977a',f:['#c9c7b0','#8fa0b0'],crack:['#16171a','#4a4d54']},
   abyss:{d:['#221a1c','#1c1517','#171113','#120d0f','#0c090a'],g:['#3a1c20','#2a1418','#1a0c0f'],b:'#5a2a30',hi:'#6e3238',f:['#4fa0ff','#a02030'],crack:['#0a0708','#3a2a2e']},
+  mines:{d:['#2a1f1a','#231a16','#1c1512','#16100e','#0f0b09'],g:['#4a2a18','#3a2014','#24140c'],b:'#7a3a18',hi:'#a84a1a',f:['#ff8a2a','#ffc040'],crack:['#0a0706','#5a2a12']},
   mire:{d:['#2c2a1c','#242218','#1d1c14','#171610','#11100c'],g:['#5f6a34','#4a5428','#2c3318'],b:'#7d8840',hi:'#8f9a4c',f:['#d6d860','#9fb04a'],crack:['#12110c','#3a3624']},
 };
 function ground(pal){
@@ -314,17 +315,33 @@ function reeds(){
   // Maps walk through LEVEL_THEMES and loop. A theme can swap the sky and the far/mid layers for pictures and scatter
   // cut-out pieces (tools/cut_scenery.py -> assets/scenery/<theme>/atlas.png, rects in DS.SCENERY) on parallax rows.
   // Row: f = how fast it scrolls with the camera (1 = with the ground), ty = how far it follows the camera up and down,
-  // sink = px pushed into the ground, gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
+  // sink = px pushed into the ground, lift = px floated above it (islands), gap = [min, max] px between pieces, pick = pieces to draw from (repeats allowed).
   const THEMES = {
     shallows: { code: true, ground: "shallows", rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
     ] },
-    reaches: { code: true, trees: false, tint: "rgba(30,34,44,0.35)", ground: "reaches", rows: [
-      { f: 0.7, ty: 0.88, sink: 3, gap: [180, 460], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
+    reaches: { sky: true, far: true, plats: true, ground: "reaches", top: "#0e1216", fog: "#36505f", wisp: ["#c8d8e8", "#5a6a7a"],
+      post: [16, 10], rows: [
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["rock1", "rock2", "window", "rock3", "scaffold", "banner"] },
+      { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
     ] },
-    abyss: { code: true, trees: false, tint: "rgba(48,4,12,0.5)", ground: "abyss", wisp: ["#7fb8ff", "#3a5a8a"], rows: [
+    abyss: { sky: true, far: true, plats: true, ground: "abyss", top: "#050000", fog: "#1c0f10", wisp: ["#7fb8ff", "#3a5a8a"],
+      posts: ["post1", "post2", "post3"], rows: [ // post4 carries a banner that would repeat when stretched
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["dtree1", "dtree2", "dtree3", "dtree4", "dtree5", "dtree6"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["briar1", "bellframe", "briar1"] },
       { f: 1, ty: 1, sink: 2, gap: [70, 260], pick: ["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3", "briar2"] },
+    ] },
+    spires: { sky: true, far: true, plats: true, ground: "abyss", top: "#0a0410", fog: "#2c1640", wisp: ["#d890ff", "#6a3a9a"],
+      posts: ["post1", "post2", "post3"], rows: [ // post4's crystal crown would be cut by stretching
+      { f: 0.5, ty: 0.8, sink: 0, lift: 70, gap: [120, 320], pick: ["fisle1", "fisle2", "isle1", "isle2", "isle3"] },
+      { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["arch", "cpillar", "wall", "chpillar"] },
+      { f: 0.75, ty: 0.9, sink: 3, gap: [220, 520], pick: ["portal", "pylon", "pylonBroken"] },
+    ] },
+    mines: { sky: true, far: true, plats: true, ground: "mines", top: "#1a0c08", fog: "#341a0c", wisp: ["#ffb040", "#a04010"],
+      posts: ["post1", "post3"], post: [10, 14], rows: [ // the lantern posts' arms would repeat when stretched
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"] },
+      { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["headframe", "lavafall", "pillar", "gate"] },
+      { f: 1, ty: 1, sink: 2, gap: [260, 620], pick: ["cart", "brazier"] },
     ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
@@ -334,9 +351,9 @@ function reeds(){
   };
   // One map per 10 levels (Robert 2026-11-19), then round again.
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
-  // is dropped from the run. Reaches and Abyss use the code sky and trees with their own landmarks and ground until
-  // their sky/far/mid pictures come in.
-  const LEVEL_THEMES = ["mire", "reaches", "abyss"], MAP_LEVELS = 10;
+  // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
+  // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
+  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
@@ -386,7 +403,7 @@ function reeds(){
     if (!T.atlas || !T.atlas.complete || !T.atlas.naturalWidth) return;
     const off = cx * row.f, n = Math.floor((off - 300) / row.len);
     for (let rep = n; rep * row.len - off < lw; rep++) for (const p of row.list) {
-      const [sx, sy, w, h] = T.rects[p.k], x = Math.round(rep * row.len + p.x - off), y = Math.round(base - h + row.sink);
+      const [sx, sy, w, h] = T.rects[p.k], x = Math.round(rep * row.len + p.x - off), y = Math.round(base - h + row.sink - (row.lift || 0));
       if (x > lw || x + w < 0) continue;
       if (p.flip) { g.save(); g.translate(x + w, y); g.scale(-1, 1); g.drawImage(T.atlas, sx, sy, w, h, 0, 0, w, h); g.restore(); }
       else g.drawImage(T.atlas, sx, sy, w, h, x, y, w, h);
@@ -397,12 +414,19 @@ function reeds(){
     if (!L) build();
     const fy = Math.round((FLOOR - cam.y) / 2), cx = cam.x / 2, top = fy - GY;
     if (T.code) {
-      g.fillStyle = "#0d1422"; g.fillRect(0, 0, lw, lh);
-      g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
-      tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
+      const own = T.skyImg && T.skyImg.naturalWidth; // the map's own sky picture over the code hills (Abyss, until its far/mid come in)
+      g.fillStyle = own ? T.top : "#0d1422"; g.fillRect(0, 0, lw, lh);
+      if (own) pingpong(g, T.skyImg, cx * 0.05 + t * 2, Math.max(0, Math.round(top * 0.5)), lw);
+      else {
+        g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
+        tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
+      }
       tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
       if (T.trees !== false) { tiled(g, L.far, cx * 0.35, top * 0.7, lw); tiled(g, L.mid, cx * 0.6, top * 0.85, lw); }
-      if (T.tint) { g.fillStyle = T.tint; g.fillRect(0, 0, lw, lh); } // stand-in mood until the map's own sky comes in
+      if (T.tint) { // stand-in mood until the map's own pictures come in; spare the sky picture
+        const ty = own ? Math.round(top * 0.5 + GY - 45) : 0;
+        g.fillStyle = T.tint; g.fillRect(0, ty, lw, lh - ty);
+      }
     } else {
       g.fillStyle = T.top; g.fillRect(0, 0, lw, lh);
       const sy = Math.max(0, Math.round(top * 0.5));
@@ -438,7 +462,7 @@ function reeds(){
   }
   // a post from y0 down to y1, centred on x: its cap, the middle repeated, its rotten foot
   function post(g, k, x, y0, y1) {
-    const [sx, sy, W, H] = piece(k), top = 8, foot = 12, left = Math.round(x - W / 2);
+    const [sx, sy, W, H] = piece(k), [top, foot] = T.post || [8, 12], left = Math.round(x - W / 2);
     if (y1 - y0 < top + foot) return;
     g.drawImage(T.atlas, sx, sy, W, top, left, y0, W, top);
     const midH = H - top - foot;
@@ -469,12 +493,12 @@ function reeds(){
     // posts first, then planks
     for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
-      if (pa) { post(g, ["post1", "post2", "post3", "post4"][((wx / 7) | 0) & 3], X(wx) + 2, y0 - 4, y1 + 2); continue; }
+      if (pa) { const ps = T.posts || ["post1", "post2", "post3", "post4"]; post(g, ps[((wx / 7) | 0) % ps.length], X(wx) + 2, y0 - 4, y1 + 2); continue; }
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
       g.fillStyle = "#4a3624"; g.fillRect(X(wx), y0, 4, y1 - y0);
       g.fillStyle = "#6b5034"; g.fillRect(X(wx), y0, 1, y1 - y0);
     }
-    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => pa ? block(Math.round(s.w / 2), Math.round(s.h / 2)) : stone(s.w / 2, s.h / 2), tag), X(s.x), Y(s.y));
+    for (const s of solids) if (s.kind === "stone" && vis(s.x, s.w)) g.drawImage(art(s, () => pa && pa.rects.block3 ? block(Math.round(s.w / 2), Math.round(s.h / 2)) : stone(s.w / 2, s.h / 2), pa && pa.rects.block3 ? tag : "code"), X(s.x), Y(s.y)); // a map without its blocks yet keeps the code stone
     g.fillStyle = "#181210"; g.fillRect(0, fy + 60, lw, Math.max(0, lh - fy - 60));
     tiled(g, L.ground, cam.x / 2, fy - 8, lw);
     for (const s of solids) {
