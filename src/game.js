@@ -200,7 +200,7 @@
   function kill(e) {
     e.dead = true; e.state = "dead"; e.st = 0; e.deadT = 0; e.vy = -260; e.vx = Math.sign(e.x - G.player.x) * 160;
     G.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
-    DS.Fam.onKill();
+    DS.Fam.onKill(); DS.Loot.onKill(e); // currencies drop (src/loot.js)
     if (e.enc && e.enc.boss) e.enc.won = true; // remembered: his body is cleared away 1.4 s later
     const p = G.player, k = p.k;
     for (let i = 0; i < 14; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-14, 14), y: e.y - rnd(10, e.h), vx: rnd(-60, 60), vy: rnd(-160, -40), t: 0, life: rnd(0.5, 1), c: "rgba(110,230,220," });
@@ -218,6 +218,7 @@
     let m = 1;
     if (k.guard) m *= 1 - k.guard;
     if (k.aegis) m *= 1 - k.aegis;
+    m *= DS.Loot.hurtMult(); // the Guard upgrade
     const stance = k.stance && p.stillT >= k.stance.after;
     if (stance) m *= 1 - k.stance.guard;
     if (p.bless > 0) m *= 1 - p.blessAmt;             // Abigail's blessing
@@ -487,7 +488,8 @@
   // A level is generated as you go: in landscape it ends in the Sovereign's clearing; in portrait (the knight fights
   // on its own, Robert 2026-11-18) it runs on forever until the phone is turned sideways.
   function loadLevel(n) {
-    G.level = n; G.tok++;
+    G.level = n; G.tok++; DS.Loot.clear();
+    if (!G.auto && !G.wall) DS.Maps.reached(n); // opens maps on the map select
     G.checkpoint = 300; G.clearT = 0; G.famReward = 0;
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
@@ -538,6 +540,7 @@
     if (bossEnc && bossEnc.won && !G.clearT) {
       for (const f of G.foes) if (!f.dead && !f.d.dummy) kill(f);
       G.clearT = 3.5; G.banner = { txt: "Level " + (G.level + 1) + " cleared", t: 0 };
+      DS.Loot.onClear(G.level);
       if (!G.wall && DS.Fam.rewardLevel(G.level)) G.famReward = 1.6; // a familiar to choose, once the dust settles
     }
     if (G.famReward > 0 && (G.famReward -= dt) <= 0) { G.famReward = 0; DS.UI.open("famWin"); return; }
@@ -631,7 +634,7 @@
   function setWall(on) {
     G.wall = on; G.wallT = 0; document.body.classList.toggle("wall", on);
     if (on) { G.scroll = true; bag = []; G.kit = null; nextWallKnight(); G.auto = true; restart(); }
-    else { setAuto(innerHeight > innerWidth); DS.Fam.set(DS.Fam.picked()); }
+    else { DS.Loot.flush(); setAuto(innerHeight > innerWidth); DS.Fam.set(DS.Fam.picked()); } // hand over what it gathered
   }
   Object.assign(DS, { setWall });
 
@@ -641,7 +644,7 @@
     setAuto(G.wall || innerHeight > innerWidth); // portrait (or wallpaper): the knight fights on its own
     DS.UI.update(dt);
     if (G.mode !== "play") return;
-    if (I.p.pause) { if (G.wall && !G.wallLocked) setWall(false); DS.UI.open("pause"); return; }
+    if (I.p.pause) { const wasWall = G.wall && !G.wallLocked; if (wasWall) setWall(false); DS.UI.open("pause"); if (wasWall) DS.UI.showHaul("pause"); return; }
     if (G.wall && (G.wallT += dt) > WALL_SWAP) nextWallKnight();
     if (I.p.kit) { DS.UI.cycleKit(1); }
     if (G.auto && G.scroll) autopilot(dt);
@@ -656,6 +659,7 @@
     for (const e of G.foes) updateFoe(e, dt);
     G.foes = G.foes.filter((e) => !e.dead || e.deadT < 1.4);
     if (G.scroll) DS.Explore.update(dt);
+    DS.Loot.update(dt);
     updateShots(dt);
     DS.Kits.updateZones(dt);
     updateFx(dt);
@@ -711,7 +715,7 @@
     for (const id of DS.KIT_ORDER) DS.Sprites.loadSet(DS.KITS[id].sprite);
     for (const id of DS.ENEMY_ORDER) DS.Sprites.loadSet(DS.ENEMIES[id].sprite);
     DS.Fam.load();
-    if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); setWall(true); }
+    if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); DS.Maps.wallStart(); setWall(true); }
     requestAnimationFrame(frame);
   };
   DS.step = step; // for tests

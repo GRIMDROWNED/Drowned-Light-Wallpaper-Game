@@ -40,6 +40,7 @@
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
       DS.Explore.drawWorld(ctx);
+      DS.Loot.draw(ctx); // dropped currencies
       DS.Fam.draw(ctx, false); // walking familiars, Derek's walls, Fred's glowcaps
       for (const e of G.foes) drawFoe(e);
       DS.Fam.drawAura(ctx, G.player);
@@ -494,6 +495,7 @@
       ctx.fillStyle = `rgba(220,240,240,${a})`; ctx.fillText(G.banner.txt, vw / 2, R.vh * 0.28);
     }
     DS.Explore.drawNote(ctx, vw, R.vh);
+    DS.Loot.hud(ctx, vw);
     if (p.dead) {
       ctx.textAlign = "center"; ctx.font = '700 28px "Pixelify Sans", monospace'; ctx.fillStyle = "#e8b0b0";
       ctx.fillText("The light gutters…", vw / 2, R.vh * 0.42);

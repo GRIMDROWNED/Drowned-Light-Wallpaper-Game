@@ -44,19 +44,42 @@ SHEETS = {
         "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
         "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
+    "spires": {
+        "portal-pylons.png": (["portal", "pylon", "pylonBroken"], 130, 0.3),
+        "islands.png": (["isle1", "isle2", "isle3"], 80, 0.35),
+        "mid.png": (["arch", "cpillar", "wall", "fisle1", "chpillar", "fisle2"], 92, 0.3),
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
+    },
+    "mines": {
+        "headframe-cart.png": (["headframe", "cart", "brazier"], 100, 0.25),
+        "lavafalls-pillars.png": (["lavafall", "pillar", "gate"], 110, 0.25),
+        "mid.png": (["basalt", "scaffold", "chimney", "mheadframe", "lavarock", "parch"], 92, 0.3),
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
+    },
 }
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
-STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}}
+STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}, "spires": {"sky.png": 240, "far.png": 250}, "mines": {"sky.png": 240, "far.png": 250}}
+GREEN = {"spires", "mines"}  # maps drawn on a green key
 # sheets drawn as rows stacked top to bottom: keep only the last (longest) row
-LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png")}
+LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png"), ("spires", "walkways.png"), ("mines", "walkways.png")}
 # sheets whose pieces overlap in x (branches): rough cut columns, each moved to the emptiest column within 50 px
-SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782], ("abyss", "mid.png"): [375, 770, 1068, 1469, 1808]}
-FOG = {"shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
+SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782], ("abyss", "mid.png"): [375, 770, 1068, 1469, 1808], ("mines", "lavafalls-pillars.png"): [712, 1278]}
+FOG = {"spires": (44, 22, 60), "mines": (40, 20, 14), "shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
 
 
-def key(im):
+def key(im, green=False):
     a = np.asarray(im.convert("RGB")).astype(int)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    if green:  # chroma green (the Spires are violet, so GPT drew them on green)
+        mag = (g > 150) & (r < 130) & (b < 130) & (g - np.maximum(r, b) > 70)
+        alpha = np.where(mag, 0, 255).astype(np.uint8)
+        spill = (g > np.maximum(r, b) + 30) & ~mag
+        a[spill, 1] = np.maximum(r[spill], b[spill]) + 10
+        return np.dstack([a.astype(np.uint8), alpha])
     mag = (r > 150) & (b > 150) & (g < 110) & (abs(r - b) < 90)
     alpha = np.where(mag, 0, 255).astype(np.uint8)
     # despill: pinkish fringe pixels next to the key lose their magenta cast
@@ -79,7 +102,7 @@ def runs(alpha, gap=24, minw=12):
     return out
 
 
-def shrink(rgba, scale, fog, fogc):
+def shrink(rgba, scale, fog, fogc, green=False):
     im = Image.fromarray(rgba, "RGBA")
     w, h = im.size; nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
     # premultiplied downscale so the key doesn't bleed into edges
@@ -87,8 +110,12 @@ def shrink(rgba, scale, fog, fogc):
     pm = Image.fromarray(np.dstack([arr[..., :3] * al, arr[..., 3:]]).astype(np.uint8), "RGBA").resize((nw, nh), Image.BOX)
     p = np.asarray(pm).astype(float); A = p[..., 3:4] / 255
     rgb = np.where(A > 0, p[..., :3] / np.maximum(A, 1e-6), 0)
-    pink = (rgb[..., 0] - rgb[..., 1] > 14) & (rgb[..., 2] - rgb[..., 1] > 14)  # leftover key in twig tips
-    m = rgb[..., 1][pink]; rgb[pink] = np.stack([m * 1.05, m, m * 0.85], -1)
+    if green:  # leftover green key on edges: pull green down to the violet around it
+        gr = rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2]) > 14
+        rgb[gr, 1] = np.maximum(rgb[gr, 0], rgb[gr, 2]) * 0.8
+    else:
+        pink = (rgb[..., 0] - rgb[..., 1] > 14) & (rgb[..., 2] - rgb[..., 1] > 14)  # leftover key in twig tips
+        m = rgb[..., 1][pink]; rgb[pink] = np.stack([m * 1.05, m, m * 0.85], -1)
     rgb = rgb * (1 - fog) + np.array(fogc) * fog
     out = np.dstack([np.clip(rgb, 0, 255), np.where(p[..., 3] > 110, 255, 0)]).astype(np.uint8)
     q = Image.fromarray(out, "RGBA")
@@ -117,7 +144,7 @@ for lv, sheets in SHEETS.items():
     os.makedirs(os.path.join(OUT, lv), exist_ok=True)
     pieces, info = [], {}
     for fn, (names, tall, fog) in sheets.items():
-        rgba = key(Image.open(os.path.join(SRC, lv, fn)))
+        rgba = key(Image.open(os.path.join(SRC, lv, fn)), lv in GREEN)
         if (lv, fn) in LAST_ROW:
             filled = np.where((rgba[..., 3] > 0).sum(1) > 0)[0]
             gaps = np.where(np.diff(filled) > 20)[0]
@@ -133,7 +160,7 @@ for lv, sheets in SHEETS.items():
             cuts.append(sub[rows[0]:rows[-1] + 1])
         scale = tall / max(c.shape[0] for c in cuts)
         for name, c in zip(names, cuts):
-            im = crop(shrink(c, scale, fog, FOG[lv]))
+            im = crop(shrink(c, scale, fog, FOG[lv], lv in GREEN))
             pieces.append((name, im))
     atlas, rects = pack(pieces)
     atlas.save(os.path.join(OUT, lv, "atlas.png"))
@@ -145,10 +172,10 @@ for lv, sheets in SHEETS.items():
             out = im.resize((round(im.width * s), tall), Image.BOX)
             out = out.quantize(colors=32, method=Image.Quantize.MAXCOVERAGE, dither=Image.Dither.NONE).convert("RGB")
         else:
-            rgba = key(im); rows = np.where((rgba[..., 3] > 0).sum(1) > 2)[0]
+            rgba = key(im, lv in GREEN); rows = np.where((rgba[..., 3] > 0).sum(1) > 2)[0]
             band = rgba[rows[0]:rows[-1] + 1]
             s = 64 / band.shape[0] * (band.shape[0] / (rows[-1] - rows[0] + 1))  # silhouette band ~64 px tall
-            out = crop(shrink(band, s, 0.45, FOG[lv]))
+            out = crop(shrink(band, s, 0.45, FOG[lv], lv in GREEN))
         out.save(os.path.join(OUT, lv, fn))
         data[lv][fn[:-4]] = list(out.size)
     print(lv, {k: v[2:] for k, v in rects.items()})

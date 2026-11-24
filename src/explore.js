@@ -74,10 +74,10 @@
 
   // ---------------- what the kit level and relics change (read by game.js / kits.js) ----------------
   const has = (r) => E.relics.includes(r);
-  E.dmgMult = (p) => (1 + kitLevel(p.kitId) * KITLV.dmg) * (has("stone") ? 1.15 : 1);
-  E.hpMult = (kitId) => (1 + kitLevel(kitId) * KITLV.hp) * (has("heart") ? 1.25 : 1);
-  E.speedMult = () => (has("greave") ? 1.12 : 1);
-  E.cdMult = (p) => Math.max(0.5, 1 - Math.floor(kitLevel(p.kitId) / KITLV.cdEvery) * KITLV.cd);
+  E.dmgMult = (p) => (1 + kitLevel(p.kitId) * KITLV.dmg) * (has("stone") ? 1.15 : 1) * DS.Loot.dmgMult(); // + upgrades (src/loot.js)
+  E.hpMult = (kitId) => (1 + kitLevel(kitId) * KITLV.hp) * (has("heart") ? 1.25 : 1) * DS.Loot.hpMult();
+  E.speedMult = () => (has("greave") ? 1.12 : 1) * DS.Loot.speedMult();
+  E.cdMult = (p) => Math.max(0.5, 1 - Math.floor(kitLevel(p.kitId) / KITLV.cdEvery) * KITLV.cd) * DS.Loot.cdMult();
   const radius = () => (LIGHT.r0 + LIGHT.r1 * E.light / LIGHT.max) * (has("wick") ? 1.35 : 1);
   const flareMax = () => FLARE.max + (has("flask") ? 1 : 0);
 
@@ -229,7 +229,7 @@
     // the lantern drains in mist (not while the knight fights on its own)
     const q = patchAt(p.x);
     if (q && !p.dead && !G.auto && !E.scenic) {
-      E.light = Math.max(0, E.light - LIGHT.drain * (has("wick") ? 0.7 : 1) * dt);
+      E.light = Math.max(0, E.light - LIGHT.drain * (has("wick") ? 0.7 : 1) * DS.Loot.drainMult() * dt);
       if (E.light <= 0 && !G.god) { // the mist eats the knight
         p.hp -= LIGHT.starve * dt;
         if (Math.random() < dt * 3) fx().text(p.x, p.y - p.h - 6, "the mist", "#8a9a9a", 11);
