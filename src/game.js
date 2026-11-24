@@ -489,7 +489,7 @@
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
     else { const lv = Wd.level(n, 1000 + n * 7919); G.enc = lv.enc; G.bossX = lv.bossX; G.endless = false; }
-    DS.Explore.build(n, G.endless ? 0 : G.bossX); // mist, traps and pickups (played levels only)
+    if (G.endless) DS.Explore.startScenic(n); else DS.Explore.build(n, G.bossX); // mist, traps and pickups (looks only in the endless run)
     G.banner = { txt: G.auto ? "Level " + (n + 1) + ": auto-fight" : "Level " + (n + 1), t: 0 };
   }
   // portrait <-> landscape in the middle of a level
@@ -511,9 +511,10 @@
     const p = G.player, tok = G.tok;
     if (G.endless) {
       G.enc.push(...Wd.extend(p.x + 3600));
+      DS.Explore.extendScenic(p.x + 3000);
       if ((G.autoT += dt) > 2) { // tidy up far behind
         G.autoT = 0; const cut = Math.min(p.x, G.checkpoint) - 2500;
-        Wd.prune(cut); G.enc = G.enc.filter((e) => e.x > cut - 1200);
+        Wd.prune(cut); DS.Explore.prune(cut); G.enc = G.enc.filter((e) => e.x > cut - 1200);
         G.foes = G.foes.filter((f) => f.d.dummy || f.x > cut);
       }
     }

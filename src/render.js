@@ -388,7 +388,7 @@
     const p = G.player, k = p.k, vw = R.vw;
     ctx.textAlign = "left";
     const x = 14, y = 14;
-    const fam = DS.Fam.form(), ex = DS.Explore.on ? (DS.Explore.relics.length ? 28 : 16) : 0;
+    const fam = DS.Fam.form(), ex = DS.Explore.on ? (DS.Explore.relics.length ? 32 : 16) : 0;
     ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, (fam ? 88 : 72) + ex);
     ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = `rgb(${k.color})`;
     ctx.fillText(k.name.toUpperCase(), x, y + 10);

@@ -90,7 +90,7 @@
   };
   const clearFloor = (x) => !Wd.solidAt(x, Wd.FLOOR - 5) && !Wd.solidAt(x - 30, Wd.FLOOR - 5) && !Wd.solidAt(x + 30, Wd.FLOOR - 5);
 
-  E.clear = function () { E.on = false; E.patches = []; E.items = []; E.traps = []; E.wells = []; E.thrown = []; syncFlareBtn(); };
+  E.clear = function () { E.on = false; E.scenic = false; E.genX = 0; E.patches = []; E.items = []; E.traps = []; E.wells = []; E.thrown = []; syncFlareBtn(); };
   E.reset = function () { E.relics = []; E.flares = FLARE.start; E.light = LIGHT.max; }; // a fresh run
   E.build = function (n, bossX) {
     E.clear();
@@ -161,6 +161,35 @@
     if (n >= 2) { const s = take(high); if (s) item("ember", s.x, s.y); }
     syncFlareBtn();
   };
+  // The wallpaper and the portrait auto-fight (Robert 2026-11-23: "add some of these features to the wallpaper"): the
+  // endless run gets mist banks, Mist Wells the knight lights as it passes, glowing oil and embers, flares it throws
+  // into the mist and traps that only catch the Drowned. Looks only: no lantern drain, no pages, sigils or relics.
+  E.startScenic = function (n) { E.clear(); E.on = true; E.scenic = true; E.genX = 1600; E.lvl = n; E.rng = rng(4242 + n * 31); E.light = LIGHT.max; E.flares = 2; };
+  E.extendScenic = function (toX) {
+    if (!E.on) return;
+    if (!E.scenic) { E.scenic = true; E.rng = E.rng || rng(777); E.genX = Math.max(E.genX || 0, G.player.x + 1800); }
+    const r = E.rng;
+    while (E.genX < toX) {
+      const x0 = E.genX, seg = 1800 + r() * 1400;
+      E.genX += seg;
+      if (r() < 0.6) { // a bank of mist with its well
+        const len = 700 + r() * 500, a = x0 + 200, b = a + len, q = { a, b, fade: 1, cleared: false };
+        E.patches.push(q);
+        const wx = a + len * 0.62;
+        E.wells.push({ x: wx, y: floorAt(wx), patch: q, charge: 0, lit: false });
+        for (let k = 0; k < 2; k++) { const x = a + 150 + r() * (len - 250); if (Math.abs(x - wx) > 90 && clearFloor(x) && !E.traps.some((t) => Math.abs(t.x - x) < 140)) { const kind = ["spikes", "snare", "rune"][r() * 3 | 0]; E.traps.push({ kind, x, y: Wd.FLOOR, w: kind === "spikes" ? 70 : 60, cd: 0, seen: false, t: 0 }); } }
+        E.items.push({ kind: r() < 0.5 ? "oil" : "ember", x: b - 120, y: floorAt(b - 120), t: r() * 6 });
+        if (r() < 0.6) E.items.push({ kind: "flare", x: a - 180, y: floorAt(a - 180), t: r() * 6 });
+      }
+      // glowing pickups up on the planks of this stretch
+      let n = 0;
+      for (const pl of Wd.plats) if (pl.x > x0 && pl.x < x0 + seg && pl.y <= 660 && n < 2 && r() < 0.5) { n++; E.items.push({ kind: ["oil", "ember", "flare"][r() * 3 | 0], x: pl.x + pl.w / 2, y: pl.y, t: r() * 6 }); }
+    }
+  };
+  E.prune = function (beforeX) { // forget what the endless run left far behind
+    E.patches = E.patches.filter((q) => q.b > beforeX); E.wells = E.wells.filter((w) => w.x > beforeX);
+    E.items = E.items.filter((i) => i.x > beforeX); E.traps = E.traps.filter((t) => t.x > beforeX);
+  };
   E.onDeath = function () { // relics are lost; the lantern refills
     if (E.relics.length) fx().text(G.player.x, G.player.y - 120, "Relics lost to the mist", "#c0a0ff", 14);
     E.relics = []; E.light = LIGHT.max; E.flares = Math.max(E.flares, FLARE.start); syncFlareBtn();
@@ -199,7 +228,7 @@
     const p = G.player;
     // the lantern drains in mist (not while the knight fights on its own)
     const q = patchAt(p.x);
-    if (q && !p.dead && !G.auto) {
+    if (q && !p.dead && !G.auto && !E.scenic) {
       E.light = Math.max(0, E.light - LIGHT.drain * (has("wick") ? 0.7 : 1) * dt);
       if (E.light <= 0 && !G.god) { // the mist eats the knight
         p.hp -= LIGHT.starve * dt;
@@ -220,6 +249,10 @@
       pickups(p);
       if (p.snareT > 0) { p.snareT -= dt; p.x = p.snareX; p.vx = 0; if (I.p.jump || I.p.dash) { p.snareT -= 0.25; fx().spark(p.x, p.y - 10, "#8a6a40", 3); } }
       if (I.p.flare) throwFlare(p);
+      if (G.auto) { // the knight on its own throws a flare ahead into a bank of mist
+        const q2 = patchAt(p.x); // half the time, once well inside, so the mist is seen first
+        if (q2 && !q2.flared && p.x > q2.a + 260) { q2.flared = true; if (E.flares > 0 && Math.random() < 0.5) throwFlare(p); }
+      }
     }
     for (const f of E.thrown) {
       if (!f.landed) {
@@ -231,6 +264,7 @@
     }
     E.thrown = E.thrown.filter((f) => !f.landed || f.burn > 0);
     for (const it of E.items) it.t += dt;
+    if (E.pop && (E.pop.t += dt) > 2.4) E.pop = null;
     if (E.note) { E.note.t += dt; if (E.note.t > 6) E.note = null; }
   };
 
@@ -244,7 +278,7 @@
     for (const t of E.traps) {
       if (t.cd > 0) continue;
       const on = (o) => o.onGround && Math.abs(o.x - t.x) < t.w / 2 && Math.abs(o.y - t.y) < 4;
-      if (on(p)) spring(t, p, null);
+      if (on(p) && !E.scenic) spring(t, p, null);
       else for (const e of G.foes) if (!e.dead && !e.d.boss && !e.d.dummy && e.spawnT <= 0 && on(e)) { spring(t, null, e); break; }
     }
   }
@@ -271,14 +305,14 @@
   function wells(p, dt) {
     for (const w of E.wells) {
       if (w.lit) continue;
-      const near = Math.abs(p.x - w.x) < 46 && Math.abs(p.y - w.y) < 30;
-      w.charge = near ? Math.min(1, w.charge + dt / 1.2) : Math.max(0, w.charge - dt);
+      const near = Math.abs(p.x - w.x) < (E.scenic ? 70 : 46) && Math.abs(p.y - w.y) < (E.scenic ? 200 : 30);
+      w.charge = near ? Math.min(1, w.charge + dt / (E.scenic ? 0.5 : 1.2)) : Math.max(0, w.charge - dt * (E.scenic ? 0.2 : 1));
       if (w.charge >= 1) {
         w.lit = true; w.patch.cleared = true;
         E.light = Math.min(LIGHT.max, E.light + LIGHT.wellOil);
         G.checkpoint = Math.max(G.checkpoint, w.x - 60);
-        G.banner = { txt: "Mist Well lit", t: 0 };
-        note("The mist burns away for good. You will wake here if you fall.");
+        if (!E.scenic) G.banner = { txt: "Mist Well lit", t: 0 };
+        if (!E.scenic) note("The mist burns away for good. You will wake here if you fall.");
         fx().ring(w.x, w.y - 30, "rgba(255,210,120,0.9)"); fx().shake(4);
       }
     }
@@ -303,6 +337,7 @@
           if (k === "heart") { p.max = Math.round(p.max * 1.25); p.hp += p.max - hp0; }
           if (k === "flask") { E.flares++; syncFlareBtn(); }
           G.banner = { txt: R.name, t: 0 }; note(R.text);
+          E.pop = { k, x: it.x, y: it.y - 30, t: 0 }; // the relic rises out of its cache
         } else { E.light = LIGHT.max; say("the cache is empty: oil", "#ffc060"); }
       } else if (it.kind === "page") {
         if (!pages.includes(it.key)) { pages.push(it.key); save("dl-side-pages", pages); }
@@ -339,14 +374,36 @@
     for (const w of E.wells) drawWell(g, w);
     for (const t of E.traps) drawTrap(g, t);
     for (const it of E.items) drawItem(g, it);
+    const A = pickArt(), pr = E.pop && DS.PICKART && DS.PICKART["relic_" + E.pop.k];
+    if (A && pr) { // Robert's relic icon rising from the cache, at double size
+      const t = E.pop.t, x = E.pop.x, y = E.pop.y - Math.min(1, t / 0.8) * 50, a = Math.min(1, (2.4 - t) * 2);
+      glow(g, x, y, 60, "255,210,120", 0.5 * a);
+      g.globalAlpha = a; g.drawImage(A, pr[0], pr[1], pr[2], pr[3], Math.round(x - pr[2] * 2), Math.round(y - pr[3] * 2), pr[2] * 4, pr[3] * 4); g.globalAlpha = 1;
+    }
     for (const f of E.thrown) {
       glow(g, f.x, f.y - 8, f.landed ? 60 : 24, "160,220,255", 0.6);
       g.fillStyle = "#e8f8ff"; g.fillRect(f.x - 3, f.y - 10, 6, 8);
     }
   };
+  // Robert's pickup art (2026-11-23), cut by tools/cut_pickups.py; the code shapes below stay for anything not drawn yet
+  let pickImg = null;
+  const GLOW = { oil: "255,190,90", ember: "255,90,70", flare: "140,210,255", page: "220,230,210", sigil: "255,170,80" };
+  function pickArt() {
+    if (!pickImg && DS.PICKART) { pickImg = new Image(); pickImg.src = "assets/pickups/atlas.png?v=" + DS.VERSION; }
+    return pickImg && pickImg.complete && pickImg.naturalWidth ? pickImg : null;
+  }
   function drawItem(g, it) {
     const b = Math.sin(it.t * 2.4) * 4, x = Math.round(it.x), y = Math.round(it.y - 22 + b);
     const box = (c, x0, y0, w, h) => { g.fillStyle = c; g.fillRect(x0, y0, w, h); };
+    const A = pickArt();
+    if (A && DS.PICKART[it.kind]) {
+      glow(g, x, y, it.kind === "sigil" ? 40 : 28, GLOW[it.kind], it.kind === "sigil" || it.kind === "ember" ? 0.5 : 0.35);
+      let r = DS.PICKART[it.kind], sx = 1;
+      if (it.kind === "sigil") { const c = Math.cos(it.t * 1.6); sx = Math.max(0.3, Math.abs(c)); if (Math.abs(c) < 0.6 && DS.PICKART.sigil2) { r = DS.PICKART.sigil2; sx = 1; } }
+      const w = r[2] * 2 * sx, h = r[3] * 2; // 1 atlas px = 2 world units
+      g.drawImage(A, r[0], r[1], r[2], r[3], Math.round(x - w / 2), Math.round(y - h / 2), Math.round(w), h);
+      return;
+    }
     if (it.kind === "oil") {
       glow(g, x, y, 26, "255,190,90", 0.35);
       box("#2a1a10", x - 7, y - 9, 14, 18); box("#d08a30", x - 5, y - 5, 10, 12); box("#ffd27a", x - 3, y - 3, 3, 6); box("#5a4030", x - 3, y - 13, 6, 5);
@@ -472,8 +529,17 @@
     bar(x + 46, y + 2, 84, 6, E.light / LIGHT.max, inM ? "#ffb040" : "#a07a3a", "#1c160c");
     ctx.fillStyle = E.flares ? "#a0dcff" : "#5a6870"; ctx.fillText("Flares " + E.flares, x + 138, y + 8);
     const here = pages.filter((k) => k.split(":")[0] === String(G.level)).length;
-    ctx.fillStyle = "#d8d0b0"; ctx.fillText("Pages " + here + "/3", x + 182, y + 8);
-    if (E.relics.length) { ctx.fillStyle = "#ffd27a"; ctx.fillText("Relics: " + E.relics.map((k) => RELICS[k].name).join(", "), x, y + 22); return 26; }
+    if (!E.scenic) { ctx.fillStyle = "#d8d0b0"; ctx.fillText("Pages " + here + "/3", x + 182, y + 8); }
+    if (E.relics.length) {
+      ctx.fillStyle = "#ffd27a"; ctx.fillText("Relics", x, y + 24);
+      const A = pickArt(); let ix = x + 40;
+      for (const k of E.relics) {
+        const r = A && DS.PICKART["relic_" + k];
+        if (r) { const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false; ctx.drawImage(A, r[0], r[1], r[2], r[3], ix, y + 12, r[2], r[3]); ctx.imageSmoothingEnabled = sm; ix += r[2] + 6; }
+        else { ctx.fillText(RELICS[k].name, ix, y + 24); ix += ctx.measureText(RELICS[k].name).width + 8; }
+      }
+      return 30;
+    }
     return 14;
   };
   E.drawNote = function (ctx, vw, vh) {
