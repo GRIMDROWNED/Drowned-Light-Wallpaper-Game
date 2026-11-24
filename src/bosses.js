@@ -1,6 +1,6 @@
 /* The later levels' bosses, ported from the main game (Robert 2026-11-18/20): the Drowned Colossus (map 1, level 5),
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
-   The Deadly Rose (map 3, level 30). DS.bossFor in data.js puts them at the
+   The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35) and the Lord of the Rift Throne (level 40). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -419,6 +419,173 @@
       if (e.state === "strike") return m === "glide" ? (e.fly ? "glide" : "drop") : { lash: "lash", upLash: "upLash", briar: "briar", waltz: "waltz" }[m];
       if (e.state === "recover") return m === "glide" ? (e.onGround ? "land" : "drop") : { lash: "lash", upLash: "upLash", briar: "briar", waltz: "waltz" }[m];
       if (!e.onGround) return e.vy < 0 ? "rise" : "drop";
+      return null;
+    },
+  };
+
+  // a spike of shot that bursts up from the ground after a warning mark (the Rose's briar, the Rift's crystals, the Seraph's beam)
+  function spike(e, kind, x, delay, dmg, h = 72, life = 0.45) {
+    const gy = groundY(x, G.player.y - 40);
+    G.shots.push({ team: "f", kind, x, y: gy - h / 2, vx: 0, vy: 0, r: 18, h, dmg: Math.round(dmg), life, delay, warn: gy, ghost: true, src: e, by: e.d.name });
+  }
+
+  // ---------------- the Seething Seraph (map 4, level 35: wins a familiar) ----------------
+  // Recoloured to the Spires' violet (Robert 2026-11-24). It never walks: it floats a little off the ground, keeping its
+  // distance. Orb rings, pillars of light on marked spots, a banner sweep across the hall, and it sinks into the floor
+  // to rise behind the knight. Staggered, it drops to the ground for a moment.
+  const SERAPH_UP = 46;
+  AI["seething-seraph"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Seraph's halo burns white");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const m = adx < 170 ? pick([["sweep", 3], ["sink", 2], ["orbs", 1]])
+          : adx < 450 ? pick([["orbs", 3], ["beam", 3], ["sweep", 1]])
+          : pick([["beam", 3], ["sink", 2], ["orbs", 1]]);
+        start(e, m, { orbs: 0.7, beam: 0.8, sweep: 0.55, sink: 0.4 }[m] * (hot ? 0.85 : 1));
+      }
+      return 0; // it drifts (frame), it doesn't walk
+    },
+    frame(e, dt) {
+      const p = G.player;
+      if (e.state === "hurt") { if (e.stun >= 0.5) e.fly = false; return; } // staggered: it drops
+      if (e.state === "strike" && (e.move === "sweep" || e.move === "sink")) return;
+      if (!e.fly) { e.fly = true; e.onGround = false; }
+      const want = e.state === "move" ? 260 : Math.abs(e.x - p.x), side = e.x < p.x ? -1 : 1;
+      const hx = e.state === "move" ? p.x + side * want : e.x, hy = groundY(e.x, e.y) - SERAPH_UP + Math.sin(G.t * 2) * 8;
+      e.vx += clamp((hx - e.x) * 2.5 - e.vx * 1.8, -700, 700) * dt; e.vx = clamp(e.vx, -e.d.speed, e.d.speed);
+      e.vy += clamp((hy - e.y) * 5 - e.vy * 2.5, -900, 900) * dt;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "orbs") { // a ring of slow orbs, and one sent straight at the knight
+        e.strikeDur = 0.5;
+        const n = hot ? 10 : 7, cx = e.x, cy = e.y - e.h * 0.6;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + G.t;
+          G.shots.push({ team: "f", kind: "orb", x: cx, y: cy, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, r: 10, dmg: Math.round(d.dmg * 0.5), life: 3, src: e, by: d.name, c: "220,110,255", ghost: true });
+        }
+        const a = Math.atan2(p.y - p.h * 0.5 - cy, p.x - cx);
+        G.shots.push({ team: "f", kind: "orb", x: cx, y: cy, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, r: 12, dmg: Math.round(d.dmg * 0.6), life: 3, homing: 1.2, speed: 330, src: e, by: d.name, c: "255,150,255" });
+      } else if (e.move === "beam") { // pillars of light where the knight stands, then either side
+        e.strikeDur = 0.6;
+        const n = hot ? 5 : 3;
+        for (let i = 0; i < n; i++) spike(e, "beam", clamp(p.x + (i ? (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 150 : 0), 80, Wd.W - 80), 0.5 + Math.ceil(i / 2) * 0.25, d.dmg * 0.8, 420, 0.4);
+      } else if (e.move === "sweep") { // banners whipped forward: it rushes across the hall
+        e.strikeDur = 0.75; e.dir = Math.sign(p.x - e.x) || e.dir; e.vx = e.dir * 640; e.vy = 0;
+      } else if (e.move === "sink") { // into the floor, and up behind the knight
+        e.strikeDur = 1.4; e.under = true; e.vx = 0; e.vy = 0; e.boss.rose = false;
+        G.fx.push({ kind: "portal", x: e.x, y: e.y, t: 0, life: 0.5 });
+      }
+    },
+    tick(e) {
+      const d = e.d, p = G.player;
+      if (e.move === "sweep") {
+        if (!e.hitDone && DS.boxHitsPlayer(e.x - e.w * 0.6, e.y - e.h, e.x + e.w * 0.6, e.y)) { e.hitDone = true; hurt(e, d.dmg); }
+        if (e.st > 0.5) e.vx *= 0.9;
+      } else if (e.move === "sink") {
+        e.vx = 0; e.vy = 0;
+        if (e.st > 0.7 && !e.boss.rose) {
+          e.boss.rose = true; e.under = false;
+          const side = p.dir > 0 ? -1 : 1; // behind the knight
+          e.x = clamp(p.x + side * 120, 80, Wd.W - 80); e.y = groundY(e.x, p.y - 40); e.dir = -side;
+          G.fx.push({ kind: "portal", x: e.x, y: e.y, t: 0, life: 0.5 }); fx().shake(6);
+          if (DS.boxHitsPlayer(e.x - 70, e.y - e.h, e.x + 70, e.y)) { hurt(e, d.dmg); p.vy = -460; p.onGround = false; }
+          e.vy = -260;
+        }
+      }
+    },
+    pose(e) {
+      const m = e.move;
+      if (e.state === "hurt") return !e.fly && !e.onGround ? "drop" : e.stun >= 0.5 ? "stun" : "knock";
+      if (e.state === "windup") return { orbs: "orbWind", beam: "beamWind", sweep: "float", sink: "sink" }[m];
+      if (e.state === "strike") return m === "sink" ? (e.boss.rose ? "rise" : "sink") : { orbs: "orbCast", beam: "beam", sweep: "sweep" }[m];
+      if (e.state === "recover") return { orbs: "orbCast", beam: "beam", sweep: "float", sink: "rise" }[m];
+      return Math.abs(e.vx) > 40 ? "float" : null;
+    },
+  };
+
+  // ---------------- the Lord of the Rift Throne (map 4, level 40: wins the Chain Reaper) ----------------
+  // Scythe sweep that throws a crescent of violet light, an overhead that drives crystals up from the floor in a line,
+  // a rift blink behind the knight straight into a sweep, and a leap that ends in a dive. Below half health he hangs in
+  // the air at the top of the leap, throwing rift lightning, and the crystals come on both sides.
+  AI["rift-throne"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Rift tears open");
+      if (e.cd <= 0) {
+        let m;
+        if (e.boss.next) { m = e.boss.next; e.boss.next = null; }
+        else m = adx < 160 ? pick([["over", 3], ["sweep", 2], ["blink", hot ? 2 : 1]])
+          : adx < 420 ? pick([["sweep", 4], ["leap", 2], ["blink", 2]])
+          : pick([["sweep", 2], ["leap", 3], ["blink", 2]]);
+        e.dir = Math.sign(dx) || e.dir;
+        start(e, m, { sweep: 0.6, over: 0.7, blink: 0.35, leap: 0.5 }[m] * (hot ? 0.85 : 1));
+        return 0;
+      }
+      e.dir = Math.sign(dx) || e.dir;
+      return adx > 150 ? Math.sign(dx) : 0;
+    },
+    frame(e) {
+      if (e.fly && e.state === "hurt") e.fly = false;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "sweep") {
+        e.strikeDur = 0.35;
+        G.shots.push({ team: "f", kind: "crescent", x: e.x + e.dir * 60, y: e.y - e.h * 0.45, vx: e.dir * 560, vy: 0, r: 26, h: 96, dmg: Math.round(d.dmg * 0.7), life: 1.6, ghost: true, src: e, by: d.name });
+      } else if (e.move === "over") {
+        e.strikeDur = 0.5; fx().shake(7);
+        for (const sd of hot ? [1, -1] : [e.dir]) for (let i = 0; i < 6; i++) spike(e, "crystal", clamp(e.x + sd * (70 + i * 70), 60, Wd.W - 60), 0.05 + i * 0.08, d.dmg * 0.7, 78);
+      } else if (e.move === "blink") { // gone in shards, back behind the knight, sweeping
+        e.strikeDur = 0.25;
+        G.fx.push({ kind: "portal", x: e.x, y: e.y, t: 0, life: 0.45 });
+        const side = p.dir > 0 ? -1 : 1;
+        e.x = clamp(p.x + side * 150, 80, Wd.W - 80); e.y = groundY(e.x, p.y - 40); e.dir = -side; e.vx = 0; e.vy = 0;
+        G.fx.push({ kind: "portal", x: e.x, y: e.y, t: 0, life: 0.45 });
+        e.boss.next = "sweep"; e.cd = 0;
+      } else if (e.move === "leap") {
+        e.strikeDur = 4; e.vy = -950; e.onGround = false; e.vx = clamp((p.x - e.x) / 1.4, -380, 380); e.boss.air = "up"; e.boss.zap = 0;
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, hot = e.boss.phase > 1;
+      if (e.move === "sweep") {
+        if (!e.hitDone && e.st < 0.15 && front(e, d.reach, 0.9, 20)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "over") {
+        if (!e.hitDone && e.st < 0.12 && front(e, 130, 1, 10)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "leap") {
+        if (e.boss.air === "up" && e.vy > -60) { // the top of the leap: hang there (phase 2: throwing lightning), then dive
+          e.boss.air = "hang"; e.fly = true; e.vx = 0; e.vy = 0; e.boss.hangT = hot ? 1.3 : 0.35;
+        } else if (e.boss.air === "hang") {
+          e.vy = 0; e.vx = 0; e.dir = Math.sign(p.x - e.x) || e.dir;
+          if (hot && (e.boss.zap -= dt) <= 0) {
+            e.boss.zap = 0.4;
+            const a = Math.atan2(p.y - p.h * 0.5 - (e.y - e.h * 0.6), p.x - e.x);
+            G.shots.push({ team: "f", kind: "orb", x: e.x, y: e.y - e.h * 0.6, vx: Math.cos(a) * 460, vy: Math.sin(a) * 460, r: 10, dmg: Math.round(d.dmg * 0.5), life: 2, src: e, by: d.name, c: "210,120,255" });
+          }
+          if ((e.boss.hangT -= dt) <= 0) {
+            e.boss.air = "dive"; const gy = groundY(p.x, p.y), L = Math.hypot(p.x - e.x, gy - e.y) || 1;
+            e.vx = (p.x - e.x) / L * 950; e.vy = (gy - e.y) / L * 950;
+          }
+        } else if (e.boss.air === "dive") {
+          if (!e.hitDone && DS.boxHitsPlayer(e.x - 50, e.y - e.h, e.x + 50, e.y)) { e.hitDone = true; hurt(e, d.dmg); }
+          if (e.onGround || e.y >= groundY(e.x, e.y) - 4) {
+            e.fly = false; e.boss.air = "land"; e.vx = 0; e.st = e.strikeDur - 0.4; fx().shake(11);
+            for (const sd of [1, -1]) DS.groundWave(e, e.x + sd * 50, sd, 0, 500, 1.3, d.dmg * 0.6, { c: "200,110,255" });
+            if (DS.boxHitsPlayer(e.x - 120, e.y - e.h, e.x + 120, e.y)) hurt(e, d.dmg);
+          }
+        }
+        if (e.boss.air !== "land" && e.st > e.strikeDur - 0.45) e.st = e.strikeDur - 0.45; // until he lands
+      }
+    },
+    pose(e) {
+      const m = e.move;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return { sweep: "sweepWind", over: "overWind", blink: "blink", leap: "crouch" }[m];
+      if (e.state === "strike") return m === "leap" ? ({ up: "leap", hang: e.boss.phase > 1 ? "float" : "leap", dive: "dive", land: "land" }[e.boss.air]) : { sweep: "sweep", over: "over", blink: "blink" }[m];
+      if (e.state === "recover") return { sweep: "sweep", over: "over", blink: "sweepWind", leap: "land" }[m];
       return null;
     },
   };

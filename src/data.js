@@ -193,6 +193,12 @@
     "deadly-rose": boss("deadly-rose", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/rise"], fall: ["side/drop"], death: ["side/death"] },
       ["lashWind", "lash", "upLash", "briar", "waltz", "stun", "glide", "rise", "hover", "drop", "land", "knock"],
       { name: "The Deadly Rose", title: "The Deadly Rose", fallen: "THE ROSE WITHERS", hp: 1500, speed: 120, dmg: 20, reach: 300, windup: 0.6, cd: 0.95, w: 70, h: 140 }),
+    "seething-seraph": boss("seething-seraph", { idle: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/rise"], fall: ["side/drop"], death: ["side/death"] },
+      ["float", "orbWind", "orbCast", "beamWind", "beam", "stun", "rise", "sink", "sweep", "dive", "drop", "knock"],
+      { name: "Seething Seraph", title: "The Seething Seraph", fallen: "THE SERAPH FALLS SILENT", hp: 1500, speed: 150, dmg: 20, reach: 140, windup: 0.7, cd: 1.0, w: 70, h: 120 }),
+    "rift-throne": boss("rift-throne", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/leap"], fall: ["side/dive"], death: ["side/death"] },
+      ["sweepWind", "sweep", "overWind", "over", "blink", "stun", "crouch", "leap", "float", "dive", "land", "knock"],
+      { name: "Lord of the Rift Throne", title: "The Lord of the Rift Throne", fallen: "THE THRONE STANDS EMPTY", hp: 1800, speed: 130, dmg: 22, reach: 190, windup: 0.6, cd: 0.9, w: 64, h: 124 }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 

@@ -214,17 +214,40 @@
   // ---------------- shots ----------------
   function drawShot(s) {
     if (s.warn && s.delay > 0) { // a boulder about to fall: a blinking mark where it lands
-      ctx.fillStyle = `rgba(255,80,60,${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = s.kind === "crystal" || s.kind === "beam" ? `rgba(210,110,255,${0.35 + 0.3 * Math.sin(G.t * 30)})` : `rgba(255,80,60,${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
     }
     if (s.delay > 0) return;
     if (s.kind === "thorn") { // the Rose's briar: thorns burst up from the ground
-      const k = Math.min(1, s.t / 0.08), fade = Math.min(1, s.life * 4);
+      const k = Math.min(1, (s.t || 0) / 0.08), fade = Math.min(1, s.life * 4);
       S.drawFx(ctx, s.big ? "bloodThorns" : "bloodThorn", s.x, s.warn + 3, { ay: 1, sy: k * 1.5, scale: 1.4, alpha: fade });
+      return;
+    }
+    if (s.kind === "crystal") { // the Rift Throne's crystals bursting from the ground
+      const k = Math.min(1, (s.t || 0) / 0.07), fade = Math.min(1, s.life * 4), hh = s.h * k, w = s.r * 1.3;
+      glowDot(s.x, s.warn - hh * 0.5, 30, "200,90,255", 0.35 * fade);
+      ctx.globalAlpha = fade; ctx.fillStyle = "#d9a0ff"; ctx.strokeStyle = "#4a1660"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(s.x - w, s.warn); ctx.lineTo(s.x - 2, s.warn - hh); ctx.lineTo(s.x + w * 0.6, s.warn - hh * 0.55); ctx.lineTo(s.x + w, s.warn); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.globalAlpha = 1; return;
+    }
+    if (s.kind === "crescent") { // a scythe's arc of violet light flying on
+      const d = Math.sign(s.vx) || 1, fade = Math.min(1, s.life * 3);
+      glowDot(s.x, s.y, 50, "200,90,255", 0.35 * fade);
+      ctx.strokeStyle = `rgba(230,170,255,${0.9 * fade})`; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(s.x - d * 26, s.y, s.h * 0.5, -1.1, 1.1, d < 0); ctx.stroke();
+      ctx.strokeStyle = `rgba(150,60,220,${0.7 * fade})`; ctx.lineWidth = 9;
+      ctx.beginPath(); ctx.arc(s.x - d * 32, s.y, s.h * 0.5, -0.9, 0.9, d < 0); ctx.stroke();
+      return;
+    }
+    if (s.kind === "beam") { // the Seraph's pillar of light
+      const k = Math.min(1, (s.t || 0) / 0.06), fade = Math.min(1, s.life * 4);
+      const g = ctx.createLinearGradient(s.x - s.r, 0, s.x + s.r, 0);
+      g.addColorStop(0, "rgba(200,90,255,0)"); g.addColorStop(0.5, `rgba(255,210,255,${0.9 * fade})`); g.addColorStop(1, "rgba(200,90,255,0)");
+      ctx.fillStyle = g; ctx.fillRect(s.x - s.r * 1.6 * k, s.warn - s.h, s.r * 3.2 * k, s.h);
       return;
     }
     if (s.kind === "rock") { S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
     if (s.kind === "flame") { // the dragons' breath: fire that swells then dies away
-      const k = s.t / s.life0;
+      const k = (s.t || 0) / s.life0;
       glowDot(s.x, s.y, 30, "255,140,50", 0.4 * (1 - k));
       S.drawFx(ctx, "fire" + (1 + (Math.floor(s.t * 16 + s.x) % 6)), s.x, s.y + 14, { ay: 1, scale: 0.5 + k * 0.6, alpha: 1 - k * k, add: true });
       return;
@@ -250,8 +273,8 @@
       ctx.fillStyle = "#7ff0e0"; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(3, -4); ctx.lineTo(3, 4); ctx.fill();
       ctx.restore();
     } else if (s.kind === "orb") {
-      glowDot(s.x, s.y, 22, "120,255,200", 0.55);
-      ctx.fillStyle = "#d8fff4"; ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill();
+      glowDot(s.x, s.y, 22, s.c || "120,255,200", 0.55);
+      ctx.fillStyle = s.c ? "#ffe0ff" : "#d8fff4"; ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, TAU); ctx.fill();
     } else if (s.kind === "soul") { // Abigail's soul orb
       glowDot(s.x, s.y, 20, "90,245,205", 0.55);
       S.drawFx(ctx, "soulOrb", s.x, s.y, { scale: 0.45, rot: ang + Math.PI / 2 });

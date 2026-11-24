@@ -15,8 +15,9 @@ def stats(a):
 
 # the bosses' main-game frames live outside drowned/ (see BOSSES in tools/pixelize.py)
 BOSS_REF = {"drowned-colossus": "colossus/side/walk1", "mother-wyvern": "wyvern-mother/side/fly1", "crucible-wyrm": "mines-bosses/wyrm/side/walk1",
-            "starved-bell": "starved-bell/side/walk1", "deadly-rose": "deadly-rose/side/walk1"}
-GREEN = {"mother-wyvern", "crucible-wyrm", "deadly-rose"}
+            "starved-bell": "starved-bell/side/walk1", "deadly-rose": "deadly-rose/side/walk1",
+            "rift-throne": "rift-throne/side/walk1"}  # (the Seraph is recoloured violet: tools/recolor_seraph.py, no matching)
+GREEN = {"mother-wyvern", "crucible-wyrm", "deadly-rose", "rift-throne"}
 for t in sys.argv[2:]:
     ref = np.array(Image.open(os.path.join(sys.argv[1], "assets/sprites", BOSS_REF[t]) + ".png" if t in BOSS_REF else MAIN + t + "/side/walk1.png").convert("RGBA"))
     rm, rs = stats(ref)
