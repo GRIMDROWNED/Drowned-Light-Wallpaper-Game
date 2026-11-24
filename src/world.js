@@ -319,10 +319,12 @@ function reeds(){
     shallows: { code: true, ground: "shallows", rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [260, 520], pick: ["shrine1", "shrine2", "shrine3", "post1", "post2", "cart"] },
     ] },
-    reaches: { code: true, trees: false, tint: "rgba(30,34,44,0.35)", ground: "reaches", rows: [
-      { f: 0.7, ty: 0.88, sink: 3, gap: [180, 460], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
+    reaches: { sky: true, far: true, plats: true, ground: "reaches", top: "#0e1216", fog: "#36505f", wisp: ["#c8d8e8", "#5a6a7a"],
+      post: [16, 10], rows: [
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["rock1", "rock2", "window", "rock3", "scaffold", "banner"] },
+      { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
     ] },
-    abyss: { code: true, trees: false, tint: "rgba(48,4,12,0.5)", ground: "abyss", wisp: ["#7fb8ff", "#3a5a8a"], rows: [
+    abyss: { code: true, sky: true, top: "#050000", trees: false, tint: "rgba(48,4,12,0.5)", ground: "abyss", wisp: ["#7fb8ff", "#3a5a8a"], rows: [
       { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["briar1", "bellframe", "briar1"] },
       { f: 1, ty: 1, sink: 2, gap: [70, 260], pick: ["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3", "briar2"] },
     ] },
@@ -334,8 +336,8 @@ function reeds(){
   };
   // One map per 10 levels (Robert 2026-11-19), then round again.
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
-  // is dropped from the run. Reaches and Abyss use the code sky and trees with their own landmarks and ground until
-  // their sky/far/mid pictures come in.
+  // is dropped from the run. Reaches has its full set (2026-11-24); the Abyss has its sky picture over the code hills
+  // with its own landmarks and ground until its far/mid/platform pictures come in.
   const LEVEL_THEMES = ["mire", "reaches", "abyss"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
@@ -397,12 +399,19 @@ function reeds(){
     if (!L) build();
     const fy = Math.round((FLOOR - cam.y) / 2), cx = cam.x / 2, top = fy - GY;
     if (T.code) {
-      g.fillStyle = "#0d1422"; g.fillRect(0, 0, lw, lh);
-      g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
-      tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
+      const own = T.skyImg && T.skyImg.naturalWidth; // the map's own sky picture over the code hills (Abyss, until its far/mid come in)
+      g.fillStyle = own ? T.top : "#0d1422"; g.fillRect(0, 0, lw, lh);
+      if (own) pingpong(g, T.skyImg, cx * 0.05 + t * 2, Math.max(0, Math.round(top * 0.5)), lw);
+      else {
+        g.drawImage(L.sky, 0, Math.max(0, Math.round(top * 0.5))); // tall portrait views: night sky above it
+        tiled(g, L.clouds, cx * 0.08 + t * 3, 8 + top * 0.2, lw);
+      }
       tiled(g, L.hills, cx * 0.2, top * 0.5, lw);
       if (T.trees !== false) { tiled(g, L.far, cx * 0.35, top * 0.7, lw); tiled(g, L.mid, cx * 0.6, top * 0.85, lw); }
-      if (T.tint) { g.fillStyle = T.tint; g.fillRect(0, 0, lw, lh); } // stand-in mood until the map's own sky comes in
+      if (T.tint) { // stand-in mood until the map's own pictures come in; spare the sky picture
+        const ty = own ? Math.round(top * 0.5 + GY - 45) : 0;
+        g.fillStyle = T.tint; g.fillRect(0, ty, lw, lh - ty);
+      }
     } else {
       g.fillStyle = T.top; g.fillRect(0, 0, lw, lh);
       const sy = Math.max(0, Math.round(top * 0.5));
@@ -438,7 +447,7 @@ function reeds(){
   }
   // a post from y0 down to y1, centred on x: its cap, the middle repeated, its rotten foot
   function post(g, k, x, y0, y1) {
-    const [sx, sy, W, H] = piece(k), top = 8, foot = 12, left = Math.round(x - W / 2);
+    const [sx, sy, W, H] = piece(k), [top, foot] = T.post || [8, 12], left = Math.round(x - W / 2);
     if (y1 - y0 < top + foot) return;
     g.drawImage(T.atlas, sx, sy, W, top, left, y0, W, top);
     const midH = H - top - foot;

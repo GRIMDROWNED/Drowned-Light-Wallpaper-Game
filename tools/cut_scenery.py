@@ -31,6 +31,10 @@ SHEETS = {
     "reaches": {
         "bridge-tower.png": (["bridge", "tower"], 128, 0.3),
         "crags.png": (["crag1", "crag2", "crag3"], 140, 0.35),
+        "mid.png": (["rock1", "rock2", "window", "rock3", "scaffold", "banner"], 96, 0.3),
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
     "abyss": {
         "graves-amethyst.png": (["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3"], 40, 0.0),
@@ -38,11 +42,11 @@ SHEETS = {
     },
 }
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
-STRIPS = {"mire": {"sky.png": 240, "far.png": 250}}
+STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240}}
 # sheets drawn as rows stacked top to bottom: keep only the last (longest) row
-LAST_ROW = {("mire", "walkways.png")}
+LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png")}
 # sheets whose pieces overlap in x (branches): rough cut columns, each moved to the emptiest column within 50 px
-SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705]}
+SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782]}
 FOG = {"shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
 
 
