@@ -157,7 +157,7 @@
   // ---------------- damage ----------------
   // The knight hits a foe. opt: {dmg, kb, kbY, dir, heavy, burn, chill, freeze, root, stun, hitstop, noMult, src, fromX}
   function hitFoe(e, opt) {
-    if (e.dead || e.spawnT > 0) return false;
+    if (e.dead || e.spawnT > 0 || e.under) return false; // e.under: the Starved Bell, buried in the mud
     const p = G.player;
     let dmg = opt.dmg * (opt.noMult ? 1 : dmgMult(p));
     const dir = opt.dir || Math.sign(e.x - (opt.fromX != null ? opt.fromX : p.x)) || 1;

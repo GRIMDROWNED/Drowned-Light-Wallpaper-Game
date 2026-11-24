@@ -1,5 +1,6 @@
 /* The later levels' bosses, ported from the main game (Robert 2026-11-18/20): the Drowned Colossus (map 1, level 5),
-   the Mother Wyvern (map 2, level 15) and the Crucible Wyrm (map 2, level 20). DS.bossFor in data.js puts them at the
+   the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
+   The Deadly Rose (map 3, level 30). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -274,6 +275,150 @@
       }
       if (e.state === "recover") return { bite: "bite", breath: "breath", tail: "tail", gust: "gust", fly: "land" }[m];
       if (!e.onGround) return e.vy < 0 ? "takeoff" : "dive";
+      return null;
+    },
+  };
+
+  // ---------------- the Starved Bell (map 3, level 25: wins a familiar) ----------------
+  // An ambush: it waits buried in the mud (it can't be hurt there) and erupts when the knight comes near. Claw, Toll
+  // (rings of sound along the ground, both ways), a Swallow lunge mouth-first, a pounce, and it sinks back into the mud
+  // to come up right under the knight. Below half health it tolls twice and burrows more often.
+  AI["starved-bell"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Bell tolls for you");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.boss.waiting === undefined) { e.boss.waiting = G.t; e.under = true; } // it starts buried, down in the mud
+      if (e.onPlat && e.boss.waiting) { e.dropT = 0.3; e.y += 2; }
+      if (e.boss.waiting) { // it bursts out when the knight comes near (or loses patience)
+        if (e.onGround && !e.onPlat && (adx < 280 || G.t - e.boss.waiting > 6)) { e.boss.waiting = false; start(e, "erupt", 0.35); }
+        else if (e.onGround && !e.onPlat) e.vx = clamp(dx * 0.8, -160, 160); // a ripple in the mud, creeping closer
+        return 0;
+      }
+      if (e.cd <= 0) {
+        const m = (e.boss.count || 0) % (hot ? 3 : 4) === 3 ? "burrow"
+          : adx < 170 ? pick([["claw", 4], ["swallow", 2], ["toll", 1]])
+          : adx < 420 ? pick([["swallow", 3], ["toll", 3], ["pounce", 2]])
+          : pick([["pounce", 3], ["toll", 2], ["burrow", 2]]);
+        start(e, m, { claw: 0.5, swallow: 0.6, toll: 0.85, pounce: 0.5, burrow: 0.45 }[m]);
+        return 0;
+      }
+      return adx > 120 ? Math.sign(dx) : 0;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "erupt") { // out of the mud: a blow straight up where it stood
+        e.under = false; e.strikeDur = 0.4; fx().shake(9); fx().puff(e.x, e.y, 18, "rgba(110,90,60,0.6)");
+        if (DS.boxHitsPlayer(e.x - 90, e.y - e.h * 1.3, e.x + 90, e.y)) { hurt(e, d.dmg); p.vy = -520; p.onGround = false; }
+      } else if (e.move === "claw") { e.strikeDur = 0.3; }
+      else if (e.move === "toll") {
+        e.strikeDur = 0.5; fx().shake(7); fx().ring(e.x, e.y - e.h * 0.6, "rgba(230,190,110,0.8)");
+        for (const sd of [1, -1]) {
+          DS.groundWave(e, e.x + sd * 60, sd, 0, 430, 1.9, d.dmg * 0.6, { c: "220,180,100" });
+          if (hot) DS.groundWave(e, e.x + sd * 60, sd, 0.45, 430, 1.9, d.dmg * 0.6, { c: "220,180,100" });
+        }
+      } else if (e.move === "swallow") { e.strikeDur = 0.45; e.vx = e.dir * 720; }
+      else if (e.move === "pounce") {
+        e.strikeDur = 2; e.vy = -720; e.onGround = false; e.vx = clamp((p.x - e.x) / 0.7, -620, 620);
+      } else if (e.move === "burrow") { // sink, creep under the knight, burst up
+        e.strikeDur = 2.2; e.under = true; e.vx = 0; e.boss.bx = null; fx().puff(e.x, e.y, 14, "rgba(110,90,60,0.6)");
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player;
+      if (e.move === "claw") {
+        if (!e.hitDone && e.st < 0.15 && front(e, d.reach, 1, 20)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "swallow") { // caught in the mouth: a hard bite and spat out
+        if (!e.hitDone && front(e, 90, 0.8, 40)) { e.hitDone = true; if (hurt(e, d.dmg * 1.4)) { p.vx = -e.dir * 520; p.vy = -380; p.onGround = false; } }
+      } else if (e.move === "pounce") {
+        if (!e.hitDone && DS.boxHitsPlayer(e.x - e.w * 0.5, e.y - e.h, e.x + e.w * 0.5, e.y)) { e.hitDone = true; hurt(e, d.dmg); }
+        if (e.onGround && e.st > 0.2) { e.st = 9; e.vx = 0; fx().shake(6); fx().puff(e.x, e.y, 10, "rgba(110,90,60,0.5)"); }
+      } else if (e.move === "burrow") {
+        if (e.st > 0.4 && e.st < 1.5) { // a ripple in the mud hunting the knight
+          e.vx = clamp((p.x - e.x) * 4, -520, 520);
+          if (Math.random() < 0.6) fx().puff(e.x + rnd(-30, 30), e.y, 1, "rgba(110,90,60,0.5)");
+        } else e.vx = 0;
+        if (e.st >= 1.5 && e.under) {
+          e.under = false; fx().shake(10); fx().puff(e.x, e.y, 20, "rgba(110,90,60,0.6)");
+          if (DS.boxHitsPlayer(e.x - 80, e.y - e.h * 1.3, e.x + 80, e.y)) { hurt(e, d.dmg * 1.2); p.vy = -560; p.onGround = false; }
+          e.vy = -420; e.onGround = false;
+        }
+      }
+    },
+    pose(e) {
+      const m = e.move;
+      if (e.boss.waiting || (e.under && m === "burrow" && e.st > 0.3)) return "buried";
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return { erupt: "buried", claw: "crouch", swallow: "tollFwd", toll: "tollBack", pounce: "crouch", burrow: "crouch" }[m];
+      if (e.state === "strike") return m === "pounce" ? (e.onGround ? "crouch" : e.vy < 0 ? "leap" : "drop") : m === "burrow" ? (e.onGround ? "crouch" : "leap") : { erupt: "erupt", claw: "claw", toll: "tollFwd", swallow: "swallow" }[m];
+      if (e.state === "recover") return { erupt: "erupt", claw: "claw", toll: "tollFwd", swallow: "swallow", pounce: "crouch", burrow: "crouch" }[m];
+      return null;
+    },
+  };
+
+  // ---------------- The Deadly Rose (map 3, level 30: wins the Rose Paladin) ----------------
+  // Lash (a long thorn whip), Up-lash (at a knight in the air), Briar (thorns burst from marked spots round the knight),
+  // Waltz (a spinning advance that cuts both sides), and a glide: she rises and sweeps across the clearing. Below half
+  // health the briar spreads wider and the waltz lasts longer.
+  AI["deadly-rose"] = {
+    think(e, dx, adx, dy) {
+      const hot = rage(e, "The Rose bares her thorns");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const m = dy < -70 && adx < 240 ? "upLash"
+          : adx < 150 ? pick([["waltz", 3], ["lash", 2], ["glide", 1]])
+          : adx < 330 ? pick([["lash", 4], ["briar", 3], ["waltz", 1]])
+          : pick([["briar", 3], ["glide", 3], ["lash", 1]]);
+        start(e, m, { lash: 0.6, upLash: 0.45, briar: 0.8, waltz: 0.45, glide: 0.5 }[m] * (hot ? 0.85 : 1));
+        return 0;
+      }
+      return adx > 260 ? Math.sign(dx) : adx < 120 ? -Math.sign(dx) * 0.6 : 0; // keeps to whip's length
+    },
+    frame(e) {
+      if (e.fly && e.state === "hurt") { e.fly = false; } // struck from the air
+      if (e.state === "windup" && e.move === "glide" && !e.fly) { e.fly = true; e.vy = -260; e.onGround = false; }
+      if (e.fly && e.state === "windup") e.vy *= 0.9;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, hot = e.boss.phase > 1;
+      e.hitDone = false;
+      if (e.move === "lash") { e.strikeDur = 0.3; }
+      else if (e.move === "upLash") { e.strikeDur = 0.3; }
+      else if (e.move === "briar") {
+        e.strikeDur = 0.5;
+        const n = hot ? 7 : 5, step = 110;
+        for (let i = 0; i < n; i++) {
+          const x = clamp(p.x + (i - (n - 1) / 2) * step + rnd(-15, 15), 80, Wd.W - 80), gy = groundY(x, p.y - 40);
+          G.shots.push({ team: "f", kind: "thorn", x, y: gy - 36, vx: 0, vy: 0, r: 18, h: 72, dmg: Math.round(d.dmg * 0.7), life: 0.45, delay: 0.55 + Math.abs(i - (n - 1) / 2) * 0.12, warn: gy, ghost: true, big: i % 2, src: e, by: d.name });
+        }
+      } else if (e.move === "waltz") { e.strikeDur = hot ? 1.5 : 1.1; e.boss.cut = 0; }
+      else if (e.move === "glide") { e.strikeDur = 0.8; e.dir = Math.sign(p.x - e.x) || e.dir; e.vx = e.dir * 640; e.vy = 0; }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player;
+      if (e.move === "lash") {
+        if (!e.hitDone && e.st < 0.15 && DS.boxHitsPlayer(e.dir > 0 ? e.x : e.x - d.reach, e.y - e.h * 0.85, e.dir > 0 ? e.x + d.reach : e.x, e.y - e.h * 0.35)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "upLash") {
+        if (!e.hitDone && e.st < 0.15 && DS.boxHitsPlayer(e.x - 110, e.y - e.h - 220, e.x + 110, e.y - e.h * 0.5)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "waltz") {
+        e.vx = e.dir * 230; e.dir = Math.sign(p.x - e.x) || e.dir;
+        if ((e.boss.cut -= dt) <= 0) {
+          e.boss.cut = 0.3;
+          if (DS.boxHitsPlayer(e.x - 120, e.y - e.h * 0.7, e.x + 120, e.y)) hurt(e, d.dmg * 0.5);
+          if (Math.random() < 0.8) for (let i = 0; i < 3; i++) G.fx.push({ kind: "mote", x: e.x + rnd(-90, 90), y: e.y - rnd(10, 80), vx: rnd(-120, 120), vy: rnd(-80, 20), t: 0, life: 0.6, c: "rgba(200,30,50," });
+        }
+      } else if (e.move === "glide") {
+        if (!e.hitDone && DS.boxHitsPlayer(e.x - e.w * 0.6, e.y - e.h, e.x + e.w * 0.6, e.y)) { e.hitDone = true; hurt(e, d.dmg); }
+        if (e.st > 0.6) { e.fly = false; e.vx *= 0.9; }
+      }
+    },
+    pose(e) {
+      const m = e.move;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return m === "glide" ? (e.st > 0.25 ? "hover" : "rise") : { lash: "lashWind", upLash: "lashWind", briar: "briar", waltz: "lashWind" }[m];
+      if (e.state === "strike") return m === "glide" ? (e.fly ? "glide" : "drop") : { lash: "lash", upLash: "upLash", briar: "briar", waltz: "waltz" }[m];
+      if (e.state === "recover") return m === "glide" ? (e.onGround ? "land" : "drop") : { lash: "lash", upLash: "upLash", briar: "briar", waltz: "waltz" }[m];
+      if (!e.onGround) return e.vy < 0 ? "rise" : "drop";
       return null;
     },
   };

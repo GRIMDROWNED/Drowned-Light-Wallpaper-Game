@@ -187,6 +187,12 @@
     "crucible-wyrm": boss("crucible-wyrm", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], fly: ["side/hoverUp", "side/fly1", "side/hoverDown", "side/fly3"], jump: ["side/takeoff"], fall: ["side/dive"], death: ["side/death"] },
       ["breathWind", "breath", "tail", "gust", "bite", "stun", "takeoff", "hoverUp", "hoverDown", "dive", "land", "knockAir"],
       { name: "Crucible Wyrm", title: "The Crucible Wyrm", fallen: "THE WYRM IS SLAIN", hp: 1600, speed: 110, dmg: 22, reach: 170, windup: 0.6, cd: 1.0, w: 140, h: 110 }),
+    "starved-bell": boss("starved-bell", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/leap"], fall: ["side/drop"], death: ["side/death"] },
+      ["buried", "erupt", "tollBack", "tollFwd", "swallow", "stun", "claw", "crouch", "leap", "hang", "drop", "knock"],
+      { name: "Starved Bell", title: "The Starved Bell", fallen: "THE BELL IS SILENT", hp: 1400, speed: 150, dmg: 20, reach: 130, windup: 0.6, cd: 0.9, w: 110, h: 100 }),
+    "deadly-rose": boss("deadly-rose", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], jump: ["side/rise"], fall: ["side/drop"], death: ["side/death"] },
+      ["lashWind", "lash", "upLash", "briar", "waltz", "stun", "glide", "rise", "hover", "drop", "land", "knock"],
+      { name: "The Deadly Rose", title: "The Deadly Rose", fallen: "THE ROSE WITHERS", hp: 1500, speed: 120, dmg: 20, reach: 300, windup: 0.6, cd: 0.95, w: 70, h: 140 }),
   };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 

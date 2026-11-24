@@ -217,6 +217,11 @@
       ctx.fillStyle = `rgba(255,80,60,${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
     }
     if (s.delay > 0) return;
+    if (s.kind === "thorn") { // the Rose's briar: thorns burst up from the ground
+      const k = Math.min(1, s.t / 0.08), fade = Math.min(1, s.life * 4);
+      S.drawFx(ctx, s.big ? "bloodThorns" : "bloodThorn", s.x, s.warn + 3, { ay: 1, sy: k * 1.5, scale: 1.4, alpha: fade });
+      return;
+    }
     if (s.kind === "rock") { S.drawFx(ctx, "boulder11", s.x, s.y, { rot: s.t * 6, scale: 0.9 }); return; }
     if (s.kind === "flame") { // the dragons' breath: fire that swells then dies away
       const k = s.t / s.life0;
