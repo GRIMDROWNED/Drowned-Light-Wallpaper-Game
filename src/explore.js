@@ -90,7 +90,7 @@
   };
   const clearFloor = (x) => !Wd.solidAt(x, Wd.FLOOR - 5) && !Wd.solidAt(x - 30, Wd.FLOOR - 5) && !Wd.solidAt(x + 30, Wd.FLOOR - 5);
 
-  E.clear = function () { E.on = false; E.scenic = false; E.genX = 0; E.patches = []; E.items = []; E.traps = []; E.wells = []; E.thrown = []; syncFlareBtn(); };
+  E.clear = function () { E.on = false; E.scenic = false; E.genX = 0; E.patches = []; E.items = []; E.traps = []; E.wells = []; E.thrown = []; E.opened = []; syncFlareBtn(); };
   E.reset = function () { E.relics = []; E.flares = FLARE.start; E.light = LIGHT.max; }; // a fresh run
   E.build = function (n, bossX) {
     E.clear();
@@ -339,6 +339,7 @@
           G.banner = { txt: R.name, t: 0 }; note(R.text);
           E.pop = { k, x: it.x, y: it.y - 30, t: 0 }; // the relic rises out of its cache
         } else { E.light = LIGHT.max; say("the cache is empty: oil", "#ffc060"); }
+        (E.opened = E.opened || []).push({ x: it.x, y: it.y });
       } else if (it.kind === "page") {
         if (!pages.includes(it.key)) { pages.push(it.key); save("dl-side-pages", pages); }
         const here = pages.filter((k) => k.split(":")[0] === String(G.level)).length;
@@ -373,6 +374,8 @@
     if (!E.on) return;
     for (const w of E.wells) drawWell(g, w);
     for (const t of E.traps) drawTrap(g, t);
+    const ca = pickArt(), co = ca && DS.PICKART.cacheOpen;
+    if (co) for (const o of E.opened || []) g.drawImage(ca, co[0], co[1], co[2], co[3], Math.round(o.x - co[2]), o.y - co[3] * 2 + 2, co[2] * 2, co[3] * 2);
     for (const it of E.items) drawItem(g, it);
     const A = pickArt(), pr = E.pop && DS.PICKART && DS.PICKART["relic_" + E.pop.k];
     if (A && pr) { // Robert's relic icon rising from the cache, at double size
@@ -396,6 +399,11 @@
     const b = Math.sin(it.t * 2.4) * 4, x = Math.round(it.x), y = Math.round(it.y - 22 + b);
     const box = (c, x0, y0, w, h) => { g.fillStyle = c; g.fillRect(x0, y0, w, h); };
     const A = pickArt();
+    if (A && it.kind === "relic" && DS.PICKART.cache) { // Robert's relic cache, sitting on the ground
+      const r = DS.PICKART.cache; glow(g, it.x, it.y - 14, 34, "255,210,120", 0.3 + 0.1 * Math.sin(it.t * 2));
+      g.drawImage(A, r[0], r[1], r[2], r[3], Math.round(it.x - r[2]), it.y - r[3] * 2 + 2, r[2] * 2, r[3] * 2);
+      return;
+    }
     if (A && DS.PICKART[it.kind]) {
       glow(g, x, y, it.kind === "sigil" ? 40 : 28, GLOW[it.kind], it.kind === "sigil" || it.kind === "ember" ? 0.5 : 0.35);
       let r = DS.PICKART[it.kind], sx = 1;
@@ -431,7 +439,14 @@
     }
   }
   function drawWell(g, w) {
-    const x = Math.round(w.x), y = Math.round(w.y);
+    const x = Math.round(w.x), y = Math.round(w.y), A = pickArt(), u = A && DS.PICKART.well, l = A && DS.PICKART.wellLit;
+    if (u && l) { // Robert's Mist Well: the lit picture fades in as the knight lights it
+      const a = w.lit ? 1 : w.charge;
+      if (a > 0) glow(g, x, y - 40, w.lit ? 90 : 40 + 50 * a, "255,190,90", 0.5 * a);
+      if (a < 1) g.drawImage(A, u[0], u[1], u[2], u[3], x - u[2], y - u[3] * 2 + 4, u[2] * 2, u[3] * 2);
+      if (a > 0) { g.globalAlpha = a; g.drawImage(A, l[0], l[1], l[2], l[3], x - l[2], y - l[3] * 2 + 4, l[2] * 2, l[3] * 2); g.globalAlpha = 1; }
+      return;
+    }
     g.fillStyle = "#14161a"; g.fillRect(x - 24, y - 26, 48, 26);
     g.fillStyle = "#3a3e44"; g.fillRect(x - 22, y - 24, 44, 22);
     g.fillStyle = "#565c62"; g.fillRect(x - 26, y - 30, 52, 6);
@@ -444,6 +459,13 @@
     } else { g.fillStyle = "#1e2226"; g.fillRect(x - 12, y - 32, 24, 3); }
   }
   function drawTrap(g, t) {
+    const A = pickArt(), up = t.fired > 0 || (t.kind === "snare" && t.cd > 2.2);
+    const r = A && DS.PICKART[(t.kind === "spikes" ? "spikes" : t.kind === "snare" ? "snare" : "rune") + (up ? "Up" : "")];
+    if (r) { // Robert's traps (2026-11-24), each on its strip of mud, its bottom a little into the ground
+      if (t.kind === "rune") glow(g, t.x, t.y - 6, up ? 60 : 30, "170,100,255", up ? 0.5 : 0.18 + 0.1 * Math.sin(t.t * 3));
+      g.drawImage(A, r[0], r[1], r[2], r[3], Math.round(t.x - r[2]), t.y - r[3] * 2 + 8, r[2] * 2, r[3] * 2);
+      return;
+    }
     const x = Math.round(t.x), y = t.y, f = t.fired > 0 ? 1 : 0;
     if (t.kind === "spikes") {
       g.fillStyle = "#120e0c"; g.fillRect(x - t.w / 2, y - 3, t.w, 5);
