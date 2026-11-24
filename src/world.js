@@ -324,7 +324,9 @@ function reeds(){
       { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["rock1", "rock2", "window", "rock3", "scaffold", "banner"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["bridge", "tower", "crag1", "crag2", "crag3"] },
     ] },
-    abyss: { code: true, sky: true, top: "#050000", trees: false, tint: "rgba(48,4,12,0.5)", ground: "abyss", wisp: ["#7fb8ff", "#3a5a8a"], rows: [
+    abyss: { sky: true, far: true, plats: true, ground: "abyss", top: "#050000", fog: "#1c0f10", wisp: ["#7fb8ff", "#3a5a8a"],
+      posts: ["post1", "post2", "post3"], rows: [ // post4 carries a banner that would repeat when stretched
+      { f: 0.55, ty: 0.82, sink: 2, gap: [-10, 60], pick: ["dtree1", "dtree2", "dtree3", "dtree4", "dtree5", "dtree6"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [200, 480], pick: ["briar1", "bellframe", "briar1"] },
       { f: 1, ty: 1, sink: 2, gap: [70, 260], pick: ["agrave1", "agrave2", "agrave3", "crystal1", "crystal2", "crystal3", "briar2"] },
     ] },
@@ -336,8 +338,8 @@ function reeds(){
   };
   // One map per 10 levels (Robert 2026-11-19), then round again.
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
-  // is dropped from the run. Reaches has its full set (2026-11-24); the Abyss has its sky picture over the code hills
-  // with its own landmarks and ground until its far/mid/platform pictures come in.
+  // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
+  // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
   const LEVEL_THEMES = ["mire", "reaches", "abyss"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
@@ -478,7 +480,7 @@ function reeds(){
     // posts first, then planks
     for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
-      if (pa) { post(g, ["post1", "post2", "post3", "post4"][((wx / 7) | 0) & 3], X(wx) + 2, y0 - 4, y1 + 2); continue; }
+      if (pa) { const ps = T.posts || ["post1", "post2", "post3", "post4"]; post(g, ps[((wx / 7) | 0) % ps.length], X(wx) + 2, y0 - 4, y1 + 2); continue; }
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
       g.fillStyle = "#4a3624"; g.fillRect(X(wx), y0, 4, y1 - y0);
       g.fillStyle = "#6b5034"; g.fillRect(X(wx), y0, 1, y1 - y0);
