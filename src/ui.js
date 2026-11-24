@@ -3,7 +3,7 @@
 (function (DS) {
   const G = DS.G, I = DS.Input;
   const $ = (s) => document.querySelector(s);
-  let open = null, focus = 0;
+  let open = null, focus = 0, back = null; // back: the menu the upgrades / haul screens return to
 
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
@@ -90,6 +90,77 @@
     $("#famWinText").textContent = "";
   }
 
+  // ---------------- the map select: Robert's spiked badges (src/maps.js) ----------------
+  function buildMaps() {
+    const row = $("#mapPick"); row.innerHTML = "";
+    DS.MAPS.forEach((m, i) => {
+      const b = el("button", "opt map");
+      b.dataset.map = i;
+      b.addEventListener("click", () => {
+        if (!DS.Maps.open(i)) { showMapText(i); return; }
+        DS.Maps.pick(i); syncMaps(); flash(b);
+        if (G.player && G.mode !== "title") { close(); DS.restart(); G.mode = "play"; } // mid-run: go there now
+      });
+      b.addEventListener("focus", () => showMapText(i));
+      b.addEventListener("mouseenter", () => showMapText(i));
+      row.appendChild(b);
+    });
+    syncMaps();
+  }
+  function syncMaps() {
+    const cur = DS.Maps.picked();
+    for (const b of document.querySelectorAll(".map")) {
+      const i = +b.dataset.map, m = DS.MAPS[i], on = DS.Maps.open(i);
+      b.classList.toggle("locked", !on); b.classList.toggle("sel", on && i === cur);
+      b.style.setProperty("--mc", m.c);
+      b.innerHTML = `<img alt="" src="${DS.Maps.badge(i)}"><span>${on ? m.name : "???"}</span>`;
+    }
+    showMapText(cur);
+  }
+  function showMapText(i) {
+    const m = DS.MAPS[i];
+    $("#mapText").innerHTML = DS.Maps.open(i) ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}`
+      : `<b>???</b> · Reach level ${i * 10 + 1} to open this map.`;
+  }
+
+  // ---------------- upgrades: currencies from src/loot.js ----------------
+  const L = () => DS.Loot;
+  const chip = (k, n, ok) => `<span class="chip${ok === false ? " short" : ""}"><img alt="" src="${L().icon(k)}">${n}</span>`;
+  function buildWallet(box, bag) {
+    box.innerHTML = DS.CUR_ORDER.map((k) => `<span class="coin" title="${DS.CURRENCY[k].name}" style="--cc:${DS.CURRENCY[k].c}"><img alt="" src="${L().icon(k)}"><b>${bag ? bag[k] | 0 : L().have(k)}</b><i>${DS.CURRENCY[k].name}</i></span>`).join("");
+  }
+  function buildUpgrades() {
+    buildWallet($("#wallet"));
+    const list = $("#upList"); list.innerHTML = "";
+    for (const u of DS.UPGRADES) {
+      const r = L().rank(u.id), max = r >= L().MAX_RANK, c = L().cost(u.id);
+      const b = el("button", "opt upg" + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
+      b.dataset.up = u.id;
+      const pips = Array.from({ length: L().MAX_RANK }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
+      const costs = max ? "<span class=\"chip\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
+      b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="pips">${pips}</span><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="cost">${costs}</span>`;
+      b.addEventListener("click", () => {
+        if (L().buy(u.id)) { $("#upText").innerHTML = `<b>${u.name}</b> rank ${L().rank(u.id)}: ${u.text(L().rank(u.id))}.`; const f = focus; buildUpgrades(); focus = f; setFocus(); }
+        else $("#upText").textContent = max ? `${u.name} is at its highest rank.` : `Not enough yet. ${DS.CURRENCY[u.mat].name} and Gold drop from the Drowned; Amethyst from bosses.`;
+      });
+      b.addEventListener("focus", () => showUpText(u));
+      b.addEventListener("mouseenter", () => showUpText(u));
+      list.appendChild(b);
+    }
+  }
+  function showUpText(u) { $("#upText").innerHTML = `<b>${u.name}</b> takes Gold and ${DS.CURRENCY[u.mat].name}. Each rank: ${u.text(1)}.`; }
+  function openUpgrades(from) { back = from || open || "kits"; openMenu("upgrades"); }
+  // what the wallpaper gathered: taken into the wallet as the screen opens
+  function showHaul(from) {
+    const got = L().collect(); if (!got) return false;
+    const mins = got.since ? Math.round((Date.now() - got.since) / 60000) : 0;
+    $("#haulSub").textContent = "Your wallpaper kept fighting" + (mins > 1 ? ` (since ${mins >= 120 ? Math.round(mins / 60) + " hours" : mins + " minutes"} ago)` : "") + " and gathered this for you.";
+    buildWallet($("#haulList"), got);
+    for (const c of [...$("#haulList").children]) if (c.querySelector("b").textContent === "0") c.remove();
+    back = from || "kits"; openMenu("haul");
+    return true;
+  }
+
   function buildPause() {
     const spawn = $("#spawnRow"); spawn.innerHTML = "";
     for (const id of DS.ENEMY_ORDER.concat(["dummy"])) {
@@ -105,6 +176,14 @@
     }
     $("#btnResume").onclick = () => { close(); G.mode = "play"; };
     $("#btnKits").onclick = () => openMenu("kits");
+    $("#btnUpPause").onclick = () => openUpgrades("pause");
+    $("#btnUpKits").onclick = () => openUpgrades("kits");
+    $("#btnUpBack").onclick = () => openMenu(back || "kits");
+    $("#btnHaulOk").onclick = () => openMenu(back || "kits");
+    $("#btnHaulUp").onclick = () => openUpgrades(back || "kits");
+    $("#btnRich").onclick = (e) => { for (const k of DS.CUR_ORDER) DS.Loot.give(k, 500); flash(e.target); };
+    $("#btnMaps").onclick = (e) => { DS.Maps.unlockAll(); syncMaps(); flash(e.target); };
+    $("#btnUpReset").onclick = (e) => { DS.Loot.resetAll(); flash(e.target); };
     $("#btnWave").onclick = (e) => {
       if (G.scroll) { for (const en of G.enc) if (!en.boss) en.on = true; const p = G.player; p.x = G.bossX - 200; p.y = DS.World.FLOOR - 200; p.vx = p.vy = 0; G.foes = G.foes.filter((f) => f.d.dummy); }
       else { G.waveT = 0; G.foes = G.foes.filter((f) => f.d.dummy); G.waves = true; }
@@ -144,6 +223,8 @@
     open = name; focus = 0;
     if (name === "pause") syncToggles();
     if (name === "famWin") buildFamWin();
+    if (name === "upgrades") buildUpgrades();
+    if (name === "kits") syncMaps();
     syncFams();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
@@ -188,6 +269,7 @@
     if (I.p.back || I.p.pause) {
       if (open === "kits" && G.mode === "title") return;
       if (open === "famWin") return; // the reward has to be chosen
+      if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
     }
@@ -203,7 +285,7 @@
   function init() {
     try { const k = localStorage.getItem("dl-side-kit"); if (k && DS.KITS[k]) G.kit = k; } catch (e) { /* storage blocked */ }
     DS.Fam.load();
-    buildKits(); buildPause(); buildFams();
+    buildKits(); buildPause(); buildFams(); buildMaps();
     $("#pauseBtn").addEventListener("click", () => { if (G.mode === "play") openMenu("pause"); });
     document.querySelectorAll(".menu .back").forEach((b) => b.addEventListener("click", () => openMenu("pause")));
     DS.Input.bindMouse(document.getElementById("game"));
@@ -211,11 +293,17 @@
     // a tap or click leaves the wallpaper for the pause menu (not when opened as ?wallpaper by a wallpaper app)
     document.addEventListener("pointerdown", (e) => {
       if (!G.wall || G.wallLocked || G.mode !== "play" || e.target.closest(".menu")) return;
-      DS.setWall(false); openMenu("pause");
+      DS.setWall(false); openMenu("pause"); showHaul("pause");
     });
     $("#ver").textContent = "v" + DS.VERSION;
     openMenu("kits");
+    showHaul("kits"); // what the wallpaper gathered since last time
+    // the desktop and phone apps keep the game open behind the wallpaper: check again whenever it comes back
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden || G.wall || G.mode === "title" || open === "haul" || open === "famWin") return;
+      if (L().haul().gold || Object.keys(L().haul()).length > 1) { if (G.mode === "play") G.mode = "menu"; showHaul(open || "pause"); }
+    });
   }
 
-  DS.UI = { init, update, open: openMenu, close, cycleKit };
+  DS.UI = { init, update, open: openMenu, close, cycleKit, showHaul };
 })(window.DS = window.DS || {});
