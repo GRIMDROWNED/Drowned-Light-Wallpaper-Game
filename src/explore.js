@@ -459,6 +459,13 @@
     } else { g.fillStyle = "#1e2226"; g.fillRect(x - 12, y - 32, 24, 3); }
   }
   function drawTrap(g, t) {
+    const A = pickArt(), up = t.fired > 0 || (t.kind === "snare" && t.cd > 2.2);
+    const r = A && DS.PICKART[(t.kind === "spikes" ? "spikes" : t.kind === "snare" ? "snare" : "rune") + (up ? "Up" : "")];
+    if (r) { // Robert's traps (2026-11-24), each on its strip of mud, its bottom a little into the ground
+      if (t.kind === "rune") glow(g, t.x, t.y - 6, up ? 60 : 30, "170,100,255", up ? 0.5 : 0.18 + 0.1 * Math.sin(t.t * 3));
+      g.drawImage(A, r[0], r[1], r[2], r[3], Math.round(t.x - r[2]), t.y - r[3] * 2 + 8, r[2] * 2, r[3] * 2);
+      return;
+    }
     const x = Math.round(t.x), y = t.y, f = t.fired > 0 ? 1 : 0;
     if (t.kind === "spikes") {
       g.fillStyle = "#120e0c"; g.fillRect(x - t.w / 2, y - 3, t.w, 5);
