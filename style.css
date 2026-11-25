@@ -46,8 +46,6 @@ h2 { font: 600 13px var(--display); letter-spacing: 0.14em; text-transform: uppe
 .menu button.small { font-size: 12.5px; padding: 8px 12px; }
 .menu button.opt:not(.kit):hover, .menu button.opt.focus:not(.kit), .menu button.opt:not(.kit):focus-visible { border-color: var(--accent); background: rgba(40, 80, 90, 0.9); outline: none; }
 .menu button.done { background: rgba(127, 227, 212, 0.4) !important; }
-#help p { color: var(--dim); font-size: 13px; }
-#help b { color: var(--gold); }
 
 /* ---------- touch controls (shown once the screen is touched) ---------- */
 #touch, #stick, #pauseBtn { display: none; }
@@ -85,17 +83,8 @@ body.wall { cursor: none; }
 .famRow button.fam.locked img { filter: brightness(0) opacity(0.6); }
 .famRow button.fam.locked { color: var(--dim); }
 /* choosing a familiar after a map's level 5 boss */
-.famWinRow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 900px; margin: 10px auto 0; }
-.menu button.famCard { width: 190px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; text-align: center; border-color: rgba(var(--fc), 0.5); }
-.famCard img { height: 64px; image-rendering: pixelated; }
-.famCard b { color: rgb(var(--fc)); font-family: var(--display); font-size: 15px; }
-.famCard span { color: var(--dim); font-size: 12px; line-height: 1.35; }
-#famWinText { max-width: 820px; margin: 10px auto 0; text-align: center; color: var(--text); min-height: 1.4em; }
 
 /* the Journal: Drowned pages found (src/explore.js) */
-#journal { max-height: 40vh; overflow-y: auto; text-align: left; margin: 8px 0; }
-#journal p { margin: 6px 0; font-style: italic; color: var(--text); }
-#journal p b { font-style: normal; color: var(--gold); margin-right: 6px; }
 
 /* the map select: Robert's spiked badges (src/maps.js) */
 .mapRow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 1100px; margin: 0 auto 4px; }
@@ -134,3 +123,264 @@ body.wall { cursor: none; }
 .menu button.upg.can { border-color: rgba(230, 194, 122, 0.55); }
 .menu button.upg.max { opacity: 0.75; }
 #upText { max-width: 820px; margin: 10px auto 0; text-align: center; color: var(--text); min-height: 1.4em; font-size: 13px; }
+/* the tester code keypad (pause menu) */
+.codePad { margin-top: 10px; max-width: 300px; }
+.codeShow { font: 700 18px var(--display); letter-spacing: 0.2em; color: var(--text); margin: 4px 0 8px; min-height: 24px; }
+.codePad .keyRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.codePad .key { justify-content: center; text-align: center; }
+
+/* ---------- the knight screen on Robert's art (2026-11-25): assets/ui/knight-screen.jpg is 1672 x 941 ----------
+   .kstage keeps the picture's shape and fits the screen; each .ks part is placed in art pixels (--x --y --w --h)
+   and sized with cqw so text scales with the picture. --u = one art pixel. */
+.menu[hidden] { display: none !important; } /* a menu with its own display (the art screens) still hides */
+.menu.art { padding: 0; display: grid; place-items: center; overflow: hidden; background: #05080b; }
+#kits { --art: url("assets/ui/knight-screen.jpg"); } #upgrades { --art: url("assets/ui/upgrades-screen.jpg"); } #haul { --art: url("assets/ui/haul-screen.jpg"); } #pause { --art: url("assets/ui/pause-screen.jpg"); }
+#famWin { --art: url("assets/ui/famwin-screen.jpg"); } #death { --art: url("assets/ui/death-screen.jpg"); } #cleared { --art: url("assets/ui/cleared-screen.jpg"); } #journalMenu { --art: url("assets/ui/journal-screen.jpg"); }
+.menu.art::before { content: ""; position: absolute; inset: -40px; background: var(--art) center / cover; filter: blur(24px) brightness(0.45); } /* fills the sides on screens of another shape */
+.kstage { position: relative; container-type: inline-size; aspect-ratio: 1672 / 941;
+  width: min(100vw, calc(100vh * 1672 / 941)); width: min(100vw, calc(100dvh * 1672 / 941));
+  background: var(--art) center / 100% 100% no-repeat; }
+.kstage { --u: calc(100cqw / 1672); }
+.ks { position: absolute; box-sizing: border-box; margin: 0;
+  left: calc(var(--x) / var(--aw, 1672) * 100%); top: calc(var(--y) / var(--ah, 941) * 100%); width: calc(var(--w) / var(--aw, 1672) * 100%); height: calc(var(--h) / var(--ah, 941) * 100%); }
+:is(.kstage, .cstage) button { -webkit-appearance: none; appearance: none; font: inherit; color: inherit; cursor: pointer; }
+.ks.klogo { text-align: left; text-shadow: 0 0 calc(10 * var(--u)) #000, 0 calc(2 * var(--u)) 0 #000; }
+.klogo h1 { font: 700 calc(46 * var(--u))/1 var(--display); color: #e9e2cf; letter-spacing: 0.04em; }
+.klogo p { margin: calc(6 * var(--u)) 0 0; font: 600 max(8.5px, calc(16 * var(--u)))/1.25 var(--body); color: #f2ead6; max-width: 80%; }
+.klogo #ver { font: 600 max(8.5px, calc(14 * var(--u))) var(--body); opacity: 0.85; }
+.ks.kbanner { display: grid; place-items: center; font: 700 calc(38 * var(--u)) var(--display); color: #3a2410; letter-spacing: 0.05em; text-transform: none; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); }
+.ks.karrow { background: none; border: 0; padding: 0; }
+.ks.karrow:hover, .ks.karrow:focus-visible { background: radial-gradient(closest-side, rgba(255, 220, 140, 0.35), transparent); outline: none; }
+/* map rings: Robert's badge emblem shows through the ring's hole */
+.kmaps { display: block; }
+.menu .kmaps button.opt.map { all: unset; position: absolute; cursor: pointer; display: block; width: calc(112 * var(--u)); height: calc(112 * var(--u)); transform: translate(-50%, -50%); }
+/* the emblem: shown at --s times its picture size, its own circle centre (--ex, --ey) on the ring's centre */
+.kmaps .map .hole { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; --s: 1.75; }
+.kmaps .map img { position: absolute; width: auto; height: calc(84 * var(--s) * var(--u)); image-rendering: pixelated;
+  left: calc(56 * var(--u) - var(--ex) * var(--s) * var(--u)); top: calc(56 * var(--u) - var(--ey) * var(--s) * var(--u)); }
+.kmaps .map span:not(.hole) { position: absolute; left: -40%; right: -40%; top: calc(100% + (22 + var(--ly, 0)) * var(--u)); text-align: center; font: 700 max(9px, calc(17 * var(--u))) var(--display); color: #f4ecd8;
+  text-shadow: 0 0 calc(6 * var(--u)) #000, 0 0 calc(3 * var(--u)) #000, 0 0 calc(3 * var(--u)) #000; }
+.kmaps .map.sel .hole { box-shadow: 0 0 0 calc(4 * var(--u)) rgb(var(--mc)), 0 0 calc(30 * var(--u)) rgba(var(--mc), 0.8); }
+.kmaps .map.sel span:not(.hole) { color: rgb(var(--mc)); }
+.kmaps .map.focus .hole, .kmaps .map:focus-visible .hole, .kmaps .map:hover .hole { box-shadow: 0 0 0 calc(4 * var(--u)) #fff3c4, 0 0 calc(26 * var(--u)) rgba(255, 230, 160, 0.8); }
+.kmaps .map.locked img { filter: brightness(0.15) saturate(0); }
+.kmaps .map.locked .hole { display: grid; place-items: center; }
+.kmaps .map.locked .hole::after { content: ""; position: absolute; width: 34%; height: 34%; background: center / contain no-repeat
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3' fill='none' stroke='%23c9c2b0' stroke-width='2.4'/%3E%3Crect x='4' y='10' width='16' height='12' rx='2' fill='%23c9c2b0'/%3E%3C/svg%3E"); }
+.kmaps .map.locked span:not(.hole) { color: #a49d8c; }
+/* knight cards sit on the ten painted frames */
+#kitGrid.ks.kgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); column-gap: calc(16.75 * var(--u)); row-gap: max(9px, calc(15 * var(--u))); max-width: none; margin: 0; }
+.menu .kgrid button.kit { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: calc(6 * var(--u)); align-items: center; padding: calc(10 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));
+  border-radius: max(8px, calc(12 * var(--u))); min-width: 0; overflow: hidden; }
+.kgrid .kit .por { flex: 0 0 calc(76 * var(--u)); height: calc(100 * var(--u)); overflow: hidden; border-radius: calc(6 * var(--u)); } /* head and chest (assets/ui/portraits) */
+.kgrid .kit img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; max-width: none; filter: drop-shadow(0 calc(3 * var(--u)) calc(4 * var(--u)) #000); }
+.kgrid .kit img.px { width: auto; height: calc(205 * var(--u)); margin: calc(-2 * var(--u)) auto 0; image-rendering: pixelated; } /* side sprite stand-in */
+.kgrid .kit .info { flex: 1 1 0; display: flex; flex-direction: column; gap: calc(3 * var(--u)); min-width: 0; text-shadow: 0 0 calc(4 * var(--u)) #000, 0 calc(1 * var(--u)) 0 #000; }
+.kgrid .kit b { font: 700 max(10px, calc(18 * var(--u)))/1.05 var(--display); color: rgb(var(--kc)); filter: brightness(1.25); }
+.kgrid .kit .tag { align-self: flex-start; font: 700 max(8px, calc(12 * var(--u))) var(--body); letter-spacing: 0.06em; color: #e8f6f4; padding: calc(1 * var(--u)) calc(7 * var(--u));
+  border: calc(1.5 * var(--u)) solid rgba(var(--kc), 0.9); border-radius: calc(4 * var(--u)); background: rgba(0, 0, 0, 0.45); text-transform: none; }
+.kgrid .kit .row { font: 600 max(8px, calc(11.5 * var(--u)))/1.2 var(--body); color: #e6e0d2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kgrid .kit .row i { font-style: normal; color: #b9b2a2; }
+.kgrid .kit:hover, .kgrid .kit.focus, .kgrid .kit:focus-visible { outline: none; background: radial-gradient(ellipse at 30% 50%, rgba(var(--kc), 0.35), rgba(var(--kc), 0.08) 70%);
+  box-shadow: inset 0 0 0 calc(3 * var(--u)) rgba(var(--kc), 0.95), 0 0 max(10px, calc(18 * var(--u))) rgba(var(--kc), 0.7); }
+.kgrid .kit.cur { box-shadow: inset 0 0 0 calc(2 * var(--u)) rgba(255, 240, 200, 0.55); }
+/* the info bar: the last thing pointed at (knight, map or familiar) */
+.ks.kinfo { overflow: hidden; display: grid; align-items: center; padding: 0 max(10px, calc(18 * var(--u))); font: 600 max(8.5px, calc(12.5 * var(--u)))/1.2 var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; }
+#kits .kinfo p { grid-area: 1 / 1; margin: 0; max-width: none; min-height: 0; text-align: center; color: #efe6d2; font-size: 1em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: 2.4em; visibility: hidden; }
+#kits .kinfo p.cur { visibility: visible; }
+#kits .kinfo .pas { color: #b9e8e0; display: inline; font-size: 1em; }
+#kits .kinfo .pas::before { content: "|"; color: #8a7f66; margin: 0 0.6em; }
+/* familiars on the seven painted slots */
+.ks.kfams { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: calc(16.5 * var(--u)); margin: 0; justify-content: stretch; }
+.menu .kfams button.fam { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: calc(4 * var(--u));
+  padding: calc(8 * var(--u)) calc(4 * var(--u)) calc(10 * var(--u)); border-radius: calc(10 * var(--u)); font: 700 max(9px, calc(15 * var(--u)))/1.05 var(--display); color: #efe6d2; text-align: center;
+  text-shadow: 0 0 calc(4 * var(--u)) #000, 0 1px 0 #000; }
+.kfams button.fam img { height: calc(58 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) calc(3 * var(--u)) #000); }
+.kfams button.fam.none::before { content: ""; width: calc(44 * var(--u)); height: calc(44 * var(--u)); margin-bottom: calc(6 * var(--u)); border-radius: 50%;
+  border: calc(4 * var(--u)) solid #9b9483; box-sizing: border-box; background: linear-gradient(45deg, transparent 45%, #9b9483 45% 55%, transparent 55%); }
+.kfams button.fam.locked img { filter: brightness(0) opacity(0.75); }
+.kfams button.fam.locked { color: #a49d8c; }
+.kfams button.fam.sel { box-shadow: inset 0 0 0 calc(3 * var(--u)) rgb(var(--fc)), 0 0 max(8.5px, calc(16 * var(--u))) rgba(var(--fc), 0.7); color: #fff; }
+.kfams button.fam:hover, .kfams button.fam.focus, .kfams button.fam:focus-visible { outline: none; background: rgba(255, 235, 190, 0.12); box-shadow: inset 0 0 0 calc(3 * var(--u)) #fff3c4; }
+/* Upgrades and the control hints on the bottom plates */
+.menu .kstage button.opt.kup { background: none; border: 0; padding: 0; min-height: 0; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; border-radius: calc(8 * var(--u));
+  font: 700 calc(34 * var(--u)) var(--display); color: #f6efdc; letter-spacing: 0.03em; text-shadow: 0 calc(2 * var(--u)) 0 #000, 0 0 calc(8 * var(--u)) #000; }
+.menu .kstage button.opt.kup:hover, .menu .kstage button.opt.kup.focus, .menu .kstage button.opt.kup:focus-visible { background: rgba(127, 227, 212, 0.18); box-shadow: 0 0 0 calc(3 * var(--u)) #7fe3d4, 0 0 calc(22 * var(--u)) rgba(127, 227, 212, 0.6); }
+.ks.khint { display: flex; align-items: center; justify-content: center; gap: calc(6 * var(--u)); font: 600 max(8.5px, calc(14 * var(--u))) var(--body); color: #e9e1cc; background: none; border: 0; padding: 0; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.khint b { font: 700 max(8px, calc(12 * var(--u))) var(--body); color: #f4ecd8; padding: calc(1 * var(--u)) calc(5 * var(--u)); border: calc(1.5 * var(--u)) solid #cbbf9f; border-radius: calc(4 * var(--u)); }
+.khint b.pa, .khint b.pb { border-radius: 50%; width: calc(20 * var(--u)); height: calc(20 * var(--u)); padding: 0; display: grid; place-items: center; }
+.khint b.pa { color: #7ee07e; border-color: #7ee07e; } .khint b.pb { color: #ff7a6a; border-color: #ff7a6a; }
+button.khint.back[disabled] { opacity: 0.45; cursor: default; }
+button.khint.back:not([disabled]):hover { color: #fff; }
+/* on a phone the cards are too small for the attack and ability lines: the info bar shows them instead */
+@container (max-width: 1000px) {
+  .kgrid .kit .row { display: none; }
+  .kgrid .kit .info { justify-content: center; }
+}
+
+/* ---------- Upgrades, While you were away and Pause on Robert's art (2026-11-25), same placing as the knight screen ---------- */
+.menu:is(.art, .confirm) :is(.kstage, .cstage) button.opt:is(.ubtn, .pbtn, .upg) { min-height: 0; padding: 0; border: 0; background: none; border-radius: calc(8 * var(--u)); box-sizing: border-box; }
+.menu:is(.art, .confirm) :is(.kstage, .cstage) button.opt:is(.ubtn, .pbtn, .upg):is(:hover, .focus, :focus-visible) { outline: none; background: rgba(255, 235, 190, 0.1);
+  box-shadow: inset 0 0 0 calc(3 * var(--u)) #fff3c4, 0 0 calc(18 * var(--u)) rgba(255, 230, 160, 0.55); }
+.menu :is(.kstage, .cstage) button.ks:is(.ubtn, .pbtn) { display: grid; place-items: center; font: 700 max(11px, calc(26 * var(--u))) var(--display); color: #f6efdc; letter-spacing: 0.03em;
+  text-shadow: 0 calc(2 * var(--u)) 0 #000, 0 0 calc(8 * var(--u)) #000; }
+.menu .kstage button.ks.pbtn { font-size: max(10px, calc(24 * var(--u))); }
+.menu .kstage button.ks.pbtn.big { font-size: max(12px, calc(32 * var(--u))); }
+.ks.plabel { display: grid; place-items: center; margin: 0; font: 700 max(9px, calc(19 * var(--u))) var(--display); color: #3a2410; letter-spacing: 0.12em; text-transform: uppercase; }
+/* wallet: the eight painted coin rings */
+.ks.uwallet { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); align-items: center; margin: 0; gap: 0; }
+.uwallet .coin { position: relative; display: grid; place-items: center; height: 100%; font-size: 0; }
+.uwallet .coin img { height: calc(36 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(3 * var(--u)) #000); }
+.uwallet .coin b { position: absolute; left: 50%; bottom: calc(-12 * var(--u)); transform: translateX(-50%); font: 700 max(8.5px, calc(15 * var(--u))) var(--display);
+  padding: 0 calc(6 * var(--u)); border-radius: calc(8 * var(--u)); background: rgba(10, 8, 6, 0.85); border: calc(1.5 * var(--u)) solid rgba(var(--cc), 0.7); white-space: nowrap; }
+.uwallet .coin i { display: none; }
+/* six upgrade rows on the painted rows: icon, name plate, ten pips, cost plates */
+.ks.ulist { display: grid; grid-template-columns: 1fr; grid-template-rows: repeat(6, minmax(0, 1fr)); row-gap: calc(14 * var(--u)); max-width: none; margin: 0; }
+.menu .ulist button.opt.upg { position: relative; display: block; width: 100%; padding: 0; text-align: left; color: #efe6d2; }
+.ulist .upg > * { position: absolute; top: 50%; transform: translateY(-50%); }
+.ulist .upg .mat { left: calc(14 * var(--u)); width: calc(56 * var(--u)); height: calc(56 * var(--u)); object-fit: contain; image-rendering: pixelated; }
+.ulist .upg .un { left: calc(108 * var(--u)); width: calc(216 * var(--u)); display: flex; flex-direction: column; gap: calc(2 * var(--u)); text-shadow: 0 1px 2px #000; }
+.ulist .upg .un b { font: 700 max(10px, calc(19 * var(--u))) var(--display); color: #f6efdc; }
+.ulist .upg .ef { font: 600 max(8px, calc(11.5 * var(--u)))/1.15 var(--body); color: #cfc6b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ulist .upg .pips { left: calc(351 * var(--u)); width: calc(291 * var(--u)); height: calc(40 * var(--u)); display: grid; grid-template-columns: repeat(9, 1fr); place-items: center; gap: 0; }
+.ulist .upg .pips i { width: calc(14 * var(--u)); height: calc(14 * var(--u)); transform: rotate(45deg); background: none; }
+.ulist .upg .pips i.on { background: linear-gradient(135deg, #fff1b8, #e0a83a); box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 210, 110, 0.9); }
+.ulist .upg .cost { left: calc(662 * var(--u)); width: calc(251 * var(--u)); height: calc(52 * var(--u)); }
+.ulist .upg .cost .chip { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: calc(4 * var(--u));
+  font: 700 max(8.5px, calc(15 * var(--u))) var(--display); color: #f6efdc; text-shadow: 0 1px 2px #000; }
+.ulist .upg .cost .chip img { height: calc(22 * var(--u)); }
+.ulist .upg .cost .chip.short { color: #ff8a7a; }
+.ulist .upg.three .cost .chip:nth-child(1) { left: 0; width: calc(75 * var(--u)); }
+.ulist .upg.three .cost .chip:nth-child(2) { left: calc(91 * var(--u)); width: calc(72 * var(--u)); }
+.ulist .upg.three .cost .chip:nth-child(3) { left: calc(178 * var(--u)); width: calc(73 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(1) { left: calc(23 * var(--u)); width: calc(100 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(2) { left: calc(138 * var(--u)); width: calc(103 * var(--u)); }
+/* the art has two plates here: a third cost (Amethyst) shares the second plate */
+.ulist .upg.two .cost .chip:nth-child(2):not(:last-child) { width: calc(54 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(3) { left: calc(188 * var(--u)); width: calc(50 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(n+2):not(:only-child) img { height: calc(18 * var(--u)); }
+.ulist .upg.max .pips i.on { box-shadow: 0 0 calc(12 * var(--u)) rgba(255, 225, 140, 1); }
+.ulist .upg .cost .chip.maxed { white-space: nowrap; font-size: max(6px, calc(12 * var(--u))); color: #ffd27a; letter-spacing: 0; }
+.menu .ulist button.upg.can .un b { color: #9ff0c0; }
+.menu .ulist button.upg.max .un b { color: #ffd27a; }
+.ks.uinfo, .ks.hsub { display: block; align-content: center; margin: 0; padding: 0 calc(16 * var(--u)); text-align: center; font: 600 max(9px, calc(15 * var(--u)))/1.2 var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; overflow: hidden; }
+#upText b { color: #ffd27a; }
+/* the haul: what the wallpaper gathered, one currency per painted slot */
+.ks.hbanner { font-size: calc(40 * var(--u)); }
+.ks.hlist { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: calc(22 * var(--u)) calc(21 * var(--u)); margin: 0; }
+.hlist .coin { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--u)); text-shadow: 0 1px 2px #000; }
+.hlist .coin img { height: calc(58 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(4 * var(--u)) #000); }
+.hlist .coin b { font: 700 max(10px, calc(24 * var(--u))) var(--display); color: rgb(var(--cc)); }
+.hlist .coin i { font: 600 max(8px, calc(13 * var(--u))) var(--body); color: #cfc6b0; font-style: normal; }
+.ks.ubtn.teal { color: #eafffb; }
+/* the pause menu */
+.pfams.ks { column-gap: calc(16 * var(--u)); }
+.pfams button.fam { font-size: max(8px, calc(13 * var(--u))) !important; }
+.pfams button.fam img { height: calc(46 * var(--u)) !important; }
+.ks.ppanel { overflow-y: auto; touch-action: pan-y; padding: calc(20 * var(--u)); border-radius: calc(14 * var(--u)); background: rgba(8, 12, 16, 0.92);
+  border: calc(2 * var(--u)) solid #b8914a; box-shadow: 0 0 calc(30 * var(--u)) #000; font-size: max(11px, calc(15 * var(--u))); }
+.ppanel h2 { margin-top: 0; }
+button.khint.resume:hover { color: #fff; }
+
+/* ---------- familiar choice on Robert's shrine art: six cards 202 art px apart, portrait ring centred 128 px down ---------- */
+.ks.fwcards { display: block; }
+.menu .fwcards button.opt.fwcard { all: unset; box-sizing: border-box; position: absolute; cursor: pointer; top: 0; height: 100%;
+  left: calc((var(--i) * 202.2 + 5) * var(--u)); width: calc(184 * var(--u)); border-radius: calc(14 * var(--u)) calc(14 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)); }
+.fwcard .fwpic { position: absolute; left: calc(29 * var(--u)); top: calc(66 * var(--u)); width: calc(126 * var(--u)); height: calc(126 * var(--u));
+  border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: radial-gradient(closest-side, rgba(var(--fc), 0.35), transparent); }
+.fwcard .fwpic img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(var(--fc), 0.7)); }
+.fwcard > b { position: absolute; left: calc(12 * var(--u)); right: calc(12 * var(--u)); top: calc(222 * var(--u)); text-align: center;
+  font: 700 max(9px, calc(21 * var(--u))) var(--display); color: rgb(var(--fc)); text-shadow: 0 1px 2px #000, 0 0 calc(6 * var(--u)) #000; }
+.fwcard .fwtext { position: absolute; left: calc(18 * var(--u)); right: calc(18 * var(--u)); top: calc(258 * var(--u)); bottom: calc(34 * var(--u)); overflow: hidden;
+  text-align: center; font: 600 max(7.5px, calc(13 * var(--u)))/1.25 var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; }
+.fwcard:is(:hover, .focus, :focus-visible) { outline: none; background: rgba(255, 235, 190, 0.08); box-shadow: 0 0 calc(22 * var(--u)) rgba(var(--fc), 0.75), inset 0 0 calc(18 * var(--u)) rgba(var(--fc), 0.35); }
+.fwcard:is(:hover, .focus) .fwpic img { transform: scale(1.06); }
+.fwcard.have { cursor: default; filter: grayscale(0.7) brightness(0.6); }
+.ks.fwsub { font-size: max(8.5px, calc(16 * var(--u))); }
+.ks.fwinfo { font-size: max(8.5px, calc(16 * var(--u))); }
+.ks.fwinfo .pas, .ks.uinfo .pas { color: #cfc6b0; }
+@container (max-width: 700px) { .fwcard .fwtext { display: none; } }
+
+/* ---------- the Journal on Robert's book art ---------- */
+.ks.jentries { display: block; }
+.jentry { position: absolute; box-sizing: border-box; left: calc(var(--l) * var(--u)); top: calc(var(--t) * var(--u)); width: calc(var(--bw) * var(--u)); height: calc(var(--bh) * var(--u));
+  padding: calc(18 * var(--u)) calc(26 * var(--u)); display: flex; flex-direction: column; gap: calc(6 * var(--u)); overflow: hidden; }
+.jentry b { font: 700 max(8px, calc(15 * var(--u))) var(--display); color: #f0c46a; text-shadow: 0 1px 2px #000; }
+.jentry span { font: italic 600 max(8px, calc(16 * var(--u)))/1.3 var(--body); color: #f3ead6; text-shadow: 0 1px 2px #000; }
+.jentry.missing b { color: #a89c84; } .jentry.missing span { font-style: normal; color: #9d927c; font-size: max(7.5px, calc(13 * var(--u))); }
+.ks.jtabs { display: block; }
+.menu .jtabs button.opt.jtab { all: unset; box-sizing: border-box; position: absolute; cursor: pointer; left: calc(8 * var(--u)); top: calc((var(--t) + 3) * var(--u)); height: calc(48 * var(--u)); width: calc(92 * var(--u));
+  transform: translateY(-50%); display: grid; place-items: center; padding-right: calc(10 * var(--u)); font: 700 max(6.5px, calc(12 * var(--u))) var(--display); color: #fff7e6; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+.jtab:disabled { cursor: default; color: rgba(255, 255, 255, 0.45); }
+.jtab:is(:hover, .focus, :focus-visible):not(:disabled) { outline: none; filter: drop-shadow(0 0 calc(8 * var(--u)) rgba(var(--tc), 1)); background: rgba(255, 240, 210, 0.12); }
+.jtab.cur { box-shadow: inset calc(-4 * var(--u)) 0 0 rgba(255, 240, 200, 0.9); background: rgba(var(--tc), 0.35); }
+.menu .kstage button.ks.jarrow { all: unset; position: absolute; cursor: pointer; left: calc(var(--x) / 1672 * 100%); top: calc(var(--y) / 941 * 100%); width: calc(var(--w) / 1672 * 100%); height: calc(var(--h) / 941 * 100%); border-radius: 50%; }
+.jarrow:is(:hover, .focus, :focus-visible):not(:disabled) { background: radial-gradient(closest-side, rgba(255, 220, 140, 0.45), transparent); }
+.jarrow:disabled { opacity: 0.35; filter: grayscale(1); cursor: default; }
+.ks.jpage { display: block; align-content: center; text-align: center; font: 700 max(7.5px, calc(14 * var(--u))) var(--body); color: #4a2e12; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5); white-space: nowrap; }
+.ks.jpage b { text-shadow: 0 1px 1px #000; }
+
+/* ---------- death and level cleared on Robert's art ---------- */
+.ks.dbanner { color: #2a1a10; font-size: calc(40 * var(--u)); }
+.ks.dline { font-size: max(9px, calc(19 * var(--u))); }
+.ks.dline b { color: #ff9a9a; }
+.ks.dline small { display: block; margin-top: calc(4 * var(--u)); color: #b8ad98; font-size: max(8px, calc(14 * var(--u))); }
+#death .ubtn { font-size: max(10px, calc(22 * var(--u))); }
+.ks.cbanner { font-size: calc(36 * var(--u)); }
+.ks.crows { display: block; }
+.crow { position: absolute; left: 0; right: 0; top: calc(var(--r) * 71.7 * var(--u)); height: calc(60 * var(--u)); }
+.crow i { position: absolute; left: 0; width: calc(65 * var(--u)); height: 100%; display: grid; place-items: center; font: normal 700 max(10px, calc(26 * var(--u))) var(--display); color: #f0c46a; text-shadow: 0 0 calc(6 * var(--u)) rgba(240, 196, 106, 0.6); }
+.crow span { position: absolute; left: calc(92 * var(--u)); right: calc(14 * var(--u)); height: 100%; display: flex; align-items: center; justify-content: space-between;
+  font: 600 max(8.5px, calc(18 * var(--u))) var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; }
+.crow span b { font: 700 max(9px, calc(21 * var(--u))) var(--display); color: #f6efdc; }
+.ks.cloot { display: grid; grid-template-columns: repeat(8, 1fr); }
+.cloot .lc { position: relative; display: grid; place-items: center; }
+.cloot .lc img { height: calc(42 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(3 * var(--u)) #000); }
+.cloot .lc b { position: absolute; right: calc(10 * var(--u)); bottom: calc(4 * var(--u)); font: 700 max(8px, calc(15 * var(--u))) var(--display); color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+#cleared .ubtn { font-size: max(10px, calc(24 * var(--u))); }
+
+/* ---------- the confirm pop-up: over the menu that asked, the rest of the screen dimmed ---------- */
+.menu.confirm { padding: 0; display: grid; place-items: center; background: rgba(2, 4, 8, 0.6); z-index: 30; }
+.cstage { position: relative; container-type: inline-size; aspect-ratio: 1430 / 875; width: min(92vw, 640px, calc(80vh * 1430 / 875));
+  background: url("assets/ui/confirm.webp") center / 100% 100% no-repeat; --aw: 1430; --ah: 875; --u: calc(100cqw / 1430); }
+.cstage .ks.uinfo { font-size: max(11px, calc(40 * var(--u))); display: grid; place-items: center; }
+.cstage .ubtn { font-size: max(11px, calc(44 * var(--u))) !important; }
+
+/* ---------- Settings on Robert's art ---------- */
+#settings { --art: url("assets/ui/settings-screen.jpg"); }
+.ks.setlabel { display: flex; align-items: center; justify-content: space-between; padding: 0 calc(24 * var(--u)); text-shadow: 0 1px 2px #000; }
+.setlabel b { font: 700 max(9px, calc(20 * var(--u))) var(--display); color: #f6efdc; }
+.setlabel span { font: 700 max(8.5px, calc(17 * var(--u))) var(--body); color: #f0c46a; }
+.menu .kstage button.ks.sld { all: unset; position: absolute; box-sizing: border-box; cursor: pointer; touch-action: none;
+  left: calc(var(--x) / 1672 * 100%); top: calc(var(--y) / 941 * 100%); width: calc(var(--w) / 1672 * 100%); height: calc(var(--h) / 941 * 100%); }
+.sld .fill { position: absolute; left: calc(6 * var(--u)); top: calc(17 * var(--u)); height: calc(14 * var(--u)); width: calc(var(--f) * 100% - 6 * var(--u)); border-radius: calc(6 * var(--u));
+  background: linear-gradient(90deg, rgba(150, 30, 30, 0.75), rgba(240, 150, 60, 0.85)); box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 160, 70, 0.5); }
+.sld img { position: absolute; top: 50%; left: calc(var(--f) * 100%); height: calc(58 * var(--u)); transform: translate(-58%, -50%); pointer-events: none; filter: drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) #000); }
+.sld:is(:hover, .focus, :focus-visible) img { filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 220, 120, 0.95)); }
+.menu .kstage button.ks.tgl { all: unset; position: absolute; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 113fr 105fr;
+  left: calc(var(--x) / 1672 * 100%); top: calc(var(--y) / 941 * 100%); width: calc(var(--w) / 1672 * 100%); height: calc(var(--h) / 941 * 100%); border-radius: calc(10 * var(--u)); }
+.tgl span { display: grid; place-items: center; margin: calc(8 * var(--u)) calc(5 * var(--u)); border-radius: calc(8 * var(--u)); font: 700 max(8.5px, calc(18 * var(--u))) var(--display); color: rgba(239, 230, 210, 0.45); text-shadow: 0 1px 2px #000; }
+.tgl:not(.on) span:first-child { color: #ffb0a0; background: rgba(170, 40, 40, 0.45); box-shadow: inset 0 0 calc(10 * var(--u)) rgba(255, 120, 90, 0.4); }
+.tgl.on span:last-child { color: #c9fff2; background: rgba(40, 150, 140, 0.5); box-shadow: inset 0 0 calc(10 * var(--u)) rgba(120, 255, 220, 0.45); }
+.tgl:is(:hover, .focus, :focus-visible) { outline: none; box-shadow: 0 0 calc(14 * var(--u)) rgba(255, 220, 140, 0.7); }
+#touch { transform: scale(var(--tscale, 1)); transform-origin: 100% 100%; }
+#stick { transform: scale(var(--tscale, 1)); }
+
+/* ---------- Controls on Robert's art ---------- */
+#controls { --art: url("assets/ui/controls-screen.jpg"); }
+#controls .ctab { font-size: max(9px, calc(21 * var(--u))) !important; }
+#controls .ctab.cur { color: #fff3c4; box-shadow: inset 0 0 0 calc(3 * var(--u)) rgba(255, 230, 160, 0.9), 0 0 calc(16 * var(--u)) rgba(255, 210, 120, 0.6); }
+#controls .ctab:not(.cur) { color: rgba(246, 239, 220, 0.6); }
+.ks.cplate { display: flex; align-items: center; justify-content: center; gap: calc(7 * var(--u)); padding: 0 calc(12 * var(--u)); white-space: nowrap; overflow: hidden; text-shadow: 0 1px 2px #000; }
+.cplate b { font: 700 max(7.5px, calc(14 * var(--u))) var(--display); color: #f0c46a; }
+.cplate span { font: 600 max(7.5px, calc(13.5 * var(--u))) var(--body); color: #efe6d2; }
+#controls .khint { font-size: max(7.5px, calc(15 * var(--u))); }
+
+/* ---------- touch buttons in Robert's spiked rims (assets/ui/hud/btn*.png) ---------- */
+.tb { border: 0; background: center / 100% 100% no-repeat; text-shadow: 0 1px 2px #000, 0 0 4px #000; color: #f6efdc; }
+.tb.at { background-image: url("assets/ui/hud/btnGold.png"); }
+.tb.ju { background-image: url("assets/ui/hud/btnSilver.png"); }
+.tb.da { background-image: url("assets/ui/hud/btnTeal.png"); }
+.tb.ab { background-image: url("assets/ui/hud/btnCrimson.png"); }
+.tb.fl { background-image: url("assets/ui/hud/btnEmber.png"); }
+.tb.on { background-color: transparent; filter: brightness(1.35) drop-shadow(0 0 8px rgba(255, 220, 140, 0.8)); }

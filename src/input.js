@@ -92,8 +92,13 @@
 
   function poll() {
     const g = pad();
-    const now = {};
-    for (const a of ACTIONS) now[a] = KEYS[a].some((k) => keys.has(k) || tapped.has(k) && !prev[a]);
+    const now = {}, fresh = {};
+    for (const a of ACTIONS) {
+      now[a] = KEYS[a].some((k) => keys.has(k) || tapped.has(k) && !prev[a]);
+      // a new key-down counts as a press even while another key of the same action is held:
+      // W and Up are both "up" and "jump", so holding W to aim or walk used to swallow every Space press
+      fresh[a] = KEYS[a].some((k) => tapped.has(k));
+    }
     tapped.clear();
     now.attack = now.attack || mouse.attack; now.ability = now.ability || mouse.ability;
     let x = (now.right ? 1 : 0) - (now.left ? 1 : 0), y = (now.down ? 1 : 0) - (now.up ? 1 : 0);
@@ -120,12 +125,13 @@
     }
     touch.tap = {};
     I.x = Math.max(-1, Math.min(1, x)); I.y = Math.max(-1, Math.min(1, y));
-    for (const a of ACTIONS) { I.p[a] = now[a] && !prev[a]; I.r[a] = !now[a] && prev[a]; I.h[a] = now[a]; }
+    for (const a of ACTIONS) { I.p[a] = now[a] && (!prev[a] || fresh[a]); I.r[a] = !now[a] && prev[a]; I.h[a] = now[a]; }
     prev = now;
   }
 
   // A rumble on pads that support it (Chrome's dual-rumble); harmless elsewhere.
   function rumble(strong, weak, ms) {
+    if (DS.SET && !DS.SET.rumble) return;
     const g = pad();
     try { if (g && g.vibrationActuator) g.vibrationActuator.playEffect("dual-rumble", { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) { /* not supported */ }
   }

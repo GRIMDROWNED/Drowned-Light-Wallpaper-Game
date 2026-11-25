@@ -23,79 +23,174 @@
   <button data-act="flare" class="tb fl">Flare</button>
 </div>
 
-<section id="kits" class="menu" hidden>
-  <header>
-    <h1>Drowned Light <span>Side View</span></h1>
-    <p class="sub">Combat prototype. Pick a knight and fight your way through the drowned swamp to the Sovereign. Every kit keeps its attack and ability from the main game. <span id="ver"></span></p>
-  </header>
-  <div id="mapPick" class="mapRow"></div>
-  <p id="mapText"></p>
-  <div id="kitGrid"></div>
-  <p id="kitText"></p>
-  <div id="famPick" class="row2 famRow"></div>
-  <p id="famText"></p>
-  <div class="row2 upRow"><button id="btnUpKits" class="opt small upBtn">Upgrades</button></div>
-  <div class="foot">
-    <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · F flare · Q next knight · Esc menu</p>
-    <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · click a stick flare · LB next knight · Menu pause</p>
-    <button class="back opt small" hidden>Back</button>
+<section id="kits" class="menu art" hidden>
+  <!-- Robert's knight screen art (assets/ui/knight-screen.jpg, 1672 x 941); every part sits on its slot, placed in art pixels (--x --y --w --h) -->
+  <div class="kstage">
+    <div class="ks klogo" style="--x:22;--y:14;--w:390;--h:150"><h1>Drowned Light</h1><p>Will you drown in the darkness or thrive in the light?</p><span id="ver"></span></div>
+    <h1 class="ks kbanner" style="--x:600;--y:14;--w:480;--h:58">Select a Knight</h1>
+    <button class="ks karrow" data-d="-1" style="--x:425;--y:150;--w:60;--h:80" aria-label="Previous map"></button>
+    <div id="mapPick" class="ks kmaps" style="--x:490;--y:98;--w:1056;--h:200"></div>
+    <button class="ks karrow" data-d="1" style="--x:1545;--y:150;--w:60;--h:80" aria-label="Next map"></button>
+    <div id="kitGrid" class="ks kgrid" style="--x:425;--y:332;--w:1147;--h:263"></div>
+    <div class="ks kinfo" style="--x:462;--y:619;--w:1062;--h:48"><p id="kitText" class="cur"></p><p id="mapText"></p><p id="famText"></p></div>
+    <div id="famPick" class="ks kfams famRow" style="--x:432;--y:705;--w:903;--h:110"></div>
+    <button id="btnUpKits" class="ks opt kup" style="--x:1366;--y:710;--w:262;--h:94">Upgrades</button>
+    <div class="ks khint" style="--x:185;--y:868;--w:122;--h:46"><b>&larr;&rarr;</b> Select</div>
+    <div class="ks khint" style="--x:425;--y:868;--w:120;--h:46"><b>Enter</b> Pick</div>
+    <button class="ks khint back" style="--x:640;--y:868;--w:122;--h:46"><b>Esc</b> Back</button>
+    <div class="ks khint" style="--x:910;--y:868;--w:145;--h:46"><b>Stick</b> Move</div>
+    <div class="ks khint" style="--x:1155;--y:868;--w:122;--h:46"><b class="pa">A</b> Pick</div>
+    <button class="ks khint back" style="--x:1370;--y:868;--w:122;--h:46"><b class="pb">B</b> Back</button>
   </div>
 </section>
 
-<section id="famWin" class="menu" hidden>
-  <header><h1>Choose a familiar</h1><p class="sub">The boss is down. One familiar answers your light and fights beside you from now on. Choose well: the others wait for the next map's fifth level.</p></header>
-  <div id="famWinRow" class="famWinRow"></div>
-  <p id="famWinText"></p>
+<section id="famWin" class="menu art" hidden>
+  <!-- Robert's shrine art (assets/ui/famwin-screen.jpg): six cards, one per familiar in DS.FAM_ORDER -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:640;--y:22;--w:510;--h:62">Choose a familiar</h1>
+    <p class="ks hsub fwsub" style="--x:632;--y:131;--w:522;--h:40">The boss is down. One familiar answers your light.</p>
+    <div id="famWinRow" class="ks fwcards" style="--x:388;--y:282;--w:1206;--h:436"></div>
+    <p id="famWinText" class="ks uinfo fwinfo" style="--x:472;--y:768;--w:990;--h:48"></p>
+  </div>
 </section>
 
-<section id="upgrades" class="menu" hidden>
-  <header><h1>Upgrades</h1><p class="sub">Spend what the Drowned drop on lasting upgrades for every knight. Ranks 6 to 10 also take Amethyst. Your wallpaper gathers more while you're away.</p></header>
-  <div id="wallet" class="wallet"></div>
-  <div id="upList" class="upList"></div>
-  <p id="upText"></p>
-  <div class="row2 upRow"><button id="btnUpBack" class="opt">Back</button></div>
+<section id="upgrades" class="menu art" hidden>
+  <!-- Robert's forge art (assets/ui/upgrades-screen.jpg); parts placed in art pixels like the knight screen -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:595;--y:14;--w:495;--h:58">Upgrades</h1>
+    <div id="wallet" class="ks uwallet" style="--x:477;--y:115;--w:650;--h:64"></div>
+    <div id="upList" class="ks ulist" style="--x:95;--y:258;--w:915;--h:490"></div>
+    <p id="upText" class="ks uinfo" style="--x:130;--y:822;--w:960;--h:54"></p>
+    <button id="btnUpBack" class="ks opt ubtn" style="--x:1218;--y:822;--w:340;--h:54">Back</button>
+  </div>
 </section>
 
-<section id="haul" class="menu" hidden>
-  <header><h1>While you were away</h1><p class="sub" id="haulSub">Your wallpaper kept fighting and gathered this for you.</p></header>
-  <div id="haulList" class="wallet haulList"></div>
-  <div class="row2 upRow"><button id="btnHaulUp" class="opt">Spend it</button><button id="btnHaulOk" class="opt">Collect</button></div>
+<section id="journalMenu" class="menu art" hidden>
+  <!-- Robert's book art (assets/ui/journal-screen.jpg): six Drowned pages a spread, a tab per map -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:660;--y:20;--w:520;--h:62">Journal</h1>
+    <div id="jEntries" class="ks jentries" style="--x:550;--y:185;--w:900;--h:450"></div>
+    <div id="jTabs" class="ks jtabs" style="--x:1508;--y:176;--w:136;--h:460"></div>
+    <button id="jPrev" class="ks opt jarrow" style="--x:510;--y:648;--w:60;--h:64" aria-label="Previous pages"></button>
+    <button id="jNext" class="ks opt jarrow" style="--x:1450;--y:648;--w:60;--h:64" aria-label="Next pages"></button>
+    <p id="jPage" class="ks jpage" style="--x:590;--y:660;--w:380;--h:36"></p>
+    <p id="jSpread" class="ks jpage" style="--x:1050;--y:660;--w:380;--h:36"></p>
+    <button class="ks opt back ubtn jback" style="--x:838;--y:820;--w:400;--h:56">Back</button>
+  </div>
 </section>
 
-<section id="pause" class="menu" hidden>
-  <header><h1>Paused</h1></header>
-  <div class="col">
-    <div class="row2">
-      <button id="btnResume" class="opt">Resume</button>
-      <button id="btnKits" class="opt">Change knight</button>
-      <button id="btnJournal" class="opt">Journal</button>
-      <button id="btnUpPause" class="opt">Upgrades</button>
-      <button id="btnRestart" class="opt">Restart arena</button>
-    </div>
-    <h2>Familiar</h2>
-    <div id="famPause" class="row2 famRow" style="justify-content:flex-start"></div>
-    <h2>Spawn the Drowned</h2>
-    <div id="spawnRow" class="row2"></div>
-    <h2>Testing</h2>
-    <div class="row2">
-      <button id="btnWave" class="opt small">Next wave now</button>
-      <button id="btnClear" class="opt small">Clear foes</button>
-      <button id="btnWaves" class="opt small">Waves</button>
-      <button id="btnGod" class="opt small">God mode</button>
-      <button id="btnBoxes" class="opt small">Hitboxes</button>
-      <button id="btnGrow" class="opt small">Grow familiar</button>
-      <button id="btnWinFams" class="opt small">Unlock all familiars</button>
-      <button id="btnRich" class="opt small">Give 500 of each currency</button>
-      <button id="btnMaps" class="opt small">Open all maps</button>
-      <button id="btnUpReset" class="opt small">Reset upgrades</button>
-      <button id="btnWall" class="opt small">Wallpaper</button>
-      <button id="btnHelp" class="opt small">Controls</button>
-    </div>
-    <div id="journal" hidden></div>
-    <div id="help" hidden>
-      <p><b>Keys</b> A/D move · Space/W jump, again in the air for a double jump · J or left-click attack (press again for a 3-hit combo) · K or Shift dash (through enemies, also in the air) · L or right-click ability · hold W while attacking to swing upward · hold S and attack in the air to plunge · S + jump drops through a platform · Q swaps knight · Esc pauses</p>
-      <p><b>Xbox pad</b> Left stick or D-pad move · A jump · X or LT attack · B or RB dash · Y or RT ability · LB swaps knight · Menu pauses · in menus, A picks and B goes back</p>
-      <p><b>Touch</b> drag on the left half to move (push up and attack for an up-swing, down and attack in the air to plunge) · buttons on the right · II pauses</p>
+<section id="death" class="menu art" hidden>
+  <!-- Robert's defeat art (assets/ui/death-screen.jpg) -->
+  <div class="kstage">
+    <h1 class="ks kbanner dbanner" style="--x:500;--y:90;--w:780;--h:80">You have fallen</h1>
+    <p id="deathText" class="ks uinfo dline" style="--x:800;--y:400;--w:610;--h:80"></p>
+    <button id="btnTryAgain" class="ks opt ubtn" style="--x:805;--y:526;--w:275;--h:70">Try again</button>
+    <button id="btnDeathKits" class="ks opt ubtn" style="--x:1128;--y:526;--w:285;--h:70">Back to knights</button>
+  </div>
+</section>
+
+<section id="cleared" class="menu art" hidden>
+  <!-- Robert's victory art (assets/ui/cleared-screen.jpg): five result rows, eight loot sockets -->
+  <div class="kstage">
+    <h1 id="clearTitle" class="ks kbanner cbanner" style="--x:560;--y:28;--w:590;--h:74">Level cleared</h1>
+    <div id="clearRows" class="ks crows" style="--x:830;--y:243;--w:500;--h:347"></div>
+    <div id="clearLoot" class="ks cloot" style="--x:779;--y:610;--w:577;--h:75"></div>
+    <button id="btnClearUp" class="ks opt ubtn" style="--x:790;--y:762;--w:205;--h:62">Upgrades</button>
+    <button id="btnClearNext" class="ks opt ubtn teal" style="--x:1075;--y:762;--w:300;--h:62">Next level</button>
+  </div>
+</section>
+
+<section id="confirm" class="menu confirm" hidden>
+  <!-- Robert's pop-up (assets/ui/confirm.webp, 1430 x 875 art px), shown over the menu that asked -->
+  <div class="cstage">
+    <p id="confirmText" class="ks uinfo" style="--x:190;--y:275;--w:1050;--h:170"></p>
+    <button id="confirmNo" class="ks opt ubtn" style="--x:212;--y:532;--w:452;--h:122">Cancel</button>
+    <button id="confirmYes" class="ks opt ubtn teal" style="--x:762;--y:532;--w:456;--h:122">Yes</button>
+  </div>
+</section>
+
+<section id="settings" class="menu art" hidden>
+  <!-- Robert's settings art (assets/ui/settings-screen.jpg; the painted slider roses patched out, one cut to assets/ui/rose-knob.png) -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:560;--y:22;--w:500;--h:62">Settings</h1>
+    <div id="setRows"></div>
+    <button id="btnSetControls" class="ks opt ubtn" style="--x:290;--y:733;--w:285;--h:62">Controls</button>
+    <button class="ks opt ubtn teal back" style="--x:660;--y:733;--w:300;--h:62">Back</button>
+  </div>
+</section>
+
+<section id="controls" class="menu art" hidden>
+  <!-- Robert's controls art (assets/ui/controls-screen.jpg): three tabs, twelve plates round the pad, the hint bar -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:520;--y:24;--w:520;--h:64">Controls</h1>
+    <button class="ks opt ubtn ctab" data-tab="keys" style="--x:378;--y:152;--w:196;--h:58">Keyboard</button>
+    <button class="ks opt ubtn ctab" data-tab="pad" style="--x:612;--y:152;--w:226;--h:58">Xbox pad</button>
+    <button class="ks opt ubtn ctab" data-tab="touch" style="--x:872;--y:152;--w:206;--h:58">Touch</button>
+    <div id="ctlPlates"></div>
+    <div class="ks khint" style="--x:232;--y:822;--w:176;--h:52"><b>&larr;&rarr;</b> Tab</div>
+    <div class="ks khint" style="--x:439;--y:822;--w:172;--h:52"><b>Enter</b> Pick</div>
+    <button class="ks khint cback" style="--x:647;--y:822;--w:168;--h:52"><b>Esc</b> Back</button>
+    <div class="ks khint" style="--x:857;--y:822;--w:166;--h:52"><b>D-pad</b> Tab</div>
+    <div class="ks khint" style="--x:1065;--y:822;--w:166;--h:52"><b class="pa">A</b> Pick</div>
+    <button class="ks khint cback" style="--x:1272;--y:822;--w:168;--h:52"><b class="pb">B</b> Back</button>
+  </div>
+</section>
+
+<section id="haul" class="menu art" hidden>
+  <!-- Robert's campfire art (assets/ui/haul-screen.jpg) -->
+  <div class="kstage">
+    <h1 class="ks kbanner hbanner" style="--x:800;--y:92;--w:650;--h:70">While you were away</h1>
+    <p id="haulSub" class="ks hsub" style="--x:878;--y:216;--w:490;--h:48">Your wallpaper kept fighting and gathered this for you.</p>
+    <div id="haulList" class="ks hlist" style="--x:778;--y:318;--w:690;--h:307"></div>
+    <button id="btnHaulUp" class="ks opt ubtn" style="--x:775;--y:722;--w:325;--h:80">Spend it</button>
+    <button id="btnHaulOk" class="ks opt ubtn teal" style="--x:1150;--y:722;--w:320;--h:80">Collect</button>
+  </div>
+</section>
+
+<section id="pause" class="menu art" hidden>
+  <!-- Robert's pause art (assets/ui/pause-screen.jpg): five stacked buttons, familiar slots, a More row and the hint bar -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:595;--y:14;--w:495;--h:58">Paused</h1>
+    <button id="btnResume" class="ks opt pbtn big" style="--x:230;--y:157;--w:674;--h:66">Resume</button>
+    <button id="btnKits" class="ks opt pbtn" style="--x:264;--y:243;--w:604;--h:46">Change knight</button>
+    <button id="btnJournal" class="ks opt pbtn" style="--x:264;--y:306;--w:604;--h:45">Journal</button>
+    <button id="btnUpPause" class="ks opt pbtn" style="--x:264;--y:368;--w:604;--h:45">Upgrades</button>
+    <button id="btnRestart" class="ks opt pbtn" style="--x:264;--y:429;--w:604;--h:46">Restart arena</button>
+    <h2 class="ks plabel" style="--x:368;--y:498;--w:378;--h:32">Familiar</h2>
+    <div id="famPause" class="ks kfams pfams famRow" style="--x:223;--y:543;--w:689;--h:83"></div>
+    <h2 class="ks plabel" style="--x:368;--y:646;--w:378;--h:32">More</h2>
+    <button id="btnWall" class="ks opt pbtn" style="--x:208;--y:696;--w:220;--h:62">Wallpaper</button>
+    <button id="btnSettings" class="ks opt pbtn" style="--x:458;--y:696;--w:210;--h:62">Settings</button>
+    <button id="btnCode" class="ks opt pbtn" style="--x:708;--y:696;--w:220;--h:62">Tester code</button>
+    <div class="ks khint" style="--x:183;--y:843;--w:122;--h:46"><b>&uarr;&darr;</b> Select</div>
+    <div class="ks khint" style="--x:405;--y:843;--w:135;--h:46"><b>Enter</b> Pick</div>
+    <button class="ks khint resume" style="--x:630;--y:843;--w:135;--h:46"><b>Esc</b> Resume</button>
+    <div class="ks khint" style="--x:915;--y:843;--w:140;--h:46"><b>Stick</b> Move</div>
+    <div class="ks khint" style="--x:1148;--y:843;--w:134;--h:46"><b class="pa">A</b> Pick</div>
+    <button class="ks khint resume" style="--x:1370;--y:843;--w:130;--h:46"><b class="pb">B</b> Resume</button>
+    <!-- The tester keypad and the tester tools open in this panel over the right side -->
+    <div id="pPanel" class="ks ppanel" style="--x:1005;--y:100;--w:640;--h:720" hidden>
+      <div id="codePad" class="codePad" hidden>
+        <p id="codeShow" class="codeShow">Enter the tester code</p>
+        <div class="row2 keyRow"></div>
+      </div>
+      <div id="devTools" hidden>
+        <h2>Spawn the Drowned</h2>
+        <div id="spawnRow" class="row2"></div>
+        <h2>Testing</h2>
+        <div class="row2">
+          <button id="btnWave" class="opt small">Next wave now</button>
+          <button id="btnClear" class="opt small">Clear foes</button>
+          <button id="btnWaves" class="opt small">Waves</button>
+          <button id="btnGod" class="opt small">God mode</button>
+          <button id="btnBoxes" class="opt small">Hitboxes</button>
+          <button id="btnGrow" class="opt small">Grow familiar</button>
+          <button id="btnWinFams" class="opt small">Unlock all familiars</button>
+          <button id="btnRich" class="opt small">Give 500 of each currency</button>
+          <button id="btnMaps" class="opt small">Open all maps</button>
+          <button id="btnUpReset" class="opt small">Reset upgrades</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
