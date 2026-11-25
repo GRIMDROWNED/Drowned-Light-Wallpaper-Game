@@ -1,7 +1,7 @@
 /* What the player has unlocked (Robert 2026-11-25): knights, familiars, maps and the wallpaper's level.
    - Levels beaten: a count kept in dl-side-beat (levels 1..beat are beaten; a played clear raises it). Old saves start
      from dl-side-best, the furthest level reached, since reaching a level means the one before it was cleared.
-   - Knights: the six in DS.KIT_UNLOCK are won by beating that level's boss (10, 20 ... 60); the rest are open from the start.
+   - Knights: the seven in DS.KIT_UNLOCK are won by beating that level's boss (10, 20 ... 70; Jade Breaker from the Jade Hollow); the rest are open from the start.
    - Familiars: chosen after each map's level 5 boss (src/familiars.js keeps them); maps open as a run reaches them (src/maps.js).
    - The wallpaper only shows what is unlocked, on a level already beaten: the one picked in Pause -> Wallpaper
      (dl-side-wall-level), or a random beaten level when set to Roam (-1, the default).
@@ -10,7 +10,7 @@
      goes back to the real progress. */
 "use strict";
 (function (DS) {
-  const LAST = 60; // the wallpaper picker offers levels 1-60 (the Sunken King's hall, level 61, has no endless run of its own)
+  const LAST = DS.FINALE; // the wallpaper picker offers levels 1-70 (the Sunken King's hall, level 71, has no endless run of its own)
   const getN = (k, d) => { try { const v = parseInt(localStorage.getItem(k), 10); return isNaN(v) ? d : v; } catch (e) { return d; } };
   const setS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) { /* storage blocked */ } };
   let beat = getN("dl-side-beat", -1);

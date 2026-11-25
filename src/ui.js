@@ -149,16 +149,29 @@
   function syncWall() {
     const beat = Math.min(DS.Unlock.beat(), DS.Unlock.LAST), pick = DS.Unlock.wallPick();
     const maps = $("#wallMaps"); maps.innerHTML = "";
+    // six rings are painted: with more maps (the Jade Hollow is map 7) they page, 6 at a time, with arrows either side
+    const page = Math.floor(wMap / W_RING.length), pages = Math.ceil(DS.MAPS.length / W_RING.length);
+    const turn = (d, x) => { // a page arrow, shown when that page has a beaten level
+      const to = page + d; if (to < 0 || to >= pages || beat <= to * W_RING.length * 10) return;
+      const a = el("button", "opt wpage", d < 0 ? "\u2039" : "\u203a");
+      a.setAttribute("aria-label", d < 0 ? "Earlier maps" : "Later maps");
+      a.style.left = x / 1672 * 100 + "%"; a.style.top = W_RING_Y / 941 * 100 + "%";
+      a.addEventListener("click", () => { wMap = to * W_RING.length; syncWall(); });
+      maps.appendChild(a);
+    };
+    turn(-1, 268);
     DS.MAPS.forEach((m, i) => {
+      if (Math.floor(i / W_RING.length) !== page) return;
       const ok = beat > i * 10; // a map shows once one of its levels is beaten
       const b = el("button", "opt map" + (i === wMap ? " sel" : "") + (ok ? "" : " locked"));
-      b.style.setProperty("--mc", m.c); b.style.left = W_RING[i] / 1672 * 100 + "%"; b.style.top = W_RING_Y / 941 * 100 + "%";
+      b.style.setProperty("--mc", m.c); b.style.left = W_RING[i % W_RING.length] / 1672 * 100 + "%"; b.style.top = W_RING_Y / 941 * 100 + "%";
       b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}" style="--ex:${m.em[0]};--ey:${m.em[1]}"></span>`;
       b.addEventListener("click", () => { if (ok) { wMap = i; syncWall(); } });
       const say = () => wallSay(ok ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}` : "<b>???</b> · Not reached yet.");
       b.addEventListener("focus", say); b.addEventListener("mouseenter", say);
       maps.appendChild(b);
     });
+    turn(1, 1252);
     const lv = $("#wallLevels"); lv.innerHTML = "";
     W_SLOT.forEach(([x, y, w, h], k) => {
       const n = k === 0 ? -1 : wMap * 10 + k - 1, ok = n < beat, sel = n === pick;
@@ -278,7 +291,7 @@
   // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
   // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
   const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
-  const J_TAB = [200, 272, 348, 426, 502, 580], J_TABC = ["224,165,60", "60,170,165", "200,50,60", "150,70,190", "230,120,30", "215,80,130"];
+  const J_TAB = [200, 272, 348, 426, 502, 580, 656], J_TABC = ["224,165,60", "60,170,165", "200,50,60", "150,70,190", "230,120,30", "215,80,130", "80,220,150"];
   const J_PER_MAP = 30, J_SPREADS = J_PER_MAP / 6; // 10 levels x 3 pages
   let jMap = 0, jSpread = 0;
   function buildJournal() {
@@ -339,10 +352,12 @@
     });
     syncMaps();
   }
+  const K_RINGS = 6; // rings painted on the knight screen; with more maps (the Jade Hollow, map 7) the strip pages to the picked map's six
   function syncMaps() {
-    const cur = DS.Maps.picked();
-    for (const b of document.querySelectorAll(".map")) {
+    const cur = DS.Maps.picked(), page = Math.floor(cur / K_RINGS);
+    for (const b of document.querySelectorAll("#mapPick .map")) {
       const i = +b.dataset.map, m = DS.MAPS[i], on = DS.Maps.open(i);
+      b.hidden = Math.floor(i / K_RINGS) !== page;
       b.classList.toggle("locked", !on); b.classList.toggle("sel", on && i === cur);
       b.style.setProperty("--mc", m.c);
       b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}"></span><span>${on ? m.short || m.name : "???"}</span>`;

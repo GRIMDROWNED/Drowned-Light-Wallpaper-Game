@@ -2,7 +2,7 @@
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
    The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35), the Lord of the Rift Throne (level 40), the Magma Golem (map 5, level 45)
    and the Furnace Hydra (level 50), the Cinder Colossus (map 6, level 55), the Ashen Sovereign (level 60) and the
-   Sunken King (the finale, level 61). DS.bossFor in data.js puts them at the
+   Sunken King (the finale, level 71, after the Jade Hollow). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -965,7 +965,7 @@
     },
   };
 
-  // ---------------- the Sunken King (the finale, level 61) ----------------
+  // ---------------- the Sunken King (the finale, level 71) ----------------
   // A giant in the black water behind the hall (his body is drawn behind the world; DS.KING_BODY). Only his hands
   // reach the causeway. Slam: a hand rises over the knight, follows, and crashes down, then lies there: his heart
   // opens and ONLY the resting hand can be wounded. Sweep: a hand comes in flat from the side of the hall and slides

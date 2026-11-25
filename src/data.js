@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.14.1";
+  DS.VERSION = "0.15.0";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
@@ -157,7 +157,7 @@
   DS.KIT_ORDER = Object.keys(DS.KITS);
   // Knights won by beating the boss of a map's last level (Robert 2026-11-20, locked 2026-11-25): level -> knight.
   // The four not listed are open from the start. Until won a knight shows as a dark "???" (src/unlocks.js).
-  DS.KIT_UNLOCK = { flameBastion: 10, pikeWarden: 20, rosePaladin: 30, chainReaper: 40, relicBearer: 50, cinderbrand: 60 };
+  DS.KIT_UNLOCK = { flameBastion: 10, pikeWarden: 20, rosePaladin: 30, chainReaper: 40, relicBearer: 50, cinderbrand: 60, jadeBreaker: 70 };
 
   // The Drowned. ai: walker | leaper | archer | shield | caster | boss. All side-walk sheets face right.
   // mv: frames from the side-view move sheets (side/<name>), e.g. { windup: "windup", recover: "slash" }
@@ -256,7 +256,12 @@
   // Which boss ends level n (0-based). Robert 2026-11-20: a map is 10 levels; its level 5 boss lets you choose a familiar,
   // its level 10 boss wins a kit. The plan, map by map (bosses not built yet stay the Sovereign until they are):
   DS.MAP_BOSSES = [["drowned-colossus", "champion"], ["mother-wyvern", "crucible-wyrm"], ["starved-bell", "deadly-rose"],
-    ["seething-seraph", "rift-throne"], ["magma-golem", "furnace-hydra"], ["cinder-colossus", "ashen-sovereign"]];
+    ["seething-seraph", "rift-throne"], ["magma-golem", "furnace-hydra"], ["cinder-colossus", "ashen-sovereign"],
+    // map 7, the Jade Hollow (Robert 2026-11-25): its level 70 boss wins the Jade Breaker. Robert drew the Hollow Stag (level 65) and the Jade Carapace (level 70); until
+    // their moves are built these names fall back to the champion (bossFor) and the Drowned guard its wells.
+    ["jade-stag", "jade-carapace"]];
+  // the finale, the Sunken King's hall: the level after the last map (level 71, index 70), and every loop after
+  DS.FINALE = DS.MAP_BOSSES.length * 10;
   // Who guards the Mist Wells of level n: the minions of the next boss on its map ([swarm, middle, heavy]). The Sovereign
   // brings no brood of his own, so his levels' wells keep the Drowned's best; the mines' four bosses share the mines' Drowned.
   const MINES = ["wretch", "acolyte", "ashguard"];
@@ -268,13 +273,13 @@
     "sunken-king": ["tidestalker", "wisp", "tideleech"],
   };
   DS.nextBoss = function (n) { // the next map boss (level 5 or 10 of the map), whether it is built yet or not
-    if (n > 0 && n % 60 === 0) return "sunken-king";
+    if (n > 0 && n % DS.FINALE === 0) return "sunken-king";
     const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length];
     return m[n % 10 <= 4 ? 0 : 1];
   };
   DS.bossFor = function (n) {
     const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length], at = n % 10;
-    if (n > 0 && n % 60 === 0) return "sunken-king"; // the finale: level 61 (and every loop after)
+    if (n > 0 && n % DS.FINALE === 0) return "sunken-king"; // the finale: level 71 (and every loop after)
     const t = at === 4 ? m[0] : at === 9 ? m[1] : "champion";
     return DS.ENEMIES[t] ? t : "champion";
   };
