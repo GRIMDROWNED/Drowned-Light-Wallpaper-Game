@@ -16,7 +16,8 @@
       const k = DS.KITS[id];
       const b = el("button", "kit opt");
       b.style.setProperty("--kc", k.color); b.dataset.kit = id;
-      b.innerHTML = `<span class="por"><img alt="" src="assets/${k.sprite.folder}/right.png?v=${DS.VERSION}"></span>
+      // head-and-chest portrait cut from the knight's front picture (tools/cut_portraits.py); the side sprite if there is none
+      b.innerHTML = `<span class="por"><img alt="" src="assets/ui/portraits/${id}.png?v=${DS.VERSION}" onerror="this.onerror=null;this.src='assets/${k.sprite.folder}/right.png?v=${DS.VERSION}';this.className='px'"></span>
         <span class="info"><b>${k.name}</b><span class="tag">${k.tag}</span>
         <span class="row"><i>Attack:</i> ${k.attack.name}</span><span class="row"><i>Ability:</i> ${k.ability.name}</span></span>`;
       b.title = k.ability.text + "\n" + k.passiveText;
@@ -126,6 +127,11 @@
       b.classList.toggle("locked", !on); b.classList.toggle("sel", on && i === cur);
       b.style.setProperty("--mc", m.c);
       b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}"></span><span>${on ? m.short || m.name : "???"}</span>`;
+      if (m.ring) { // centred on its ring in the art (the strip starts at art x 490, y 98 and is 1056 x 200)
+        b.style.left = (m.ring[0] - 490) / 1056 * 100 + "%"; b.style.top = (m.ring[1] - 98) / 200 * 100 + "%";
+        const img = b.querySelector("img"); img.style.setProperty("--ex", m.em[0]); img.style.setProperty("--ey", m.em[1]);
+        b.style.setProperty("--ly", 195 - m.ring[1]); // names on one line whatever the ring's height
+      }
     }
     showMapText(cur);
   }

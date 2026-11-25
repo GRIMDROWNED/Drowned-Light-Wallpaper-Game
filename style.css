@@ -160,26 +160,29 @@ body.wall { cursor: none; }
 .ks.karrow { background: none; border: 0; padding: 0; }
 .ks.karrow:hover, .ks.karrow:focus-visible { background: radial-gradient(closest-side, rgba(255, 220, 140, 0.35), transparent); outline: none; }
 /* map rings: Robert's badge emblem shows through the ring's hole */
-.kmaps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.menu .kmaps button.opt.map { all: unset; position: relative; cursor: pointer; display: block; }
-.kmaps .map .hole { position: absolute; left: 50%; top: 46%; width: calc(122 * var(--u)); height: calc(122 * var(--u)); transform: translate(-50%, -50%);
-  border-radius: 50%; overflow: hidden; display: grid; place-items: center; }
-.kmaps .map img { width: calc(170 * var(--u)); height: auto; image-rendering: pixelated; }
-.kmaps .map span { position: absolute; left: 0; right: 0; bottom: calc(-2 * var(--u)); text-align: center; font: 700 max(9px, calc(17 * var(--u))) var(--display); color: #f4ecd8;
+.kmaps { display: block; }
+.menu .kmaps button.opt.map { all: unset; position: absolute; cursor: pointer; display: block; width: calc(112 * var(--u)); height: calc(112 * var(--u)); transform: translate(-50%, -50%); }
+/* the emblem: shown at --s times its picture size, its own circle centre (--ex, --ey) on the ring's centre */
+.kmaps .map .hole { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; --s: 1.75; }
+.kmaps .map img { position: absolute; width: auto; height: calc(84 * var(--s) * var(--u)); image-rendering: pixelated;
+  left: calc(56 * var(--u) - var(--ex) * var(--s) * var(--u)); top: calc(56 * var(--u) - var(--ey) * var(--s) * var(--u)); }
+.kmaps .map span:not(.hole) { position: absolute; left: -40%; right: -40%; top: calc(100% + (22 + var(--ly, 0)) * var(--u)); text-align: center; font: 700 max(9px, calc(17 * var(--u))) var(--display); color: #f4ecd8;
   text-shadow: 0 0 calc(6 * var(--u)) #000, 0 0 calc(3 * var(--u)) #000, 0 0 calc(3 * var(--u)) #000; }
 .kmaps .map.sel .hole { box-shadow: 0 0 0 calc(4 * var(--u)) rgb(var(--mc)), 0 0 calc(30 * var(--u)) rgba(var(--mc), 0.8); }
-.kmaps .map.sel span { color: rgb(var(--mc)); }
+.kmaps .map.sel span:not(.hole) { color: rgb(var(--mc)); }
 .kmaps .map.focus .hole, .kmaps .map:focus-visible .hole, .kmaps .map:hover .hole { box-shadow: 0 0 0 calc(4 * var(--u)) #fff3c4, 0 0 calc(26 * var(--u)) rgba(255, 230, 160, 0.8); }
 .kmaps .map.locked img { filter: brightness(0.15) saturate(0); }
+.kmaps .map.locked .hole { display: grid; place-items: center; }
 .kmaps .map.locked .hole::after { content: ""; position: absolute; width: 34%; height: 34%; background: center / contain no-repeat
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3' fill='none' stroke='%23c9c2b0' stroke-width='2.4'/%3E%3Crect x='4' y='10' width='16' height='12' rx='2' fill='%23c9c2b0'/%3E%3C/svg%3E"); }
-.kmaps .map.locked span { color: #a49d8c; }
+.kmaps .map.locked span:not(.hole) { color: #a49d8c; }
 /* knight cards sit on the ten painted frames */
 #kitGrid.ks.kgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); column-gap: calc(16.75 * var(--u)); row-gap: max(9px, calc(15 * var(--u))); max-width: none; margin: 0; }
 .menu .kgrid button.kit { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: calc(6 * var(--u)); align-items: center; padding: calc(10 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));
   border-radius: max(8px, calc(12 * var(--u))); min-width: 0; overflow: hidden; }
-.kgrid .kit .por { flex: 0 0 calc(62 * var(--u)); height: calc(100 * var(--u)); display: grid; place-items: end center; overflow: hidden; }
-.kgrid .kit img { height: calc(100 * var(--u)); width: auto; max-width: none; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) calc(4 * var(--u)) #000); }
+.kgrid .kit .por { flex: 0 0 calc(76 * var(--u)); height: calc(100 * var(--u)); overflow: hidden; border-radius: calc(6 * var(--u)); } /* head and chest (assets/ui/portraits) */
+.kgrid .kit img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; max-width: none; filter: drop-shadow(0 calc(3 * var(--u)) calc(4 * var(--u)) #000); }
+.kgrid .kit img.px { width: auto; height: calc(205 * var(--u)); margin: calc(-2 * var(--u)) auto 0; image-rendering: pixelated; } /* side sprite stand-in */
 .kgrid .kit .info { flex: 1 1 0; display: flex; flex-direction: column; gap: calc(3 * var(--u)); min-width: 0; text-shadow: 0 0 calc(4 * var(--u)) #000, 0 calc(1 * var(--u)) 0 #000; }
 .kgrid .kit b { font: 700 max(10px, calc(18 * var(--u)))/1.05 var(--display); color: rgb(var(--kc)); filter: brightness(1.25); }
 .kgrid .kit .tag { align-self: flex-start; font: 700 max(8px, calc(12 * var(--u))) var(--body); letter-spacing: 0.06em; color: #e8f6f4; padding: calc(1 * var(--u)) calc(7 * var(--u));
