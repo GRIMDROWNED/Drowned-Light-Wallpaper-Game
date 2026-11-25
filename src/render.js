@@ -442,43 +442,76 @@
   }
 
   // ---------------- HUD ----------------
+  // Robert's HUD pieces (assets/ui/hud/*.png, cut by tools/cut_hud.py); until they load the plain bars stand in
+  const HUD = {};
+  function hudImg(n) {
+    let im = HUD[n];
+    if (!im) { im = HUD[n] = new Image(); im.src = `assets/ui/hud/${n}.png?v=${DS.VERSION}`; }
+    return im.complete && im.naturalWidth ? im : null;
+  }
+  R.hudImg = hudImg;
+  const FILL = { red: "fillRed", teal: "fillTeal", gold: "fillGold", ember: "fillEmber" };
+  // a framed bar: the painted frame, the painted fill clipped to f; inner = the frame's dark slot in fractions
+  function fbar(frame, fill, x, y, w, h, f, fallback) {
+    const fr = hudImg(frame), fl = hudImg(FILL[fill]);
+    if (!fr || !fl) { bar(x, y + h * 0.3, w, h * 0.4, f, fallback || "#c0a060", "#141c22"); return; }
+    ctx.drawImage(fr, x, y, w, h);
+    const ix = x + w * 0.045, iy = y + h * 0.27, iw = w * 0.91, ih = h * 0.46, fw = iw * Math.max(0, Math.min(1, f));
+    if (fw > 0.5) { ctx.save(); ctx.beginPath(); ctx.rect(ix, iy, fw, ih); ctx.clip(); ctx.drawImage(fl, ix - ih * 0.3, iy - ih * 0.15, iw + ih * 0.6, ih * 1.3); ctx.restore(); }
+  }
+  function shadowText(t, x, y, c) { ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillText(t, x + 1, y + 1); ctx.fillStyle = c; ctx.fillText(t, x, y); }
+  const famHeads = {};
+  function famHead(id) { let im = famHeads[id]; if (!im) { im = famHeads[id] = new Image(); im.src = `assets/ui/portraits/fam-${id}.png?v=${DS.VERSION}`; } return im.complete && im.naturalWidth ? im : null; }
+
   function hud() {
     const p = G.player, k = p.k, vw = R.vw;
     ctx.textAlign = "left";
-    const x = 14, y = 14;
-    const fam = DS.Fam.form(), ex = DS.Explore.on ? (DS.Explore.relics.length ? 32 : 16) : 0;
-    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 6, 232, (fam ? 88 : 72) + ex);
-    ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = `rgb(${k.color})`;
-    ctx.fillText(k.name.toUpperCase(), x, y + 10);
-    ctx.font = '600 10px "Inter", system-ui, sans-serif'; ctx.fillStyle = "#9fb4bb"; const klv = DS.Explore.kitLevel(p.kitId); // kit level from sigils (Robert 2026-11-20)
-    if (klv) { ctx.fillStyle = "#ffb060"; ctx.fillText("Lv " + klv, x + 170, y + 10); } else ctx.fillText(k.tag, x + 170, y + 10);
+    // the rose panel (584 x 268 art px; its dark slot runs 95-555 x 70-235)
+    const PX = 4, PY = 2, PW = 272, PH = 132, ax = (v) => PX + v * PW / 584, ay = (v) => PY + v * PH / 268;
+    const panel = hudImg("panel");
+    if (panel) ctx.drawImage(panel, PX, PY, PW, PH); else { ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(PX, PY, PW, PH); }
+    const x = ax(122), r = ax(546), w = r - x;
+    ctx.font = '700 12px "Pixelify Sans", monospace'; shadowText(k.name.toUpperCase(), x, ay(98), `rgb(${k.color})`);
+    ctx.textAlign = "right"; ctx.font = '600 10px "Inter", system-ui, sans-serif';
+    const klv = DS.Explore.kitLevel(p.kitId); // kit level from sigils (Robert 2026-11-20)
+    shadowText(klv ? "Lv " + klv : k.tag, r, ay(98), klv ? "#ffb060" : "#b8c6cb");
+    ctx.textAlign = "left";
     // health
-    bar(x, y + 18, 220, 9, p.hp / p.max, "#d24848", "#3a1212");
-    ctx.fillStyle = "#e8eef0"; ctx.font = '600 9px "Inter", system-ui, sans-serif'; ctx.fillText(Math.ceil(p.hp) + " / " + p.max, x + 4, y + 26);
+    fbar("frameLong", "red", x - 4, ay(108), w + 8, 17, p.hp / p.max, "#d24848");
+    ctx.textAlign = "center"; ctx.font = '700 9px "Inter", system-ui, sans-serif'; shadowText(Math.ceil(p.hp) + " / " + p.max, x + w / 2, ay(108) + 11.5, "#fff4ec");
     // ability
     const ab = k.ability, ready = p.abilCd <= 0;
-    bar(x, y + 34, 220, 7, ready ? 1 : 1 - p.abilCd / ab.cd, ready ? `rgb(${k.color})` : "#5a6870", "#141c22");
-    ctx.fillStyle = ready ? "#fff" : "#8a9aa2"; ctx.font = '600 10px "Inter", system-ui, sans-serif';
-    ctx.fillText(ab.name + (ready ? "  ready" : "  " + p.abilCd.toFixed(1) + "s"), x, y + 54);
+    fbar("frameMid", "teal", x - 4, ay(148), w * 0.72, 15, ready ? 1 : 1 - p.abilCd / ab.cd, `rgb(${k.color})`);
+    ctx.textAlign = "right"; ctx.font = '600 10px "Inter", system-ui, sans-serif';
+    shadowText(ready ? "ready" : p.abilCd.toFixed(1) + "s", r, ay(148) + 10.5, ready ? "#9ff0e0" : "#8a9aa2");
+    ctx.textAlign = "left"; ctx.font = '600 9.5px "Inter", system-ui, sans-serif';
+    shadowText(ab.name, x, ay(196), "#e8eef0");
     // kit meters
     let meter = null;
-    if (k.heat) meter = ["Heat", p.heat / k.heat.max, p.heat >= k.heat.max ? "#ffffff" : "#ff9040"];
-    if (k.tithe) meter = ["Tithe " + p.stacks, Math.min(1, p.stacks / 30), "#e03050"];
-    if (k.momentum) meter = ["Momentum", Math.min(1, p.moveT / k.momentum.full), "#60e0a0"];
-    if (k.stance) meter = ["Stable Form", Math.min(1, p.stillT / k.stance.after), p.stillT >= k.stance.after ? "#ff8090" : "#7a4a52"];
-    if (k.rush) meter = ["Rush", p.rushT / k.rush.dur, "#c9a0ff"];
-    if (fam) { // the familiar: its form, the kills to its next one, the knight's blessing or fury
-      const fd = DS.Fam.def(), f = G.fam, next = fd.grow[f.form];
-      ctx.fillStyle = `rgb(${fd.color})`; ctx.font = '600 10px "Inter", system-ui, sans-serif';
-      let t = fam.name + (next != null ? "  ·  grows in " + Math.max(0, next - f.kills) : "");
-      if (f.down > 0) t = fam.name + "  ·  down " + f.down.toFixed(0) + " s";
-      if (p.bless > 0) t += "  ·  blessed";
-      if (p.fury > 0) t += "  ·  fury";
-      ctx.fillText(t, x, y + 70);
+    if (k.heat) meter = ["Heat", p.heat / k.heat.max];
+    if (k.tithe) meter = ["Tithe " + p.stacks, Math.min(1, p.stacks / 30)];
+    if (k.momentum) meter = ["Momentum", Math.min(1, p.moveT / k.momentum.full)];
+    if (k.stance) meter = ["Stable Form", Math.min(1, p.stillT / k.stance.after)];
+    if (k.rush) meter = ["Rush", p.rushT / k.rush.dur];
+    if (meter) { ctx.textAlign = "right"; shadowText(meter[0], r, ay(196), "#ffc890"); ctx.textAlign = "left"; fbar("frameShort", "ember", x + w * 0.5, ay(206), w * 0.5, 11, meter[1], "#ff9040"); }
+    let yy = PY + PH + 2;
+    const fam = DS.Fam.form();
+    if (fam) { // the familiar: its head in the dripping ring, its form, the kills to its next one, the knight's blessing or fury
+      const fd = DS.Fam.def(), f = G.fam, next = fd.grow[f.form], ring = hudImg("famRing"), head = famHead(f.id);
+      const rw = 40, rh = rw * 338 / 243;
+      if (ring) ctx.drawImage(ring, 10, yy, rw, rh); // the ring's dark middle, then the head on it
+      if (head) { ctx.save(); ctx.beginPath(); ctx.arc(10 + rw / 2, yy + rw / 2, rw * 0.37, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(head, 10 + rw * 0.12, yy + rw * 0.12, rw * 0.76, rw * 0.76); ctx.restore(); }
+      ctx.font = '700 11px "Pixelify Sans", monospace'; shadowText(fam.name, 56, yy + 16, `rgb(${fd.color})`);
+      let t = next != null ? "grows in " + Math.max(0, next - f.kills) : "";
+      if (f.down > 0) t = "down " + f.down.toFixed(0) + " s";
+      if (p.bless > 0) t += (t ? "  ·  " : "") + "blessed";
+      if (p.fury > 0) t += (t ? "  ·  " : "") + "fury";
+      ctx.font = '600 9.5px "Inter", system-ui, sans-serif'; shadowText(t, 56, yy + 29, "#cfd8dc");
+      yy += rw + 4;
     }
-    if (meter) { ctx.fillStyle = "#cfd8dc"; ctx.fillText(meter[0], x + 130, y + 54); bar(x + 130, y + 58, 90, 4, meter[1], meter[2], "#141c22"); }
-    DS.Explore.hud(ctx, x, y + (fam ? 78 : 62), bar); // lantern, flares, pages, relics (under the familiar row)
+    DS.Explore.hud(ctx, 12, yy, (bx, by, bw, bh, bf, bc) => fbar("frameShort", "gold", bx - 2, by - 4, bw + 4, 13, bf, bc)); // lantern, flares, pages, relics
     // top right: wave, kills, combo, dummy dps
+    const y = 14;
     ctx.textAlign = "right"; ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.fillStyle = "#cfe6e8";
     const left = G.foes.filter((e) => !e.dead && !e.d.dummy).length;
     const rx = vw - 14 - (document.body.classList.contains("touch") ? 64 : 0);
@@ -500,15 +533,30 @@
     // boss bar
     const boss = G.foes.find((e) => e.d.boss && !e.dead);
     if (boss) {
-      const w = Math.min(420, vw - 120), bx = (vw - w) / 2, by = R.vh - 34;
-      ctx.textAlign = "center"; ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = "#e6d2b0";
-      ctx.fillText(boss.d.name, vw / 2, by - 6);
-      bar(bx, by, w, 8, boss.hp / boss.max, "#c0a060", "#201810");
+      const w = Math.min(520, vw - 110), h = w * 214 / 1586, bx = (vw - w) / 2, by = R.vh - h - 2, fr = hudImg("boss"), fl = hudImg("fillRed");
+      if (fr && fl) { // Robert's skull bar: the dark slot runs 6-94% across, 43-77% down
+        const ix = bx + w * 0.06, iy = by + h * 0.45, iw = w * 0.88, ih = h * 0.3, fw = iw * Math.max(0, boss.hp / boss.max);
+        ctx.drawImage(fr, bx, by, w, h);
+        ctx.save(); ctx.beginPath(); ctx.rect(ix, iy, fw, ih); ctx.clip(); ctx.drawImage(fl, ix - 4, iy - 2, iw + 8, ih + 4); ctx.restore();
+        const sx = fr.naturalWidth * 0.455, sw = fr.naturalWidth * 0.09; // the skull and its drips hang over the fill
+        const nh = fr.naturalHeight; // (only above and below the slot, so the fill runs on under it)
+        ctx.drawImage(fr, sx, 0, sw, nh * 0.45, bx + w * 0.455, by, w * 0.09, h * 0.45);
+        ctx.drawImage(fr, sx, nh * 0.75, sw, nh * 0.25, bx + w * 0.455, by + h * 0.75, w * 0.09, h * 0.25);
+        ctx.textAlign = "left"; ctx.font = '700 11px "Pixelify Sans", monospace'; shadowText(boss.d.name, ix + 6, iy + ih * 0.5 + 4, "#f3e2c0");
+      } else {
+        ctx.textAlign = "center"; ctx.font = '700 13px "Pixelify Sans", monospace'; ctx.fillStyle = "#e6d2b0";
+        ctx.fillText(boss.d.name, vw / 2, R.vh - 40);
+        bar(bx, R.vh - 34, w, 8, boss.hp / boss.max, "#c0a060", "#201810");
+      }
     }
     if (G.banner) {
       const a = Math.min(1, G.banner.t * 3, (2.2 - G.banner.t) * 2);
-      ctx.textAlign = "center"; ctx.font = '700 26px "Pixelify Sans", monospace';
-      ctx.fillStyle = `rgba(220,240,240,${a})`; ctx.fillText(G.banner.txt, vw / 2, R.vh * 0.28);
+      ctx.textAlign = "center"; ctx.font = '700 22px "Pixelify Sans", monospace';
+      const rib = hudImg("ribbon"), tw = ctx.measureText(G.banner.txt).width, bw = Math.max(260, tw + 150), bh = bw * 151 / 843, cy = R.vh * 0.28;
+      ctx.save(); ctx.globalAlpha = Math.max(0, a);
+      if (rib) { ctx.drawImage(rib, vw / 2 - bw / 2, cy - bh * 0.62, bw, bh); ctx.fillStyle = "#3a2410"; ctx.fillText(G.banner.txt, vw / 2, cy); }
+      else { ctx.fillStyle = "rgb(220,240,240)"; ctx.fillText(G.banner.txt, vw / 2, cy); }
+      ctx.restore();
     }
     DS.Explore.drawNote(ctx, vw, R.vh);
     DS.Loot.hud(ctx, vw);

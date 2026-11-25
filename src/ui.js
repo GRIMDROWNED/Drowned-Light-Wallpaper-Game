@@ -45,7 +45,8 @@
   function buildFams() {
     for (const row of [$("#famPick"), $("#famPause")]) {
       row.innerHTML = "";
-      for (const id of [null].concat(DS.FAM_ORDER)) {
+      // David first and "No familiar" last: his wide wings sit better in the first frame (Robert 2026-11-25)
+      for (const id of ["wyvern"].concat(DS.FAM_ORDER.filter((f) => f !== "wyvern"), [null])) {
         const b = el("button", "opt small fam" + (id ? "" : " none"));
         b.dataset.fam = id || "";
         b.addEventListener("click", () => {
