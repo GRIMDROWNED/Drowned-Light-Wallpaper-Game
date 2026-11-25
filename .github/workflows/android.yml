@@ -30,6 +30,6 @@ jobs:
         with:
           tag_name: android-${{ github.run_number }}
           name: Android wallpaper app ${{ github.run_number }}
-          body: "Install on Android: download drowned-light-wallpaper.apk, open it, allow installing from your browser, then open Drowned Light and tap Set wallpaper."
+          body: "Install on Android: download drowned-light-wallpaper.apk, open it, allow installing from your browser, then open Drowned Light and tap Set wallpaper. From now on the app updates itself: each time you open the game it checks here and offers the new version."
           files: drowned-light-wallpaper.apk
           make_latest: "true"
