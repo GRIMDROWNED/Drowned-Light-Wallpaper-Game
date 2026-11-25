@@ -178,7 +178,7 @@
   }
 
   // ---------------- tester view of the unlocks: your progress / everything open / everything locked ----------------
-  const UNLOCK_NAMES = { real: "your progress", all: "everything open", none: "everything locked" };
+  const UNLOCK_NAMES = { real: "as earned", all: "all UNLOCKED", none: "all LOCKED" };
   function refreshUnlocks() {
     syncKits(); syncFams(); syncMaps();
     if (G.player && !DS.Unlock.kitOpen(G.kit)) DS.switchKit(DS.Unlock.usableKit(G.kit));
@@ -505,7 +505,7 @@
   }
   function syncToggles() {
     $("#devTools").hidden = !DS.TESTER; syncPanel();
-    $("#btnUnlocks").textContent = "Unlocks: " + UNLOCK_NAMES[DS.Unlock.mode()];
+    $("#btnUnlocks").textContent = "Lock/unlock knights, familiars, maps: " + UNLOCK_NAMES[DS.Unlock.mode()];
     $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
