@@ -191,7 +191,7 @@
     if (opt.chill) e.chill = Math.max(e.chill || 0, opt.chill);
     if (opt.freeze) { if (e.d.boss) e.chill = Math.max(e.chill || 0, opt.freeze); else e.freeze = Math.max(e.freeze || 0, opt.freeze); }
     if (opt.root) e.root = Math.max(e.root || 0, e.d.boss ? opt.root * 0.3 : opt.root);
-    text(e.x + rnd(-8, 8), e.y - e.h - 4, String(dmg), blocked ? "#9aa" : opt.color || "#fff", dmg >= 25 ? 17 : 14);
+    if (DS.SET.numbers) text(e.x + rnd(-8, 8), e.y - e.h - 4, String(dmg), blocked ? "#9aa" : opt.color || "#fff", dmg >= 25 ? 17 : 14);
     spark(e.x - dir * e.w * 0.2, e.y - e.h * 0.55, opt.sparkColor || "#e8f4ff", blocked ? 3 : 8);
     G.hitstop = Math.max(G.hitstop, opt.hitstop != null ? opt.hitstop : 0.045);
     if (!opt.quiet) { shake(opt.heavy ? 5 : 2.5); I.rumble(opt.heavy ? 0.5 : 0.2, 0.3, 60); } // a familiar's blows don't shake the screen
@@ -460,7 +460,7 @@
   function spark(x, y, color, n) { for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(120, 380); G.fx.push({ kind: "spark", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: rnd(0.12, 0.3), c: color }); } }
   function puff(x, y, n, c) { for (let i = 0; i < n; i++) G.fx.push({ kind: "dust", x: x + rnd(-12, 12), y: y - 2, vx: rnd(-80, 80), vy: rnd(-60, -10), t: 0, life: rnd(0.3, 0.5), c, r: rnd(3, 6) }); }
   function ring(x, y, c) { G.fx.push({ kind: "ring", x, y, t: 0, life: 0.3, c }); }
-  function shake(a) { G.cam.shake = Math.max(G.cam.shake, a); }
+  function shake(a) { G.cam.shake = Math.max(G.cam.shake, a * DS.SET.shake); }
   DS.fx = { text, spark, puff, ring, shake };
 
   function updateFx(dt) {

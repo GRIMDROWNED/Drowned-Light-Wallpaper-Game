@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.6";
+  DS.VERSION = "0.12.7";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
@@ -313,4 +313,18 @@
     ["champion"],
     ["blackguard", "defiler", "hexbearer", "archer", "squire", "revenant", "revenant"],
   ];
+
+  // player settings (Settings screen, src/ui.js): saved per device
+  DS.SETTINGS = [
+    { id: "shake", name: "Screen shake", kind: "slider", min: 0, max: 1, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "bright", name: "Brightness", kind: "slider", min: 0.6, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "touch", name: "Touch buttons", kind: "slider", min: 0.7, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "numbers", name: "Damage numbers", kind: "toggle", def: true },
+    { id: "flash", name: "Red flash when hit", kind: "toggle", def: true },
+    { id: "rumble", name: "Controller rumble", kind: "toggle", def: true },
+  ];
+  DS.SET = {};
+  try { Object.assign(DS.SET, JSON.parse(localStorage.getItem("dl-side-settings") || "{}")); } catch (e) { /* storage blocked */ }
+  for (const o of DS.SETTINGS) if (DS.SET[o.id] === undefined) DS.SET[o.id] = o.def;
+  DS.saveSettings = () => { try { localStorage.setItem("dl-side-settings", JSON.stringify(DS.SET)); } catch (e) { /* storage blocked */ } };
 })(window.DS = window.DS || {});

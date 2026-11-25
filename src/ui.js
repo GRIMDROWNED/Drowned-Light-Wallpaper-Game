@@ -86,7 +86,7 @@
       const d = DS.FAMILIARS[id], have = DS.Fam.won(id);
       const b = el("button", "opt fwcard" + (have ? " have" : ""));
       b.style.setProperty("--i", i); b.style.setProperty("--fc", d.color); b.disabled = have;
-      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
+      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/ui/portraits/fam-${id}.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
       b.addEventListener("click", () => {
         if (have) return;
         DS.Fam.win(id); DS.Fam.set(id);
@@ -120,6 +120,72 @@
     cBack = open; cYes = fn;
     $("#confirmText").textContent = q; $("#confirmYes").textContent = yes;
     openMenu("confirm");
+  }
+
+  // ---------------- Settings on Robert's art: three rose sliders, three two-part toggles (DS.SETTINGS in data.js) ----------------
+  // rows in art px: label plates, slider tracks (x 600-996), toggles (x 700-918, split at 813)
+  const SET_ROWS = [[192, 63, 222], [279, 63, 302], [366, 63, 393], [453, 64, 486], [539, 64, 571], [623, 64, 656]];
+  function applySettings() {
+    const c = document.getElementById("game"); if (c) c.style.filter = DS.SET.bright === 1 ? "" : `brightness(${DS.SET.bright})`;
+    document.body.style.setProperty("--tscale", DS.SET.touch);
+  }
+  function buildSettings() {
+    const box = $("#setRows"); box.innerHTML = "";
+    DS.SETTINGS.forEach((o, r) => {
+      const [ly, lh, cy] = SET_ROWS[r], slider = o.kind === "slider";
+      const lab = el("div", "ks setlabel"); lab.style.cssText = `--x:212;--y:${ly};--w:${slider ? 346 : 406};--h:${lh}`;
+      lab.innerHTML = `<b>${o.name}</b><span></span>`; box.appendChild(lab);
+      const b = el("button", "ks opt " + (slider ? "sld" : "tgl"));
+      b.dataset.set = o.id;
+      if (slider) {
+        b.style.cssText = `--x:600;--y:${cy - 24};--w:396;--h:48`;
+        b.innerHTML = `<i class="fill"></i><img alt="" src="assets/ui/rose-knob.png?v=${DS.VERSION}">`;
+        const at = (e) => { const r0 = b.getBoundingClientRect(); setVal(o, o.min + (o.max - o.min) * Math.max(0, Math.min(1, (e.clientX - r0.left) / r0.width))); };
+        b.addEventListener("pointerdown", (e) => { at(e); b.setPointerCapture(e.pointerId); b.onpointermove = at; });
+        b.addEventListener("pointerup", () => { b.onpointermove = null; });
+      } else {
+        b.style.cssText = `--x:700;--y:${cy - 30};--w:218;--h:60`;
+        b.innerHTML = "<span>Off</span><span>On</span>";
+        b.addEventListener("click", () => setVal(o, !DS.SET[o.id]));
+      }
+      box.appendChild(b);
+    });
+    syncSettings();
+  }
+  function setVal(o, v) {
+    if (o.kind === "slider") v = Math.round(Math.max(o.min, Math.min(o.max, v)) * 20) / 20;
+    DS.SET[o.id] = v; DS.saveSettings(); applySettings(); syncSettings();
+  }
+  function stepSetting(b, d) { const o = DS.SETTINGS.find((x) => x.id === b.dataset.set); setVal(o, DS.SET[o.id] + d * 0.05); }
+  function syncSettings() {
+    DS.SETTINGS.forEach((o, r) => {
+      const b = document.querySelector(`#setRows [data-set="${o.id}"]`), lab = document.querySelectorAll("#setRows .setlabel")[r]; if (!b) return;
+      if (o.kind === "slider") { const f = (DS.SET[o.id] - o.min) / (o.max - o.min); b.style.setProperty("--f", f); lab.lastChild.textContent = o.show(DS.SET[o.id]); }
+      else { b.classList.toggle("on", !!DS.SET[o.id]); lab.lastChild.textContent = DS.SET[o.id] ? "On" : "Off"; }
+    });
+  }
+
+  // ---------------- Controls on Robert's art: twelve plates round the painted pad (art px), one list per tab ----------------
+  const CTL_PLATES = [[215, 307, 190], [205, 375, 205], [190, 445, 195], [185, 513, 200], [200, 584, 190], [200, 654, 195],
+    [930, 307, 195], [945, 375, 195], [955, 442, 190], [955, 512, 190], [955, 582, 185], [950, 654, 190]];
+  const CTL = {
+    keys: [["A / D", "Move"], ["Space / W", "Jump"], ["J / click", "Attack"], ["K / Shift", "Dash"], ["L / R-click", "Ability"], ["F / R", "Flare"],
+      ["Q / Tab", "Swap knight"], ["Esc / P", "Pause"], ["W + attack", "Up-swing"], ["S + attack", "Plunge (air)"], ["S + jump", "Drop down"], ["Jump twice", "Double jump"]],
+    pad: [["LB / View", "Swap knight"], ["Left stick", "Move"], ["Down + A", "Drop down"], ["D-pad", "Move"], ["LT", "Attack"], ["Menu", "Pause"],
+      ["RB", "Dash"], ["Y / RT", "Ability"], ["B", "Dash"], ["Click a stick", "Flare"], ["X", "Attack"], ["A", "Jump (twice: double)"]],
+    touch: [["Drag left side", "Move"], ["Up + Attack", "Up-swing"], ["Down + Attack", "Plunge (air)"], ["Down + Jump", "Drop down"], ["II", "Pause"], ["Hold upright", "Autopilot"],
+      ["Attack", "Attack (combo)"], ["Jump", "Jump (twice: double)"], ["Dash", "Dash"], ["Ability", "Ability"], ["Flare", "Throw a flare"], ["Settings", "Button size"]],
+  };
+  let ctlTab = "keys", ctlBack = "pause";
+  function syncControls() {
+    $("#ctlPlates").innerHTML = CTL[ctlTab].map(([k, a], i) => { const [x, y, w] = CTL_PLATES[i];
+      return `<div class="ks cplate" style="--x:${x};--y:${y};--w:${w};--h:43"><b>${k}</b><span>${a}</span></div>`; }).join("");
+    document.querySelectorAll("#controls .ctab").forEach((t) => t.classList.toggle("cur", t.dataset.tab === ctlTab));
+  }
+  function openControls(from) {
+    ctlBack = from || open || "pause";
+    ctlTab = I.source === "pad" ? "pad" : I.source === "touch" ? "touch" : "keys";
+    openMenu("controls");
   }
 
   // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
@@ -292,7 +358,10 @@
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
-    $("#btnHelp").onclick = () => panel($("#help").hidden ? "#help" : null);
+    $("#btnSettings").onclick = () => openMenu("settings");
+    $("#btnSetControls").onclick = () => openControls("settings");
+    for (const t of document.querySelectorAll("#controls .ctab")) t.addEventListener("click", () => { ctlTab = t.dataset.tab; syncControls(); });
+    for (const b of document.querySelectorAll("#controls .cback")) b.addEventListener("click", () => openMenu(ctlBack));
     $("#btnJournal").onclick = () => openJournal(); // Drowned pages found so far (src/explore.js)
     for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
@@ -300,10 +369,10 @@
   }
   // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
   function panel(sel) {
-    for (const id of ["#help", "#codePad"]) $(id).hidden = id !== sel;
+    for (const id of ["#codePad"]) $(id).hidden = id !== sel;
     syncPanel();
   }
-  function syncPanel() { $("#pPanel").hidden = ["#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
+  function syncPanel() { $("#pPanel").hidden = ["#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -362,6 +431,8 @@
     if (name === "upgrades") buildUpgrades();
     if (name === "journalMenu") { buildJournal(); syncJournal(); }
     if (name === "death") syncDeath();
+    if (name === "settings") buildSettings();
+    if (name === "controls") { syncControls(); focus = Math.max(0, opts().findIndex((b) => b.dataset.tab === ctlTab)); }
     if (name === "cleared") syncCleared();
     if (name === "kits") syncMaps();
     syncFams();
@@ -404,13 +475,14 @@
     if (!open) return;
     navT -= dt;
     const dirs = [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["down", 0, 1]];
-    for (const [a, dx, dy] of dirs) if (I.p[a] || (I.h[a] && navT < -0.25)) { nav(dx, dy); navT = 0; if (I.h[a] && !I.p[a]) navT = -0.15; }
+    for (const [a, dx, dy] of dirs) if (I.p[a] || (I.h[a] && navT < -0.25)) { const fb = opts()[focus]; if (dx && fb && fb.classList.contains("sld")) stepSetting(fb, dx); else nav(dx, dy); navT = 0; if (I.h[a] && !I.p[a]) navT = -0.15; }
     if (I.p.confirm && I.source !== "keys") { const o = opts(); if (o[focus]) o[focus].click(); }
     if (I.p.back || I.p.pause) {
       if (open === "kits" && G.mode === "title") return;
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
-      if (open === "journalMenu") { openMenu("pause"); return; }
+      if (open === "journalMenu" || open === "settings") { openMenu("pause"); return; }
+      if (open === "controls") { openMenu(ctlBack); return; }
       if (open === "confirm") { openMenu(cBack || "pause"); return; }
       if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
@@ -439,6 +511,7 @@
       DS.setWall(false); openMenu("pause"); showHaul("pause");
     });
     $("#ver").textContent = "v" + DS.VERSION;
+    applySettings();
     openMenu("kits");
     showHaul("kits"); // what the wallpaper gathered since last time
     // the desktop and phone apps keep the game open behind the wallpaper: check again whenever it comes back

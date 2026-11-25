@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.12.6">
+<link rel="stylesheet" href="style.css?v=0.12.7">
 </head>
 <body>
 <!--BODY-->
@@ -109,6 +109,33 @@
   </div>
 </section>
 
+<section id="settings" class="menu art" hidden>
+  <!-- Robert's settings art (assets/ui/settings-screen.jpg; the painted slider roses patched out, one cut to assets/ui/rose-knob.png) -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:560;--y:22;--w:500;--h:62">Settings</h1>
+    <div id="setRows"></div>
+    <button id="btnSetControls" class="ks opt ubtn" style="--x:290;--y:733;--w:285;--h:62">Controls</button>
+    <button class="ks opt ubtn teal back" style="--x:660;--y:733;--w:300;--h:62">Back</button>
+  </div>
+</section>
+
+<section id="controls" class="menu art" hidden>
+  <!-- Robert's controls art (assets/ui/controls-screen.jpg): three tabs, twelve plates round the pad, the hint bar -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:520;--y:24;--w:520;--h:64">Controls</h1>
+    <button class="ks opt ubtn ctab" data-tab="keys" style="--x:378;--y:152;--w:196;--h:58">Keyboard</button>
+    <button class="ks opt ubtn ctab" data-tab="pad" style="--x:612;--y:152;--w:226;--h:58">Xbox pad</button>
+    <button class="ks opt ubtn ctab" data-tab="touch" style="--x:872;--y:152;--w:206;--h:58">Touch</button>
+    <div id="ctlPlates"></div>
+    <div class="ks khint" style="--x:232;--y:822;--w:176;--h:52"><b>&larr;&rarr;</b> Tab</div>
+    <div class="ks khint" style="--x:439;--y:822;--w:172;--h:52"><b>Enter</b> Pick</div>
+    <button class="ks khint cback" style="--x:647;--y:822;--w:168;--h:52"><b>Esc</b> Back</button>
+    <div class="ks khint" style="--x:857;--y:822;--w:166;--h:52"><b>D-pad</b> Tab</div>
+    <div class="ks khint" style="--x:1065;--y:822;--w:166;--h:52"><b class="pa">A</b> Pick</div>
+    <button class="ks khint cback" style="--x:1272;--y:822;--w:168;--h:52"><b class="pb">B</b> Back</button>
+  </div>
+</section>
+
 <section id="haul" class="menu art" hidden>
   <!-- Robert's campfire art (assets/ui/haul-screen.jpg) -->
   <div class="kstage">
@@ -133,7 +160,7 @@
     <div id="famPause" class="ks kfams pfams famRow" style="--x:223;--y:543;--w:689;--h:83"></div>
     <h2 class="ks plabel" style="--x:368;--y:646;--w:378;--h:32">More</h2>
     <button id="btnWall" class="ks opt pbtn" style="--x:208;--y:696;--w:220;--h:62">Wallpaper</button>
-    <button id="btnHelp" class="ks opt pbtn" style="--x:458;--y:696;--w:210;--h:62">Controls</button>
+    <button id="btnSettings" class="ks opt pbtn" style="--x:458;--y:696;--w:210;--h:62">Settings</button>
     <button id="btnCode" class="ks opt pbtn" style="--x:708;--y:696;--w:220;--h:62">Tester code</button>
     <div class="ks khint" style="--x:183;--y:843;--w:122;--h:46"><b>&uarr;&darr;</b> Select</div>
     <div class="ks khint" style="--x:405;--y:843;--w:135;--h:46"><b>Enter</b> Pick</div>
@@ -141,7 +168,7 @@
     <div class="ks khint" style="--x:915;--y:843;--w:140;--h:46"><b>Stick</b> Move</div>
     <div class="ks khint" style="--x:1148;--y:843;--w:134;--h:46"><b class="pa">A</b> Pick</div>
     <button class="ks khint resume" style="--x:1370;--y:843;--w:130;--h:46"><b class="pb">B</b> Resume</button>
-    <!-- Controls, the tester keypad and the tester tools open in this panel over the right side -->
+    <!-- The tester keypad and the tester tools open in this panel over the right side -->
     <div id="pPanel" class="ks ppanel" style="--x:1005;--y:100;--w:640;--h:720" hidden>
       <div id="codePad" class="codePad" hidden>
         <p id="codeShow" class="codeShow">Enter the tester code</p>
@@ -164,34 +191,29 @@
           <button id="btnUpReset" class="opt small">Reset upgrades</button>
         </div>
       </div>
-      <div id="help" hidden>
-        <p><b>Keys</b> A/D move · Space/W jump, again in the air for a double jump · J or left-click attack (press again for a 3-hit combo) · K or Shift dash (through enemies, also in the air) · L or right-click ability · hold W while attacking to swing upward · hold S and attack in the air to plunge · S + jump drops through a platform · Q swaps knight · Esc pauses</p>
-        <p><b>Xbox pad</b> Left stick or D-pad move · A jump · X or LT attack · B or RB dash · Y or RT ability · LB swaps knight · Menu pauses · in menus, A picks and B goes back</p>
-        <p><b>Touch</b> drag on the left half to move (push up and attack for an up-swing, down and attack in the air to plunge) · buttons on the right · II pauses</p>
-      </div>
     </div>
   </div>
 </section>
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.12.6"></script>
-<script src="src/pixscale.js?v=0.12.6"></script>
-<script src="src/sprites.js?v=0.12.6"></script>
-<script src="src/input.js?v=0.12.6"></script>
-<script src="src/scenery.js?v=0.12.6"></script>
-<script src="src/world.js?v=0.12.6"></script>
-<script src="src/game.js?v=0.12.6"></script>
-<script src="src/kits.js?v=0.12.6"></script>
-<script src="src/bosses.js?v=0.12.6"></script>
-<script src="src/familiars.js?v=0.12.6"></script>
-<script src="src/pickart.js?v=0.12.6"></script>
-<script src="src/explore.js?v=0.12.6"></script>
-<script src="src/lootart.js?v=0.12.6"></script>
-<script src="src/loot.js?v=0.12.6"></script>
-<script src="src/maps.js?v=0.12.6"></script>
-<script src="src/render.js?v=0.12.6"></script>
-<script src="src/ui.js?v=0.12.6"></script>
+<script src="src/data.js?v=0.12.7"></script>
+<script src="src/pixscale.js?v=0.12.7"></script>
+<script src="src/sprites.js?v=0.12.7"></script>
+<script src="src/input.js?v=0.12.7"></script>
+<script src="src/scenery.js?v=0.12.7"></script>
+<script src="src/world.js?v=0.12.7"></script>
+<script src="src/game.js?v=0.12.7"></script>
+<script src="src/kits.js?v=0.12.7"></script>
+<script src="src/bosses.js?v=0.12.7"></script>
+<script src="src/familiars.js?v=0.12.7"></script>
+<script src="src/pickart.js?v=0.12.7"></script>
+<script src="src/explore.js?v=0.12.7"></script>
+<script src="src/lootart.js?v=0.12.7"></script>
+<script src="src/loot.js?v=0.12.7"></script>
+<script src="src/maps.js?v=0.12.7"></script>
+<script src="src/render.js?v=0.12.7"></script>
+<script src="src/ui.js?v=0.12.7"></script>
 <script>DS.boot();</script>
 </body>
 </html>

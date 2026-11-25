@@ -72,7 +72,7 @@
     const v = ctx.createRadialGradient(vw / 2, vh * 0.55, Math.min(vw, vh) * 0.35, vw / 2, vh * 0.55, Math.max(vw, vh) * 0.75);
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,4,8,0.45)");
     ctx.fillStyle = v; ctx.fillRect(0, 0, vw, vh);
-    if (G.redT > 0) { ctx.fillStyle = `rgba(160,20,20,${G.redT * 0.6})`; ctx.fillRect(0, 0, vw, vh); }
+    if (G.redT > 0 && DS.SET.flash) { ctx.fillStyle = `rgba(160,20,20,${G.redT * 0.6})`; ctx.fillRect(0, 0, vw, vh); }
     if (G.player && G.mode !== "title") { if (G.wall) wallBanner(); else hud(); }
   };
 

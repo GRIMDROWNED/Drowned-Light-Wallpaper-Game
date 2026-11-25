@@ -126,6 +126,7 @@
 
   // A rumble on pads that support it (Chrome's dual-rumble); harmless elsewhere.
   function rumble(strong, weak, ms) {
+    if (DS.SET && !DS.SET.rumble) return;
     const g = pad();
     try { if (g && g.vibrationActuator) g.vibrationActuator.playEffect("dual-rumble", { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) { /* not supported */ }
   }
