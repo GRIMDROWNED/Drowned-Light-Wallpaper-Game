@@ -143,11 +143,13 @@ body.wall { cursor: none; }
 /* ---------- the knight screen on Robert's art (2026-11-25): assets/ui/knight-screen.jpg is 1672 x 941 ----------
    .kstage keeps the picture's shape and fits the screen; each .ks part is placed in art pixels (--x --y --w --h)
    and sized with cqw so text scales with the picture. --u = one art pixel. */
-.menu#kits { padding: 0; display: grid; place-items: center; overflow: hidden; background: #05080b; }
-.menu#kits::before { content: ""; position: absolute; inset: -40px; background: url("assets/ui/knight-screen.jpg") center / cover; filter: blur(24px) brightness(0.45); } /* fills the sides on screens of another shape */
+.menu[hidden] { display: none !important; } /* a menu with its own display (the art screens) still hides */
+.menu.art { padding: 0; display: grid; place-items: center; overflow: hidden; background: #05080b; }
+#kits { --art: url("assets/ui/knight-screen.jpg"); } #upgrades { --art: url("assets/ui/upgrades-screen.jpg"); } #haul { --art: url("assets/ui/haul-screen.jpg"); } #pause { --art: url("assets/ui/pause-screen.jpg"); }
+.menu.art::before { content: ""; position: absolute; inset: -40px; background: var(--art) center / cover; filter: blur(24px) brightness(0.45); } /* fills the sides on screens of another shape */
 .kstage { position: relative; container-type: inline-size; aspect-ratio: 1672 / 941;
   width: min(100vw, calc(100vh * 1672 / 941)); width: min(100vw, calc(100dvh * 1672 / 941));
-  background: url("assets/ui/knight-screen.jpg") center / 100% 100% no-repeat; }
+  background: var(--art) center / 100% 100% no-repeat; }
 .kstage { --u: calc(100cqw / 1672); }
 .ks { position: absolute; box-sizing: border-box; margin: 0;
   left: calc(var(--x) / 1672 * 100%); top: calc(var(--y) / 941 * 100%); width: calc(var(--w) / 1672 * 100%); height: calc(var(--h) / 941 * 100%); }
@@ -225,3 +227,64 @@ button.khint.back:not([disabled]):hover { color: #fff; }
   .kgrid .kit .row { display: none; }
   .kgrid .kit .info { justify-content: center; }
 }
+
+/* ---------- Upgrades, While you were away and Pause on Robert's art (2026-11-25), same placing as the knight screen ---------- */
+.menu.art .kstage button.opt:is(.ubtn, .pbtn, .upg) { min-height: 0; padding: 0; border: 0; background: none; border-radius: calc(8 * var(--u)); box-sizing: border-box; }
+.menu.art .kstage button.opt:is(.ubtn, .pbtn, .upg):is(:hover, .focus, :focus-visible) { outline: none; background: rgba(255, 235, 190, 0.1);
+  box-shadow: inset 0 0 0 calc(3 * var(--u)) #fff3c4, 0 0 calc(18 * var(--u)) rgba(255, 230, 160, 0.55); }
+.menu .kstage button.ks:is(.ubtn, .pbtn) { display: grid; place-items: center; font: 700 max(11px, calc(26 * var(--u))) var(--display); color: #f6efdc; letter-spacing: 0.03em;
+  text-shadow: 0 calc(2 * var(--u)) 0 #000, 0 0 calc(8 * var(--u)) #000; }
+.menu .kstage button.ks.pbtn { font-size: max(10px, calc(24 * var(--u))); }
+.menu .kstage button.ks.pbtn.big { font-size: max(12px, calc(32 * var(--u))); }
+.ks.plabel { display: grid; place-items: center; margin: 0; font: 700 max(9px, calc(19 * var(--u))) var(--display); color: #3a2410; letter-spacing: 0.12em; text-transform: uppercase; }
+/* wallet: the eight painted coin rings */
+.ks.uwallet { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); align-items: center; margin: 0; gap: 0; }
+.uwallet .coin { position: relative; display: grid; place-items: center; height: 100%; font-size: 0; }
+.uwallet .coin img { height: calc(36 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(3 * var(--u)) #000); }
+.uwallet .coin b { position: absolute; left: 50%; bottom: calc(-12 * var(--u)); transform: translateX(-50%); font: 700 max(8.5px, calc(15 * var(--u))) var(--display);
+  padding: 0 calc(6 * var(--u)); border-radius: calc(8 * var(--u)); background: rgba(10, 8, 6, 0.85); border: calc(1.5 * var(--u)) solid rgba(var(--cc), 0.7); white-space: nowrap; }
+.uwallet .coin i { display: none; }
+/* six upgrade rows on the painted rows: icon, name plate, ten pips, cost plates */
+.ks.ulist { display: grid; grid-template-columns: 1fr; grid-template-rows: repeat(6, minmax(0, 1fr)); row-gap: calc(14 * var(--u)); max-width: none; margin: 0; }
+.menu .ulist button.opt.upg { position: relative; display: block; width: 100%; padding: 0; text-align: left; color: #efe6d2; }
+.ulist .upg > * { position: absolute; top: 50%; transform: translateY(-50%); }
+.ulist .upg .mat { left: calc(14 * var(--u)); width: calc(56 * var(--u)); height: calc(56 * var(--u)); object-fit: contain; image-rendering: pixelated; }
+.ulist .upg .un { left: calc(108 * var(--u)); width: calc(216 * var(--u)); display: flex; flex-direction: column; gap: calc(2 * var(--u)); text-shadow: 0 1px 2px #000; }
+.ulist .upg .un b { font: 700 max(10px, calc(19 * var(--u))) var(--display); color: #f6efdc; }
+.ulist .upg .ef { font: 600 max(8px, calc(11.5 * var(--u)))/1.15 var(--body); color: #cfc6b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ulist .upg .pips { left: calc(353 * var(--u)); width: calc(287 * var(--u)); height: calc(40 * var(--u)); display: grid; grid-template-columns: repeat(10, 1fr); place-items: center; gap: 0; }
+.ulist .upg .pips i { width: calc(15 * var(--u)); height: calc(15 * var(--u)); transform: rotate(45deg); background: none; }
+.ulist .upg .pips i.on { background: linear-gradient(135deg, #fff1b8, #e0a83a); box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 210, 110, 0.9); }
+.ulist .upg .cost { left: calc(662 * var(--u)); width: calc(251 * var(--u)); height: calc(52 * var(--u)); }
+.ulist .upg .cost .chip { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: calc(4 * var(--u));
+  font: 700 max(8.5px, calc(15 * var(--u))) var(--display); color: #f6efdc; text-shadow: 0 1px 2px #000; }
+.ulist .upg .cost .chip img { height: calc(22 * var(--u)); }
+.ulist .upg .cost .chip.short { color: #ff8a7a; }
+.ulist .upg.three .cost .chip:nth-child(1) { left: 0; width: calc(75 * var(--u)); }
+.ulist .upg.three .cost .chip:nth-child(2) { left: calc(91 * var(--u)); width: calc(72 * var(--u)); }
+.ulist .upg.three .cost .chip:nth-child(3) { left: calc(178 * var(--u)); width: calc(73 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(1) { left: calc(23 * var(--u)); width: calc(100 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(2) { left: calc(138 * var(--u)); width: calc(103 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(3) { left: calc(138 * var(--u)); width: calc(103 * var(--u)); top: auto; bottom: calc(-16 * var(--u)); } /* the art has two plates here */
+.ulist .upg .cost .chip.maxed { left: 0; width: 100%; }
+.menu .ulist button.upg.can .un b { color: #9ff0c0; }
+.menu .ulist button.upg.max .un b { color: #ffd27a; }
+.ks.uinfo, .ks.hsub { display: block; align-content: center; margin: 0; padding: 0 calc(16 * var(--u)); text-align: center; font: 600 max(9px, calc(15 * var(--u)))/1.2 var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; overflow: hidden; }
+#upText b { color: #ffd27a; }
+/* the haul: what the wallpaper gathered, one currency per painted slot */
+.ks.hbanner { font-size: calc(40 * var(--u)); }
+.ks.hlist { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: calc(22 * var(--u)) calc(21 * var(--u)); margin: 0; }
+.hlist .coin { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--u)); text-shadow: 0 1px 2px #000; }
+.hlist .coin img { height: calc(58 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(4 * var(--u)) #000); }
+.hlist .coin b { font: 700 max(10px, calc(24 * var(--u))) var(--display); color: rgb(var(--cc)); }
+.hlist .coin i { font: 600 max(8px, calc(13 * var(--u))) var(--body); color: #cfc6b0; font-style: normal; }
+.ks.ubtn.teal { color: #eafffb; }
+/* the pause menu */
+.pfams.ks { column-gap: calc(16 * var(--u)); }
+.pfams button.fam { font-size: max(8px, calc(13 * var(--u))) !important; }
+.pfams button.fam img { height: calc(46 * var(--u)) !important; }
+.ks.ppanel { overflow-y: auto; touch-action: pan-y; padding: calc(20 * var(--u)); border-radius: calc(14 * var(--u)); background: rgba(8, 12, 16, 0.92);
+  border: calc(2 * var(--u)) solid #b8914a; box-shadow: 0 0 calc(30 * var(--u)) #000; font-size: max(11px, calc(15 * var(--u))); }
+.ppanel h2 { margin-top: 0; }
+.ppanel #journal { max-height: none; }
+button.khint.resume:hover { color: #fff; }

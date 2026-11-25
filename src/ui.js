@@ -150,13 +150,14 @@
   function buildUpgrades() {
     buildWallet($("#wallet"));
     const list = $("#upList"); list.innerHTML = "";
-    for (const u of DS.UPGRADES) {
+    DS.UPGRADES.forEach((u, row) => {
       const r = L().rank(u.id), max = r >= L().MAX_RANK, c = L().cost(u.id);
-      const b = el("button", "opt upg" + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
+      // Robert's forge art paints three cost plates on rows 1, 3 and 5 and two on the others
+      const b = el("button", "opt upg" + (row % 2 ? " two" : " three") + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
       b.dataset.up = u.id;
       const pips = Array.from({ length: L().MAX_RANK }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
-      const costs = max ? "<span class=\"chip\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
-      b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="pips">${pips}</span><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="cost">${costs}</span>`;
+      const costs = max ? "<span class=\"chip maxed\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
+      b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="pips">${pips}</span><span class="cost">${costs}</span>`;
       b.addEventListener("click", () => {
         if (L().buy(u.id)) { $("#upText").innerHTML = `<b>${u.name}</b> rank ${L().rank(u.id)}: ${u.text(L().rank(u.id))}.`; const f = focus; buildUpgrades(); focus = f; setFocus(); }
         else $("#upText").textContent = max ? `${u.name} is at its highest rank.` : `Not enough yet. ${DS.CURRENCY[u.mat].name} and Gold drop from the Drowned; Amethyst from bosses.`;
@@ -164,10 +165,13 @@
       b.addEventListener("focus", () => showUpText(u));
       b.addEventListener("mouseenter", () => showUpText(u));
       list.appendChild(b);
-    }
+    });
   }
   function showUpText(u) { $("#upText").innerHTML = `<b>${u.name}</b> takes Gold and ${DS.CURRENCY[u.mat].name}. Each rank: ${u.text(1)}.`; }
-  function openUpgrades(from) { back = from || open || "kits"; openMenu("upgrades"); }
+  function openUpgrades(from) {
+    back = from || open || "kits"; openMenu("upgrades");
+    $("#upText").textContent = "Spend what the Drowned drop on lasting upgrades for every knight. Ranks 6 to 10 also take Amethyst.";
+  }
   // what the wallpaper gathered: taken into the wallet as the screen opens
   function showHaul(from) {
     const got = L().collect(); if (!got) return false;
@@ -215,18 +219,25 @@
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
-    $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
+    $("#btnHelp").onclick = () => panel($("#help").hidden ? "#help" : null);
     $("#btnJournal").onclick = () => { // Drowned pages found so far, in level order (src/explore.js)
       const j = $("#journal"), X = DS.Explore;
-      if (!j.hidden) { j.hidden = true; return; }
+      if (!j.hidden) { panel(null); return; }
       const list = X.pages().sort((a, b) => { const [la, ia] = a.split(":").map(Number), [lb, ib] = b.split(":").map(Number); return la - lb || ia - ib; });
       j.innerHTML = list.length ? list.map((k) => `<p><b>Level ${+k.split(":")[0] + 1}</b>${X.pageText(k)}</p>`).join("")
         : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
-      j.hidden = false;
+      panel("#journal");
     };
+    for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
     syncToggles();
   }
+  // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
+  function panel(sel) {
+    for (const id of ["#journal", "#help", "#codePad"]) $(id).hidden = id !== sel;
+    syncPanel();
+  }
+  function syncPanel() { $("#pPanel").hidden = ["#journal", "#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -239,7 +250,7 @@
     }
     $("#btnCode").onclick = () => {
       if (DS.TESTER) { setTester(false); return; }
-      const pad = $("#codePad"); pad.hidden = !pad.hidden; code = ""; showCode("Enter the tester code");
+      const was = $("#codePad").hidden; panel(was ? "#codePad" : null); code = ""; showCode("Enter the tester code");
     };
     addEventListener("keydown", (e) => {
       if (open !== "pause" || $("#codePad").hidden) return;
@@ -258,7 +269,7 @@
   function setTester(on) {
     DS.TESTER = on;
     try { if (on) localStorage.setItem("dl-side-tester", "1"); else localStorage.removeItem("dl-side-tester"); } catch (e) { /* storage blocked */ }
-    code = ""; $("#codePad").hidden = true;
+    code = ""; $("#codePad").hidden = true; syncPanel();
     if (!on) { // put the run back the way a player has it
       G.god = false; G.boxes = false;
       if (!G.scroll) { DS.setScroll(true); DS.restart(); }
@@ -266,7 +277,7 @@
     syncToggles();
   }
   function syncToggles() {
-    $("#devTools").hidden = !DS.TESTER;
+    $("#devTools").hidden = !DS.TESTER; syncPanel();
     $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";

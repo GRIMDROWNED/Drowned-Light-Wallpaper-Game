@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.5";
+  DS.VERSION = "0.12.6";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
