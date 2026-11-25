@@ -45,6 +45,7 @@
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
       DS.Explore.drawWorld(ctx);
+      DS.Jade.drawBack(ctx); // the Jade Hollow's creatures and pool (src/jade.js)
       DS.Loot.draw(ctx); // dropped currencies
       DS.Fam.draw(ctx, false); // walking familiars, Derek's walls, Fred's glowcaps
       for (const e of G.foes) drawFoe(e);
@@ -53,6 +54,7 @@
       DS.Fam.draw(ctx, true);  // Abigail and David fly in front
       for (const z of G.zones) drawZone(z, false);
       for (const s of G.shots) drawShot(s);
+      DS.Jade.drawFront(ctx);
       for (const f of G.fx) drawFx(f);
       if (G.boxes) drawBoxes();
       DS.Explore.drawMist(ctx, cam, LW, LH);
@@ -161,6 +163,7 @@
     if (e.boss && e.boss.rubble) for (const r of e.boss.rubble) // the Colossus's fallen stones (cover from its surge)
       S.drawFx(ctx, "boulder11", r.x, r.y - 15, { scale: 1.3, alpha: Math.min(1, r.t) });
     if (e.d.dummy) return drawDummy(e);
+    if (e.d.custom) return e.d.custom.draw(ctx, e); // drawn by its own module (the Jade Watcher, src/jade.js)
     const set = e.d.sprite, f = (a, p) => S.frame(set, a, p);
     let rec, rot = 0;
     const has = (a) => set[a] && set[a].length;

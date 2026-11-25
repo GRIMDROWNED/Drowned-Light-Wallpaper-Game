@@ -505,7 +505,7 @@ function reeds(){
     const vis = (x, w) => X(x) < lw + 4 && X(x + w) > -4;
     const pa = T.plats && T.atlas && T.atlas.complete && T.atlas.naturalWidth ? T : null, tag = pa ? themeName : "code";
     // posts first, then planks
-    for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
+    for (const p of plats) if (!p.ride && vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) { // (ride: a creature's back, drawn by its module)
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
       if (pa) { const ps = T.posts || ["post1", "post2", "post3", "post4"]; post(g, ps[((wx / 7) | 0) % ps.length], X(wx) + 2, y0 - 4, y1 + 2); continue; }
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
@@ -523,7 +523,7 @@ function reeds(){
       const ex = s.x < 0 ? x0 + w - 1 : x0;
       for (let y = Math.max(0, Y(s.y)); y < Math.min(lh, fy + 2); y++) { px(g, ex, y, y % 2 ? "#3b2c22" : "#16110f"); }
     }
-    for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
+    for (const p of plats) if (!p.ride && vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
   }
 
   const World = DS.World = { theme, get themeName() { return themeName; }, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };
