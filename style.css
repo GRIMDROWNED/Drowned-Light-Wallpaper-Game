@@ -375,3 +375,12 @@ button.khint.resume:hover { color: #fff; }
 .cplate b { font: 700 max(7.5px, calc(14 * var(--u))) var(--display); color: #f0c46a; }
 .cplate span { font: 600 max(7.5px, calc(13.5 * var(--u))) var(--body); color: #efe6d2; }
 #controls .khint { font-size: max(7.5px, calc(15 * var(--u))); }
+
+/* ---------- touch buttons in Robert's spiked rims (assets/ui/hud/btn*.png) ---------- */
+.tb { border: 0; background: center / 100% 100% no-repeat; text-shadow: 0 1px 2px #000, 0 0 4px #000; color: #f6efdc; }
+.tb.at { background-image: url("assets/ui/hud/btnGold.png"); }
+.tb.ju { background-image: url("assets/ui/hud/btnSilver.png"); }
+.tb.da { background-image: url("assets/ui/hud/btnTeal.png"); }
+.tb.ab { background-image: url("assets/ui/hud/btnCrimson.png"); }
+.tb.fl { background-image: url("assets/ui/hud/btnEmber.png"); }
+.tb.on { background-color: transparent; filter: brightness(1.35) drop-shadow(0 0 8px rgba(255, 220, 140, 0.8)); }
