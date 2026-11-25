@@ -122,6 +122,49 @@
     openMenu("confirm");
   }
 
+  // ---------------- Settings on Robert's art: three rose sliders, three two-part toggles (DS.SETTINGS in data.js) ----------------
+  // rows in art px: label plates, slider tracks (x 600-996), toggles (x 700-918, split at 813)
+  const SET_ROWS = [[192, 63, 222], [279, 63, 302], [366, 63, 393], [453, 64, 486], [539, 64, 571], [623, 64, 656]];
+  function applySettings() {
+    const c = document.getElementById("game"); if (c) c.style.filter = DS.SET.bright === 1 ? "" : `brightness(${DS.SET.bright})`;
+    document.body.style.setProperty("--tscale", DS.SET.touch);
+  }
+  function buildSettings() {
+    const box = $("#setRows"); box.innerHTML = "";
+    DS.SETTINGS.forEach((o, r) => {
+      const [ly, lh, cy] = SET_ROWS[r], slider = o.kind === "slider";
+      const lab = el("div", "ks setlabel"); lab.style.cssText = `--x:212;--y:${ly};--w:${slider ? 346 : 406};--h:${lh}`;
+      lab.innerHTML = `<b>${o.name}</b><span></span>`; box.appendChild(lab);
+      const b = el("button", "ks opt " + (slider ? "sld" : "tgl"));
+      b.dataset.set = o.id;
+      if (slider) {
+        b.style.cssText = `--x:600;--y:${cy - 24};--w:396;--h:48`;
+        b.innerHTML = `<i class="fill"></i><img alt="" src="assets/ui/rose-knob.png?v=${DS.VERSION}">`;
+        const at = (e) => { const r0 = b.getBoundingClientRect(); setVal(o, o.min + (o.max - o.min) * Math.max(0, Math.min(1, (e.clientX - r0.left) / r0.width))); };
+        b.addEventListener("pointerdown", (e) => { at(e); b.setPointerCapture(e.pointerId); b.onpointermove = at; });
+        b.addEventListener("pointerup", () => { b.onpointermove = null; });
+      } else {
+        b.style.cssText = `--x:700;--y:${cy - 30};--w:218;--h:60`;
+        b.innerHTML = "<span>Off</span><span>On</span>";
+        b.addEventListener("click", () => setVal(o, !DS.SET[o.id]));
+      }
+      box.appendChild(b);
+    });
+    syncSettings();
+  }
+  function setVal(o, v) {
+    if (o.kind === "slider") v = Math.round(Math.max(o.min, Math.min(o.max, v)) * 20) / 20;
+    DS.SET[o.id] = v; DS.saveSettings(); applySettings(); syncSettings();
+  }
+  function stepSetting(b, d) { const o = DS.SETTINGS.find((x) => x.id === b.dataset.set); setVal(o, DS.SET[o.id] + d * 0.05); }
+  function syncSettings() {
+    DS.SETTINGS.forEach((o, r) => {
+      const b = document.querySelector(`#setRows [data-set="${o.id}"]`), lab = document.querySelectorAll("#setRows .setlabel")[r]; if (!b) return;
+      if (o.kind === "slider") { const f = (DS.SET[o.id] - o.min) / (o.max - o.min); b.style.setProperty("--f", f); lab.lastChild.textContent = o.show(DS.SET[o.id]); }
+      else { b.classList.toggle("on", !!DS.SET[o.id]); lab.lastChild.textContent = DS.SET[o.id] ? "On" : "Off"; }
+    });
+  }
+
   // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
   // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
   const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
@@ -292,7 +335,8 @@
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
-    $("#btnHelp").onclick = () => panel($("#help").hidden ? "#help" : null);
+    $("#btnSettings").onclick = () => openMenu("settings");
+    $("#btnSetControls").onclick = () => { openMenu("pause"); panel("#help"); };
     $("#btnJournal").onclick = () => openJournal(); // Drowned pages found so far (src/explore.js)
     for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
@@ -362,6 +406,7 @@
     if (name === "upgrades") buildUpgrades();
     if (name === "journalMenu") { buildJournal(); syncJournal(); }
     if (name === "death") syncDeath();
+    if (name === "settings") buildSettings();
     if (name === "cleared") syncCleared();
     if (name === "kits") syncMaps();
     syncFams();
@@ -404,13 +449,13 @@
     if (!open) return;
     navT -= dt;
     const dirs = [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["down", 0, 1]];
-    for (const [a, dx, dy] of dirs) if (I.p[a] || (I.h[a] && navT < -0.25)) { nav(dx, dy); navT = 0; if (I.h[a] && !I.p[a]) navT = -0.15; }
+    for (const [a, dx, dy] of dirs) if (I.p[a] || (I.h[a] && navT < -0.25)) { const fb = opts()[focus]; if (dx && fb && fb.classList.contains("sld")) stepSetting(fb, dx); else nav(dx, dy); navT = 0; if (I.h[a] && !I.p[a]) navT = -0.15; }
     if (I.p.confirm && I.source !== "keys") { const o = opts(); if (o[focus]) o[focus].click(); }
     if (I.p.back || I.p.pause) {
       if (open === "kits" && G.mode === "title") return;
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
-      if (open === "journalMenu") { openMenu("pause"); return; }
+      if (open === "journalMenu" || open === "settings") { openMenu("pause"); return; }
       if (open === "confirm") { openMenu(cBack || "pause"); return; }
       if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
@@ -439,6 +484,7 @@
       DS.setWall(false); openMenu("pause"); showHaul("pause");
     });
     $("#ver").textContent = "v" + DS.VERSION;
+    applySettings();
     openMenu("kits");
     showHaul("kits"); // what the wallpaper gathered since last time
     // the desktop and phone apps keep the game open behind the wallpaper: check again whenever it comes back

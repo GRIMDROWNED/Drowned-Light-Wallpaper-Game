@@ -313,4 +313,18 @@
     ["champion"],
     ["blackguard", "defiler", "hexbearer", "archer", "squire", "revenant", "revenant"],
   ];
+
+  // player settings (Settings screen, src/ui.js): saved per device
+  DS.SETTINGS = [
+    { id: "shake", name: "Screen shake", kind: "slider", min: 0, max: 1, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "bright", name: "Brightness", kind: "slider", min: 0.6, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "touch", name: "Touch buttons", kind: "slider", min: 0.7, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "numbers", name: "Damage numbers", kind: "toggle", def: true },
+    { id: "flash", name: "Red flash when hit", kind: "toggle", def: true },
+    { id: "rumble", name: "Controller rumble", kind: "toggle", def: true },
+  ];
+  DS.SET = {};
+  try { Object.assign(DS.SET, JSON.parse(localStorage.getItem("dl-side-settings") || "{}")); } catch (e) { /* storage blocked */ }
+  for (const o of DS.SETTINGS) if (DS.SET[o.id] === undefined) DS.SET[o.id] = o.def;
+  DS.saveSettings = () => { try { localStorage.setItem("dl-side-settings", JSON.stringify(DS.SET)); } catch (e) { /* storage blocked */ } };
 })(window.DS = window.DS || {});
