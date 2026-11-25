@@ -7,9 +7,9 @@
 (function (DS) {
   const MAPS = DS.MAPS = [
     { id: "mire", name: "The Mire", c: "230,170,80" },
-    { id: "reaches", name: "Drowned Reaches", c: "90,190,180" },
+    { id: "reaches", name: "Drowned Reaches", short: "Reaches", c: "90,190,180" },
     { id: "abyss", name: "The Abyss", c: "220,70,80" },
-    { id: "spires", name: "Abyssal Spires", c: "170,120,240" },
+    { id: "spires", name: "Abyssal Spires", short: "Spires", c: "170,120,240" },
     { id: "mines", name: "Molten Mines", c: "200,190,150" },
     { id: "crucible", name: "Crucible Throne", c: "220,150,190" },
   ];

@@ -24,21 +24,23 @@
 </div>
 
 <section id="kits" class="menu" hidden>
-  <header>
-    <h1>Drowned Light <span>Side View</span></h1>
-    <p class="sub">Combat prototype. Pick a knight and fight your way through the drowned swamp to the Sovereign. Every kit keeps its attack and ability from the main game. <span id="ver"></span></p>
-  </header>
-  <div id="mapPick" class="mapRow"></div>
-  <p id="mapText"></p>
-  <div id="kitGrid"></div>
-  <p id="kitText"></p>
-  <div id="famPick" class="row2 famRow"></div>
-  <p id="famText"></p>
-  <div class="row2 upRow"><button id="btnUpKits" class="opt small upBtn">Upgrades</button></div>
-  <div class="foot">
-    <p class="keys"><b>Keys</b> A/D move · Space/W jump (twice in the air) · J or click attack · K/Shift dash · L or right-click ability (hold for Jade Tide and Brand Thrust) · W+attack up-swing · S+attack in the air plunge · S+jump drop through · F flare · Q next knight · Esc menu</p>
-    <p class="keys"><b>Xbox pad</b> Stick/D-pad move · A jump · X/LT attack · B/RB dash · Y/RT ability · click a stick flare · LB next knight · Menu pause</p>
-    <button class="back opt small" hidden>Back</button>
+  <!-- Robert's knight screen art (assets/ui/knight-screen.jpg, 1672 x 941); every part sits on its slot, placed in art pixels (--x --y --w --h) -->
+  <div class="kstage">
+    <div class="ks klogo" style="--x:22;--y:14;--w:390;--h:150"><h1>Drowned Light</h1><p>Will you drown in the darkness or thrive in the light?</p><span id="ver"></span></div>
+    <h2 class="ks kbanner" style="--x:600;--y:14;--w:480;--h:58">Select a Knight</h2>
+    <button class="ks karrow" data-d="-1" style="--x:425;--y:150;--w:60;--h:80" aria-label="Previous map"></button>
+    <div id="mapPick" class="ks kmaps" style="--x:490;--y:98;--w:1056;--h:200"></div>
+    <button class="ks karrow" data-d="1" style="--x:1545;--y:150;--w:60;--h:80" aria-label="Next map"></button>
+    <div id="kitGrid" class="ks kgrid" style="--x:425;--y:332;--w:1147;--h:263"></div>
+    <div class="ks kinfo" style="--x:462;--y:619;--w:1062;--h:48"><p id="kitText" class="cur"></p><p id="mapText"></p><p id="famText"></p></div>
+    <div id="famPick" class="ks kfams famRow" style="--x:432;--y:705;--w:903;--h:110"></div>
+    <button id="btnUpKits" class="ks opt kup" style="--x:1366;--y:710;--w:262;--h:94">Upgrades</button>
+    <div class="ks khint" style="--x:185;--y:868;--w:122;--h:46"><b>&larr;&rarr;</b> Select</div>
+    <div class="ks khint" style="--x:425;--y:868;--w:120;--h:46"><b>Enter</b> Pick</div>
+    <button class="ks khint back" style="--x:640;--y:868;--w:122;--h:46"><b>Esc</b> Back</button>
+    <div class="ks khint" style="--x:910;--y:868;--w:145;--h:46"><b>Stick</b> Move</div>
+    <div class="ks khint" style="--x:1155;--y:868;--w:122;--h:46"><b class="pa">A</b> Pick</div>
+    <button class="ks khint back" style="--x:1370;--y:868;--w:122;--h:46"><b class="pb">B</b> Back</button>
   </div>
 </section>
 

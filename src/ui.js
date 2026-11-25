@@ -7,15 +7,18 @@
 
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
+  // the knight screen's ten painted frames are coloured: each knight sits on the frame nearest its own colour (Robert's art 2026-11-25)
+  const SCREEN_ORDER = ["jadeBreaker", "flameBastion", "pikeWarden", "relicBearer", "ashenArbalist", "chainReaper", "rosePaladin", "bloodsworn", "cinderbrand", "lanternBlade"];
   function buildKits() {
     const grid = $("#kitGrid"); grid.innerHTML = "";
-    DS.KIT_ORDER.forEach((id) => {
+    const order = SCREEN_ORDER.filter((id) => DS.KITS[id]).concat(DS.KIT_ORDER.filter((id) => !SCREEN_ORDER.includes(id)));
+    order.forEach((id) => {
       const k = DS.KITS[id];
       const b = el("button", "kit opt");
-      b.style.setProperty("--kc", k.color);
+      b.style.setProperty("--kc", k.color); b.dataset.kit = id;
       b.innerHTML = `<span class="por"><img alt="" src="assets/${k.sprite.folder}/right.png?v=${DS.VERSION}"></span>
-        <span class="info"><span class="tag">${k.tag}</span><b>${k.name}</b>
-        <span class="row"><i>Attack</i> ${k.attack.name}</span><span class="row"><i>Ability</i> ${k.ability.name}</span></span>`;
+        <span class="info"><b>${k.name}</b><span class="tag">${k.tag}</span>
+        <span class="row"><i>Attack:</i> ${k.attack.name}</span><span class="row"><i>Ability:</i> ${k.ability.name}</span></span>`;
       b.title = k.ability.text + "\n" + k.passiveText;
       b.addEventListener("click", () => pickKit(id));
       b.addEventListener("focus", () => showKitText(id));
@@ -24,10 +27,13 @@
     });
     showKitText(G.kit);
   }
+  // the knight screen has one info bar: it shows the knight, map or familiar last pointed at
+  function info(sel, html) { const e = $(sel); e.innerHTML = html; for (const p of e.parentNode.children) p.classList.toggle("cur", p === e); }
   function showKitText(id) {
     const k = DS.KITS[id];
-    $("#kitText").innerHTML = `<b style="color:rgb(${k.color})">${k.name}</b> · ${k.ability.name}: ${k.ability.text} <span class="pas">${k.passiveText}</span>`;
+    info("#kitText", `<b style="color:rgb(${k.color})">${k.name}</b> · ${k.attack.name} · <b style="color:rgb(${k.color})">${k.ability.name}:</b> ${k.ability.text} <span class="pas">${k.passiveText}</span>`);
   }
+  function syncKits() { for (const b of document.querySelectorAll("#kitGrid .kit")) b.classList.toggle("cur", b.dataset.kit === G.kit); }
   function pickKit(id) {
     close();
     if (G.player && G.mode !== "title") DS.switchKit(id); else { G.kit = id; DS.restart(); }
@@ -39,7 +45,7 @@
     for (const row of [$("#famPick"), $("#famPause")]) {
       row.innerHTML = "";
       for (const id of [null].concat(DS.FAM_ORDER)) {
-        const b = el("button", "opt small fam");
+        const b = el("button", "opt small fam" + (id ? "" : " none"));
         b.dataset.fam = id || "";
         b.addEventListener("click", () => {
           if (id && !DS.Fam.won(id)) { showFamText(id); return; } // still a secret
@@ -61,9 +67,9 @@
   }
   function showFamText(id) {
     const d = id && DS.FAMILIARS[id], at = DS.FAM_UNLOCK.at;
-    $("#famText").innerHTML = !d ? (DS.Fam.locked().length === DS.FAM_ORDER.length ? `Fight alone. Beat the boss of level ${at} to choose your first familiar.` : "Fight alone.")
+    info("#famText", !d ? (DS.Fam.locked().length === DS.FAM_ORDER.length ? `Fight alone. Beat the boss of level ${at} to choose your first familiar.` : "Fight alone.")
       : !DS.Fam.won(id) ? `<b>???</b> · Not yet won. Beat the boss of level ${at} of a map (${at}, ${at + 10}, ${at + 20}...) to choose a familiar.`
-        : `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} Forms: ${d.forms.map((f) => f.name).join(" → ")}`;
+        : `<b style="color:rgb(${d.color})">${d.name}:</b> ${d.text} <span class="pas">Forms: ${d.forms.map((f) => f.name).join(" → ")}</span>`);
   }
   function syncFams() {
     const cur = G.wall && G.fam ? G.fam.id : DS.Fam.picked();
@@ -105,6 +111,12 @@
       b.addEventListener("mouseenter", () => showMapText(i));
       row.appendChild(b);
     });
+    // the painted arrows step through the open maps
+    for (const a of document.querySelectorAll("#kits .karrow")) a.addEventListener("click", () => {
+      const n = DS.MAPS.length, d = +a.dataset.d; let i = DS.Maps.picked();
+      for (let k = 0; k < n; k++) { i = (i + d + n) % n; if (DS.Maps.open(i)) break; }
+      document.querySelector(`#mapPick .map[data-map="${i}"]`).click();
+    });
     syncMaps();
   }
   function syncMaps() {
@@ -113,14 +125,14 @@
       const i = +b.dataset.map, m = DS.MAPS[i], on = DS.Maps.open(i);
       b.classList.toggle("locked", !on); b.classList.toggle("sel", on && i === cur);
       b.style.setProperty("--mc", m.c);
-      b.innerHTML = `<img alt="" src="${DS.Maps.badge(i)}"><span>${on ? m.name : "???"}</span>`;
+      b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}"></span><span>${on ? m.short || m.name : "???"}</span>`;
     }
     showMapText(cur);
   }
   function showMapText(i) {
     const m = DS.MAPS[i];
-    $("#mapText").innerHTML = DS.Maps.open(i) ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}`
-      : `<b>???</b> · Reach level ${i * 10 + 1} to open this map.`;
+    info("#mapText", DS.Maps.open(i) ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}`
+      : `<b>???</b> · Reach level ${i * 10 + 1} to open this map.`);
   }
 
   // ---------------- upgrades: currencies from src/loot.js ----------------
@@ -269,8 +281,9 @@
     syncFams();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
-      focus = Math.max(0, DS.KIT_ORDER.indexOf(G.kit));
-      $("#kits .back").hidden = !G.player || G.mode === "title";
+      syncKits(); showKitText(G.kit);
+      focus = Math.max(0, opts().findIndex((b) => b.dataset.kit === G.kit));
+      for (const b of document.querySelectorAll("#kits .back")) b.disabled = !G.player || G.mode === "title";
     }
     setFocus();
   }
