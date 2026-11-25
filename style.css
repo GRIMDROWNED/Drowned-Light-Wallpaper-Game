@@ -46,8 +46,6 @@ h2 { font: 600 13px var(--display); letter-spacing: 0.14em; text-transform: uppe
 .menu button.small { font-size: 12.5px; padding: 8px 12px; }
 .menu button.opt:not(.kit):hover, .menu button.opt.focus:not(.kit), .menu button.opt:not(.kit):focus-visible { border-color: var(--accent); background: rgba(40, 80, 90, 0.9); outline: none; }
 .menu button.done { background: rgba(127, 227, 212, 0.4) !important; }
-#help p { color: var(--dim); font-size: 13px; }
-#help b { color: var(--gold); }
 
 /* ---------- touch controls (shown once the screen is touched) ---------- */
 #touch, #stick, #pauseBtn { display: none; }
@@ -367,3 +365,13 @@ button.khint.resume:hover { color: #fff; }
 .tgl:is(:hover, .focus, :focus-visible) { outline: none; box-shadow: 0 0 calc(14 * var(--u)) rgba(255, 220, 140, 0.7); }
 #touch { transform: scale(var(--tscale, 1)); transform-origin: 100% 100%; }
 #stick { transform: scale(var(--tscale, 1)); }
+
+/* ---------- Controls on Robert's art ---------- */
+#controls { --art: url("assets/ui/controls-screen.jpg"); }
+#controls .ctab { font-size: max(9px, calc(21 * var(--u))) !important; }
+#controls .ctab.cur { color: #fff3c4; box-shadow: inset 0 0 0 calc(3 * var(--u)) rgba(255, 230, 160, 0.9), 0 0 calc(16 * var(--u)) rgba(255, 210, 120, 0.6); }
+#controls .ctab:not(.cur) { color: rgba(246, 239, 220, 0.6); }
+.ks.cplate { display: flex; align-items: center; justify-content: center; gap: calc(7 * var(--u)); padding: 0 calc(12 * var(--u)); white-space: nowrap; overflow: hidden; text-shadow: 0 1px 2px #000; }
+.cplate b { font: 700 max(7.5px, calc(14 * var(--u))) var(--display); color: #f0c46a; }
+.cplate span { font: 600 max(7.5px, calc(13.5 * var(--u))) var(--body); color: #efe6d2; }
+#controls .khint { font-size: max(7.5px, calc(15 * var(--u))); }

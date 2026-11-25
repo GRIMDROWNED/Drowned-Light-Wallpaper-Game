@@ -165,6 +165,29 @@
     });
   }
 
+  // ---------------- Controls on Robert's art: twelve plates round the painted pad (art px), one list per tab ----------------
+  const CTL_PLATES = [[215, 307, 190], [205, 375, 205], [190, 445, 195], [185, 513, 200], [200, 584, 190], [200, 654, 195],
+    [930, 307, 195], [945, 375, 195], [955, 442, 190], [955, 512, 190], [955, 582, 185], [950, 654, 190]];
+  const CTL = {
+    keys: [["A / D", "Move"], ["Space / W", "Jump"], ["J / click", "Attack"], ["K / Shift", "Dash"], ["L / R-click", "Ability"], ["F / R", "Flare"],
+      ["Q / Tab", "Swap knight"], ["Esc / P", "Pause"], ["W + attack", "Up-swing"], ["S + attack", "Plunge (air)"], ["S + jump", "Drop down"], ["Jump twice", "Double jump"]],
+    pad: [["LB / View", "Swap knight"], ["Left stick", "Move"], ["Down + A", "Drop down"], ["D-pad", "Move"], ["LT", "Attack"], ["Menu", "Pause"],
+      ["RB", "Dash"], ["Y / RT", "Ability"], ["B", "Dash"], ["Click a stick", "Flare"], ["X", "Attack"], ["A", "Jump (twice: double)"]],
+    touch: [["Drag left side", "Move"], ["Up + Attack", "Up-swing"], ["Down + Attack", "Plunge (air)"], ["Down + Jump", "Drop down"], ["II", "Pause"], ["Hold upright", "Autopilot"],
+      ["Attack", "Attack (combo)"], ["Jump", "Jump (twice: double)"], ["Dash", "Dash"], ["Ability", "Ability"], ["Flare", "Throw a flare"], ["Settings", "Button size"]],
+  };
+  let ctlTab = "keys", ctlBack = "pause";
+  function syncControls() {
+    $("#ctlPlates").innerHTML = CTL[ctlTab].map(([k, a], i) => { const [x, y, w] = CTL_PLATES[i];
+      return `<div class="ks cplate" style="--x:${x};--y:${y};--w:${w};--h:43"><b>${k}</b><span>${a}</span></div>`; }).join("");
+    document.querySelectorAll("#controls .ctab").forEach((t) => t.classList.toggle("cur", t.dataset.tab === ctlTab));
+  }
+  function openControls(from) {
+    ctlBack = from || open || "pause";
+    ctlTab = I.source === "pad" ? "pad" : I.source === "touch" ? "touch" : "keys";
+    openMenu("controls");
+  }
+
   // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
   // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
   const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
@@ -336,7 +359,9 @@
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnSettings").onclick = () => openMenu("settings");
-    $("#btnSetControls").onclick = () => { openMenu("pause"); panel("#help"); };
+    $("#btnSetControls").onclick = () => openControls("settings");
+    for (const t of document.querySelectorAll("#controls .ctab")) t.addEventListener("click", () => { ctlTab = t.dataset.tab; syncControls(); });
+    for (const b of document.querySelectorAll("#controls .cback")) b.addEventListener("click", () => openMenu(ctlBack));
     $("#btnJournal").onclick = () => openJournal(); // Drowned pages found so far (src/explore.js)
     for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
@@ -344,10 +369,10 @@
   }
   // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
   function panel(sel) {
-    for (const id of ["#help", "#codePad"]) $(id).hidden = id !== sel;
+    for (const id of ["#codePad"]) $(id).hidden = id !== sel;
     syncPanel();
   }
-  function syncPanel() { $("#pPanel").hidden = ["#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
+  function syncPanel() { $("#pPanel").hidden = ["#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -407,6 +432,7 @@
     if (name === "journalMenu") { buildJournal(); syncJournal(); }
     if (name === "death") syncDeath();
     if (name === "settings") buildSettings();
+    if (name === "controls") { syncControls(); focus = Math.max(0, opts().findIndex((b) => b.dataset.tab === ctlTab)); }
     if (name === "cleared") syncCleared();
     if (name === "kits") syncMaps();
     syncFams();
@@ -456,6 +482,7 @@
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
       if (open === "journalMenu" || open === "settings") { openMenu("pause"); return; }
+      if (open === "controls") { openMenu(ctlBack); return; }
       if (open === "confirm") { openMenu(cBack || "pause"); return; }
       if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
