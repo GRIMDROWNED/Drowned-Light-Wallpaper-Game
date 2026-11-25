@@ -7,15 +7,19 @@
 
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
+  // the knight screen's ten painted frames are coloured: each knight sits on the frame nearest its own colour (Robert's art 2026-11-25)
+  const SCREEN_ORDER = ["jadeBreaker", "flameBastion", "pikeWarden", "relicBearer", "ashenArbalist", "chainReaper", "rosePaladin", "bloodsworn", "cinderbrand", "lanternBlade"];
   function buildKits() {
     const grid = $("#kitGrid"); grid.innerHTML = "";
-    DS.KIT_ORDER.forEach((id) => {
+    const order = SCREEN_ORDER.filter((id) => DS.KITS[id]).concat(DS.KIT_ORDER.filter((id) => !SCREEN_ORDER.includes(id)));
+    order.forEach((id) => {
       const k = DS.KITS[id];
       const b = el("button", "kit opt");
-      b.style.setProperty("--kc", k.color);
-      b.innerHTML = `<span class="por"><img alt="" src="assets/${k.sprite.folder}/right.png?v=${DS.VERSION}"></span>
-        <span class="info"><span class="tag">${k.tag}</span><b>${k.name}</b>
-        <span class="row"><i>Attack</i> ${k.attack.name}</span><span class="row"><i>Ability</i> ${k.ability.name}</span></span>`;
+      b.style.setProperty("--kc", k.color); b.dataset.kit = id;
+      // head-and-chest portrait cut from the knight's front picture (tools/cut_portraits.py); the side sprite if there is none
+      b.innerHTML = `<span class="por"><img alt="" src="assets/ui/portraits/${id}.png?v=${DS.VERSION}" onerror="this.onerror=null;this.src='assets/${k.sprite.folder}/right.png?v=${DS.VERSION}';this.className='px'"></span>
+        <span class="info"><b>${k.name}</b><span class="tag">${k.tag}</span>
+        <span class="row"><i>Attack:</i> ${k.attack.name}</span><span class="row"><i>Ability:</i> ${k.ability.name}</span></span>`;
       b.title = k.ability.text + "\n" + k.passiveText;
       b.addEventListener("click", () => pickKit(id));
       b.addEventListener("focus", () => showKitText(id));
@@ -24,10 +28,13 @@
     });
     showKitText(G.kit);
   }
+  // the knight screen has one info bar: it shows the knight, map or familiar last pointed at
+  function info(sel, html) { const e = $(sel); e.innerHTML = html; for (const p of e.parentNode.children) p.classList.toggle("cur", p === e); }
   function showKitText(id) {
     const k = DS.KITS[id];
-    $("#kitText").innerHTML = `<b style="color:rgb(${k.color})">${k.name}</b> · ${k.ability.name}: ${k.ability.text} <span class="pas">${k.passiveText}</span>`;
+    info("#kitText", `<b style="color:rgb(${k.color})">${k.name}</b> · ${k.attack.name} · <b style="color:rgb(${k.color})">${k.ability.name}:</b> ${k.ability.text} <span class="pas">${k.passiveText}</span>`);
   }
+  function syncKits() { for (const b of document.querySelectorAll("#kitGrid .kit")) b.classList.toggle("cur", b.dataset.kit === G.kit); }
   function pickKit(id) {
     close();
     if (G.player && G.mode !== "title") DS.switchKit(id); else { G.kit = id; DS.restart(); }
@@ -39,7 +46,7 @@
     for (const row of [$("#famPick"), $("#famPause")]) {
       row.innerHTML = "";
       for (const id of [null].concat(DS.FAM_ORDER)) {
-        const b = el("button", "opt small fam");
+        const b = el("button", "opt small fam" + (id ? "" : " none"));
         b.dataset.fam = id || "";
         b.addEventListener("click", () => {
           if (id && !DS.Fam.won(id)) { showFamText(id); return; } // still a secret
@@ -61,9 +68,9 @@
   }
   function showFamText(id) {
     const d = id && DS.FAMILIARS[id], at = DS.FAM_UNLOCK.at;
-    $("#famText").innerHTML = !d ? (DS.Fam.locked().length === DS.FAM_ORDER.length ? `Fight alone. Beat the boss of level ${at} to choose your first familiar.` : "Fight alone.")
+    info("#famText", !d ? (DS.Fam.locked().length === DS.FAM_ORDER.length ? `Fight alone. Beat the boss of level ${at} to choose your first familiar.` : "Fight alone.")
       : !DS.Fam.won(id) ? `<b>???</b> · Not yet won. Beat the boss of level ${at} of a map (${at}, ${at + 10}, ${at + 20}...) to choose a familiar.`
-        : `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} Forms: ${d.forms.map((f) => f.name).join(" → ")}`;
+        : `<b style="color:rgb(${d.color})">${d.name}:</b> ${d.text} <span class="pas">Forms: ${d.forms.map((f) => f.name).join(" → ")}</span>`);
   }
   function syncFams() {
     const cur = G.wall && G.fam ? G.fam.id : DS.Fam.picked();
@@ -105,6 +112,12 @@
       b.addEventListener("mouseenter", () => showMapText(i));
       row.appendChild(b);
     });
+    // the painted arrows step through the open maps
+    for (const a of document.querySelectorAll("#kits .karrow")) a.addEventListener("click", () => {
+      const n = DS.MAPS.length, d = +a.dataset.d; let i = DS.Maps.picked();
+      for (let k = 0; k < n; k++) { i = (i + d + n) % n; if (DS.Maps.open(i)) break; }
+      document.querySelector(`#mapPick .map[data-map="${i}"]`).click();
+    });
     syncMaps();
   }
   function syncMaps() {
@@ -113,14 +126,19 @@
       const i = +b.dataset.map, m = DS.MAPS[i], on = DS.Maps.open(i);
       b.classList.toggle("locked", !on); b.classList.toggle("sel", on && i === cur);
       b.style.setProperty("--mc", m.c);
-      b.innerHTML = `<img alt="" src="${DS.Maps.badge(i)}"><span>${on ? m.name : "???"}</span>`;
+      b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}"></span><span>${on ? m.short || m.name : "???"}</span>`;
+      if (m.ring) { // centred on its ring in the art (the strip starts at art x 490, y 98 and is 1056 x 200)
+        b.style.left = (m.ring[0] - 490) / 1056 * 100 + "%"; b.style.top = (m.ring[1] - 98) / 200 * 100 + "%";
+        const img = b.querySelector("img"); img.style.setProperty("--ex", m.em[0]); img.style.setProperty("--ey", m.em[1]);
+        b.style.setProperty("--ly", 195 - m.ring[1]); // names on one line whatever the ring's height
+      }
     }
     showMapText(cur);
   }
   function showMapText(i) {
     const m = DS.MAPS[i];
-    $("#mapText").innerHTML = DS.Maps.open(i) ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}`
-      : `<b>???</b> · Reach level ${i * 10 + 1} to open this map.`;
+    info("#mapText", DS.Maps.open(i) ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}`
+      : `<b>???</b> · Reach level ${i * 10 + 1} to open this map.`);
   }
 
   // ---------------- upgrades: currencies from src/loot.js ----------------
@@ -206,9 +224,50 @@
         : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
       j.hidden = false;
     };
+    buildCodePad();
+    syncToggles();
+  }
+
+  // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
+  let code = "";
+  function buildCodePad() {
+    const row = $("#codePad .keyRow"); row.innerHTML = "";
+    for (const k of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Clear", "OK"]) {
+      const b = el("button", "opt small key", k);
+      b.addEventListener("click", () => press(k));
+      row.appendChild(b);
+    }
+    $("#btnCode").onclick = () => {
+      if (DS.TESTER) { setTester(false); return; }
+      const pad = $("#codePad"); pad.hidden = !pad.hidden; code = ""; showCode("Enter the tester code");
+    };
+    addEventListener("keydown", (e) => {
+      if (open !== "pause" || $("#codePad").hidden) return;
+      if (/^Digit\d$|^Numpad\d$/.test(e.code)) press(e.code.slice(-1));
+      else if (e.code === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); press("OK"); }
+      else if (e.code === "Backspace") { e.stopPropagation(); code = code.slice(0, -1); showCode(); } // not "back" (closes the menu)
+    }, true); // capture, so it runs before src/input.js sees the key
+  }
+  function showCode(msg) { $("#codeShow").textContent = msg || (code ? "• ".repeat(code.length).trim() : "Enter the tester code"); }
+  function press(k) {
+    if (k === "Clear") { code = ""; showCode(); return; }
+    if (k !== "OK") { if (code.length < 8) code += k; showCode(); if (code.length < DS.TESTER_CODE.length) return; }
+    if (code === DS.TESTER_CODE) { setTester(true); return; }
+    if (k === "OK" || code.length >= DS.TESTER_CODE.length) { code = ""; showCode("Wrong code"); }
+  }
+  function setTester(on) {
+    DS.TESTER = on;
+    try { if (on) localStorage.setItem("dl-side-tester", "1"); else localStorage.removeItem("dl-side-tester"); } catch (e) { /* storage blocked */ }
+    code = ""; $("#codePad").hidden = true;
+    if (!on) { // put the run back the way a player has it
+      G.god = false; G.boxes = false;
+      if (!G.scroll) { DS.setScroll(true); DS.restart(); }
+    }
     syncToggles();
   }
   function syncToggles() {
+    $("#devTools").hidden = !DS.TESTER;
+    $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
     $("#btnWave").textContent = G.scroll ? "Skip to the boss" : "Next wave now";
@@ -228,8 +287,9 @@
     syncFams();
     if (G.mode === "play") G.mode = "menu";
     if (name === "kits") {
-      focus = Math.max(0, DS.KIT_ORDER.indexOf(G.kit));
-      $("#kits .back").hidden = !G.player || G.mode === "title";
+      syncKits(); showKitText(G.kit);
+      focus = Math.max(0, opts().findIndex((b) => b.dataset.kit === G.kit));
+      for (const b of document.querySelectorAll("#kits .back")) b.disabled = !G.player || G.mode === "title";
     }
     setFocus();
   }

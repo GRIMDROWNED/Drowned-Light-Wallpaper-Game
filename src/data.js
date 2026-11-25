@@ -4,9 +4,14 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.3";
-  // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
-  DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
+  DS.VERSION = "0.12.5";
+  // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
+  // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
+  // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
+  DS.TESTER_CODE = "1045";
+  DS.TESTER = (() => { try { return localStorage.getItem("dl-side-tester") === "1"; } catch (e) { return false; } })();
+  // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through); testers only
+  DS.START_LEVEL = DS.TESTER ? Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1) : 0;
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
