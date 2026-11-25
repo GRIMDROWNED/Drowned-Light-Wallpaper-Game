@@ -65,7 +65,7 @@
     return true;
   };
   function add(bag, k, n) { bag[k] = (bag[k] | 0) + n; }
-  L.give = (k, n) => { wallet = load("dl-side-wallet", wallet); add(wallet, k, n); save("dl-side-wallet", wallet); };
+  L.give = (k, n) => { wallet = load("dl-side-wallet", wallet); add(wallet, k, n); save("dl-side-wallet", wallet); if (G.lv && n > 0) add(G.lv.bag, k, n); }; // G.lv.bag: this level's takings
   L.resetAll = () => { wallet = {}; ranks = {}; save("dl-side-wallet", wallet); save("dl-side-ranks", ranks); };
 
   // what the ranks change (read by explore.js and game.js)

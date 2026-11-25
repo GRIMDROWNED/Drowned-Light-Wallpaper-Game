@@ -137,15 +137,15 @@ body.wall { cursor: none; }
 .menu[hidden] { display: none !important; } /* a menu with its own display (the art screens) still hides */
 .menu.art { padding: 0; display: grid; place-items: center; overflow: hidden; background: #05080b; }
 #kits { --art: url("assets/ui/knight-screen.jpg"); } #upgrades { --art: url("assets/ui/upgrades-screen.jpg"); } #haul { --art: url("assets/ui/haul-screen.jpg"); } #pause { --art: url("assets/ui/pause-screen.jpg"); }
-#famWin { --art: url("assets/ui/famwin-screen.jpg"); } #journalMenu { --art: url("assets/ui/journal-screen.jpg"); }
+#famWin { --art: url("assets/ui/famwin-screen.jpg"); } #death { --art: url("assets/ui/death-screen.jpg"); } #cleared { --art: url("assets/ui/cleared-screen.jpg"); } #journalMenu { --art: url("assets/ui/journal-screen.jpg"); }
 .menu.art::before { content: ""; position: absolute; inset: -40px; background: var(--art) center / cover; filter: blur(24px) brightness(0.45); } /* fills the sides on screens of another shape */
 .kstage { position: relative; container-type: inline-size; aspect-ratio: 1672 / 941;
   width: min(100vw, calc(100vh * 1672 / 941)); width: min(100vw, calc(100dvh * 1672 / 941));
   background: var(--art) center / 100% 100% no-repeat; }
 .kstage { --u: calc(100cqw / 1672); }
 .ks { position: absolute; box-sizing: border-box; margin: 0;
-  left: calc(var(--x) / 1672 * 100%); top: calc(var(--y) / 941 * 100%); width: calc(var(--w) / 1672 * 100%); height: calc(var(--h) / 941 * 100%); }
-.kstage button { -webkit-appearance: none; appearance: none; font: inherit; color: inherit; cursor: pointer; }
+  left: calc(var(--x) / var(--aw, 1672) * 100%); top: calc(var(--y) / var(--ah, 941) * 100%); width: calc(var(--w) / var(--aw, 1672) * 100%); height: calc(var(--h) / var(--ah, 941) * 100%); }
+:is(.kstage, .cstage) button { -webkit-appearance: none; appearance: none; font: inherit; color: inherit; cursor: pointer; }
 .ks.klogo { text-align: left; text-shadow: 0 0 calc(10 * var(--u)) #000, 0 calc(2 * var(--u)) 0 #000; }
 .klogo h1 { font: 700 calc(46 * var(--u))/1 var(--display); color: #e9e2cf; letter-spacing: 0.04em; }
 .klogo p { margin: calc(6 * var(--u)) 0 0; font: 600 max(8.5px, calc(16 * var(--u)))/1.25 var(--body); color: #f2ead6; max-width: 80%; }
@@ -221,10 +221,10 @@ button.khint.back:not([disabled]):hover { color: #fff; }
 }
 
 /* ---------- Upgrades, While you were away and Pause on Robert's art (2026-11-25), same placing as the knight screen ---------- */
-.menu.art .kstage button.opt:is(.ubtn, .pbtn, .upg) { min-height: 0; padding: 0; border: 0; background: none; border-radius: calc(8 * var(--u)); box-sizing: border-box; }
-.menu.art .kstage button.opt:is(.ubtn, .pbtn, .upg):is(:hover, .focus, :focus-visible) { outline: none; background: rgba(255, 235, 190, 0.1);
+.menu:is(.art, .confirm) :is(.kstage, .cstage) button.opt:is(.ubtn, .pbtn, .upg) { min-height: 0; padding: 0; border: 0; background: none; border-radius: calc(8 * var(--u)); box-sizing: border-box; }
+.menu:is(.art, .confirm) :is(.kstage, .cstage) button.opt:is(.ubtn, .pbtn, .upg):is(:hover, .focus, :focus-visible) { outline: none; background: rgba(255, 235, 190, 0.1);
   box-shadow: inset 0 0 0 calc(3 * var(--u)) #fff3c4, 0 0 calc(18 * var(--u)) rgba(255, 230, 160, 0.55); }
-.menu .kstage button.ks:is(.ubtn, .pbtn) { display: grid; place-items: center; font: 700 max(11px, calc(26 * var(--u))) var(--display); color: #f6efdc; letter-spacing: 0.03em;
+.menu :is(.kstage, .cstage) button.ks:is(.ubtn, .pbtn) { display: grid; place-items: center; font: 700 max(11px, calc(26 * var(--u))) var(--display); color: #f6efdc; letter-spacing: 0.03em;
   text-shadow: 0 calc(2 * var(--u)) 0 #000, 0 0 calc(8 * var(--u)) #000; }
 .menu .kstage button.ks.pbtn { font-size: max(10px, calc(24 * var(--u))); }
 .menu .kstage button.ks.pbtn.big { font-size: max(12px, calc(32 * var(--u))); }
@@ -321,3 +321,29 @@ button.khint.resume:hover { color: #fff; }
 .jarrow:disabled { opacity: 0.35; filter: grayscale(1); cursor: default; }
 .ks.jpage { display: block; align-content: center; text-align: center; font: 700 max(7.5px, calc(14 * var(--u))) var(--body); color: #4a2e12; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5); white-space: nowrap; }
 .ks.jpage b { text-shadow: 0 1px 1px #000; }
+
+/* ---------- death and level cleared on Robert's art ---------- */
+.ks.dbanner { color: #2a1a10; font-size: calc(40 * var(--u)); }
+.ks.dline { font-size: max(9px, calc(19 * var(--u))); }
+.ks.dline b { color: #ff9a9a; }
+.ks.dline small { display: block; margin-top: calc(4 * var(--u)); color: #b8ad98; font-size: max(8px, calc(14 * var(--u))); }
+#death .ubtn { font-size: max(10px, calc(22 * var(--u))); }
+.ks.cbanner { font-size: calc(36 * var(--u)); }
+.ks.crows { display: block; }
+.crow { position: absolute; left: 0; right: 0; top: calc(var(--r) * 71.7 * var(--u)); height: calc(60 * var(--u)); }
+.crow i { position: absolute; left: 0; width: calc(65 * var(--u)); height: 100%; display: grid; place-items: center; font: normal 700 max(10px, calc(26 * var(--u))) var(--display); color: #f0c46a; text-shadow: 0 0 calc(6 * var(--u)) rgba(240, 196, 106, 0.6); }
+.crow span { position: absolute; left: calc(92 * var(--u)); right: calc(14 * var(--u)); height: 100%; display: flex; align-items: center; justify-content: space-between;
+  font: 600 max(8.5px, calc(18 * var(--u))) var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; }
+.crow span b { font: 700 max(9px, calc(21 * var(--u))) var(--display); color: #f6efdc; }
+.ks.cloot { display: grid; grid-template-columns: repeat(8, 1fr); }
+.cloot .lc { position: relative; display: grid; place-items: center; }
+.cloot .lc img { height: calc(42 * var(--u)); image-rendering: pixelated; filter: drop-shadow(0 0 calc(3 * var(--u)) #000); }
+.cloot .lc b { position: absolute; right: calc(10 * var(--u)); bottom: calc(4 * var(--u)); font: 700 max(8px, calc(15 * var(--u))) var(--display); color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+#cleared .ubtn { font-size: max(10px, calc(24 * var(--u))); }
+
+/* ---------- the confirm pop-up: over the menu that asked, the rest of the screen dimmed ---------- */
+.menu.confirm { padding: 0; display: grid; place-items: center; background: rgba(2, 4, 8, 0.6); z-index: 30; }
+.cstage { position: relative; container-type: inline-size; aspect-ratio: 1430 / 875; width: min(92vw, 640px, calc(80vh * 1430 / 875));
+  background: url("assets/ui/confirm.webp") center / 100% 100% no-repeat; --aw: 1430; --ah: 875; --u: calc(100cqw / 1430); }
+.cstage .ks.uinfo { font-size: max(11px, calc(40 * var(--u))); display: grid; place-items: center; }
+.cstage .ubtn { font-size: max(11px, calc(44 * var(--u))) !important; }

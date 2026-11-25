@@ -100,6 +100,28 @@
     $("#famWinText").textContent = "Choose well: the others wait for the next map's fifth level.";
   }
 
+  // ---------------- death, level cleared and the confirm pop-up (Robert's art) ----------------
+  function syncDeath() {
+    const by = G.player && G.player.lastHit;
+    $("#deathText").innerHTML = (by ? `Struck down by the <b>${by}</b>` : "The light gutters out") + `<small>Level ${G.level + 1} · you rise again at the last checkpoint</small>`;
+  }
+  function syncCleared() {
+    const lv = G.lv, n = G.level, pages = DS.Explore.pages().filter((k) => +k.split(":")[0] === n).length;
+    const t = Math.round(lv.t), time = Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+    $("#clearTitle").textContent = "Level " + (n + 1) + " cleared";
+    const rows = [["⌛", "Time", time], ["☠", "Drowned felled", lv.kills], ["⚔", "Best combo", lv.best], ["✦", "Drowned pages", pages + " of 3"], ["♰", "Falls", lv.deaths]];
+    $("#clearRows").innerHTML = rows.map(([ic, k, v], r) => `<div class="crow" style="--r:${r}"><i>${ic}</i><span>${k}<b>${v}</b></span></div>`).join("");
+    const got = DS.CUR_ORDER.filter((k) => lv.bag[k] > 0).slice(0, 8);
+    $("#clearLoot").innerHTML = Array.from({ length: 8 }, (_, i) => got[i] ? `<span class="lc" title="${DS.CURRENCY[got[i]].name}"><img alt="" src="${L().icon(got[i])}"><b>${lv.bag[got[i]]}</b></span>` : "<span class=\"lc\"></span>").join("");
+  }
+  // a yes/no question over the menu that asked; no (or back) returns to it
+  let cBack = null, cYes = null;
+  function confirmBox(q, yes, fn) {
+    cBack = open; cYes = fn;
+    $("#confirmText").textContent = q; $("#confirmYes").textContent = yes;
+    openMenu("confirm");
+  }
+
   // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
   // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
   const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
@@ -260,7 +282,13 @@
     $("#btnWaves").onclick = () => { DS.setScroll(!G.scroll); DS.restart(); close(); G.mode = "play"; };
     $("#btnGod").onclick = () => { G.god = !G.god; syncToggles(); };
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
-    $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
+    $("#btnRestart").onclick = () => confirmBox(G.scroll ? "Start this map again from its first level?" : "Restart the arena?", "Restart", () => { DS.restart(); close(); G.mode = "play"; });
+    $("#confirmNo").onclick = () => openMenu(cBack || "pause");
+    $("#confirmYes").onclick = () => { const f = cYes; cYes = null; if (f) f(); };
+    $("#btnTryAgain").onclick = () => { DS.respawn(); close(); G.mode = "play"; };
+    $("#btnDeathKits").onclick = () => { DS.respawn(); openMenu("kits"); };
+    $("#btnClearNext").onclick = () => { close(); DS.nextLevel(); G.mode = "play"; };
+    $("#btnClearUp").onclick = () => openUpgrades("cleared");
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
@@ -327,12 +355,14 @@
   function flash(b) { b.classList.add("done"); setTimeout(() => b.classList.remove("done"), 300); }
 
   function openMenu(name) {
-    for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name;
+    for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name && !(name === "confirm" && m.id === open); // the pop-up sits over its menu
     open = name; focus = 0;
     if (name === "pause") syncToggles();
     if (name === "famWin") buildFamWin();
     if (name === "upgrades") buildUpgrades();
     if (name === "journalMenu") { buildJournal(); syncJournal(); }
+    if (name === "death") syncDeath();
+    if (name === "cleared") syncCleared();
     if (name === "kits") syncMaps();
     syncFams();
     if (G.mode === "play") G.mode = "menu";
@@ -381,6 +411,8 @@
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
       if (open === "journalMenu") { openMenu("pause"); return; }
+      if (open === "confirm") { openMenu(cBack || "pause"); return; }
+      if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
     }

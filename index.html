@@ -79,6 +79,36 @@
   </div>
 </section>
 
+<section id="death" class="menu art" hidden>
+  <!-- Robert's defeat art (assets/ui/death-screen.jpg) -->
+  <div class="kstage">
+    <h1 class="ks kbanner dbanner" style="--x:500;--y:90;--w:780;--h:80">You have fallen</h1>
+    <p id="deathText" class="ks uinfo dline" style="--x:800;--y:400;--w:610;--h:80"></p>
+    <button id="btnTryAgain" class="ks opt ubtn" style="--x:805;--y:526;--w:275;--h:70">Try again</button>
+    <button id="btnDeathKits" class="ks opt ubtn" style="--x:1128;--y:526;--w:285;--h:70">Back to knights</button>
+  </div>
+</section>
+
+<section id="cleared" class="menu art" hidden>
+  <!-- Robert's victory art (assets/ui/cleared-screen.jpg): five result rows, eight loot sockets -->
+  <div class="kstage">
+    <h1 id="clearTitle" class="ks kbanner cbanner" style="--x:560;--y:28;--w:590;--h:74">Level cleared</h1>
+    <div id="clearRows" class="ks crows" style="--x:830;--y:243;--w:500;--h:347"></div>
+    <div id="clearLoot" class="ks cloot" style="--x:779;--y:610;--w:577;--h:75"></div>
+    <button id="btnClearUp" class="ks opt ubtn" style="--x:790;--y:762;--w:205;--h:62">Upgrades</button>
+    <button id="btnClearNext" class="ks opt ubtn teal" style="--x:1075;--y:762;--w:300;--h:62">Next level</button>
+  </div>
+</section>
+
+<section id="confirm" class="menu confirm" hidden>
+  <!-- Robert's pop-up (assets/ui/confirm.webp, 1430 x 875 art px), shown over the menu that asked -->
+  <div class="cstage">
+    <p id="confirmText" class="ks uinfo" style="--x:190;--y:275;--w:1050;--h:170"></p>
+    <button id="confirmNo" class="ks opt ubtn" style="--x:212;--y:532;--w:452;--h:122">Cancel</button>
+    <button id="confirmYes" class="ks opt ubtn teal" style="--x:762;--y:532;--w:456;--h:122">Yes</button>
+  </div>
+</section>
+
 <section id="haul" class="menu art" hidden>
   <!-- Robert's campfire art (assets/ui/haul-screen.jpg) -->
   <div class="kstage">
