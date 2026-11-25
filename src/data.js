@@ -4,9 +4,14 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.4";
-  // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through)
-  DS.START_LEVEL = Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1);
+  DS.VERSION = "0.12.9";
+  // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
+  // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
+  // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
+  DS.TESTER_CODE = "1045";
+  DS.TESTER = (() => { try { return localStorage.getItem("dl-side-tester") === "1"; } catch (e) { return false; } })();
+  // ?level=N starts the scrolling run on level N (to look at a level's scenery without playing through); testers only
+  DS.START_LEVEL = DS.TESTER ? Math.max(0, (parseInt(new URLSearchParams(location.search).get("level"), 10) || 1) - 1) : 0;
 
   // Physics and the player's movement (px, px/s, px/s²)
   DS.PHYS = {
@@ -344,4 +349,18 @@
     ["champion"],
     ["blackguard", "defiler", "hexbearer", "archer", "squire", "revenant", "revenant"],
   ];
+
+  // player settings (Settings screen, src/ui.js): saved per device
+  DS.SETTINGS = [
+    { id: "shake", name: "Screen shake", kind: "slider", min: 0, max: 1, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "bright", name: "Brightness", kind: "slider", min: 0.6, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "touch", name: "Touch buttons", kind: "slider", min: 0.7, max: 1.4, def: 1, show: (v) => Math.round(v * 100) + "%" },
+    { id: "numbers", name: "Damage numbers", kind: "toggle", def: true },
+    { id: "flash", name: "Red flash when hit", kind: "toggle", def: true },
+    { id: "rumble", name: "Controller rumble", kind: "toggle", def: true },
+  ];
+  DS.SET = {};
+  try { Object.assign(DS.SET, JSON.parse(localStorage.getItem("dl-side-settings") || "{}")); } catch (e) { /* storage blocked */ }
+  for (const o of DS.SETTINGS) if (DS.SET[o.id] === undefined) DS.SET[o.id] = o.def;
+  DS.saveSettings = () => { try { localStorage.setItem("dl-side-settings", JSON.stringify(DS.SET)); } catch (e) { /* storage blocked */ } };
 })(window.DS = window.DS || {});

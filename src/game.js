@@ -5,7 +5,7 @@
   const P = DS.PHYS, Wd = DS.World, I = DS.Input;
   const G = DS.G = {
     mode: "title", t: 0, foes: [], shots: [], zones: [], fx: [], texts: [],
-    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, auto: false, endless: false, autoT: 0, wall: false, wallT: 0, wallLocked: false, god: false, boxes: false,
+    cam: { x: 0, y: 400, shake: 0 }, hitstop: 0, wave: 0, waveT: 2, waves: true, scroll: true, level: 0, enc: [], bossX: 0, checkpoint: 300, clearT: 0, tok: 0, lv: { t: 0, kills: 0, deaths: 0, best: 0, gold: 0, bag: {} }, auto: false, endless: false, autoT: 0, wall: false, wallT: 0, wallLocked: false, god: false, boxes: false,
     kills: 0, combo: 0, comboT: 0, best: 0, swingId: 0, dummyLog: [], kit: "lanternBlade",
   };
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -57,7 +57,11 @@
 
   function updatePlayer(p, dt) {
     const k = p.k;
-    if (p.dead) { p.dead += dt; p.vx *= 0.9; p.vy += P.gravity * dt; Wd.move(p, dt); if (p.dead > 2.2) respawn(); return; }
+    if (p.dead) {
+      p.dead += dt; p.vx *= 0.9; p.vy += P.gravity * dt; Wd.move(p, dt);
+      if (p.dead > 2.2) { if (G.wall || G.auto) respawn(); else if (!p.shown) { p.shown = true; DS.UI.open("death"); } }
+      return;
+    }
     p.inv = Math.max(0, p.inv - dt); p.hurtT = Math.max(0, p.hurtT - dt); p.flipT = Math.max(0, (p.flipT || 0) - dt); p.landT = Math.max(0, (p.landT || 0) - dt); p.dashCd = Math.max(0, p.dashCd - dt);
     p.abilCd = Math.max(0, p.abilCd - dt); p.rushT = Math.max(0, p.rushT - dt); p.dropT = Math.max(0, p.dropT - dt);
     p.comboT = Math.max(0, p.comboT - dt);
@@ -142,7 +146,7 @@
 
   function respawn() {
     const kit = G.player.kitId;
-    DS.Explore.onDeath();
+    DS.Explore.onDeath(); G.lv.deaths++;
     G.player = newPlayer(kit);
     G.foes = G.foes.filter((f) => f.d.dummy);
     G.shots = []; G.zones = [];
@@ -187,11 +191,11 @@
     if (opt.chill) e.chill = Math.max(e.chill || 0, opt.chill);
     if (opt.freeze) { if (e.d.boss) e.chill = Math.max(e.chill || 0, opt.freeze); else e.freeze = Math.max(e.freeze || 0, opt.freeze); }
     if (opt.root) e.root = Math.max(e.root || 0, e.d.boss ? opt.root * 0.3 : opt.root);
-    text(e.x + rnd(-8, 8), e.y - e.h - 4, String(dmg), blocked ? "#9aa" : opt.color || "#fff", dmg >= 25 ? 17 : 14);
+    if (DS.SET.numbers) text(e.x + rnd(-8, 8), e.y - e.h - 4, String(dmg), blocked ? "#9aa" : opt.color || "#fff", dmg >= 25 ? 17 : 14);
     spark(e.x - dir * e.w * 0.2, e.y - e.h * 0.55, opt.sparkColor || "#e8f4ff", blocked ? 3 : 8);
     G.hitstop = Math.max(G.hitstop, opt.hitstop != null ? opt.hitstop : 0.045);
     if (!opt.quiet) { shake(opt.heavy ? 5 : 2.5); I.rumble(opt.heavy ? 0.5 : 0.2, 0.3, 60); } // a familiar's blows don't shake the screen
-    G.combo++; G.comboT = 2; G.best = Math.max(G.best, G.combo);
+    G.combo++; G.comboT = 2; G.best = Math.max(G.best, G.combo); if (G.lv) G.lv.best = Math.max(G.lv.best, G.combo);
     if (G.player.k.heat && !opt.noHeat) { p.heat = Math.min(p.k.heat.max, p.heat + p.k.heat.perHit); p.heatT = p.k.heat.hold; }
     if (e.hp <= 0 && !e.d.dummy) kill(e);
     return true;
@@ -199,7 +203,7 @@
 
   function kill(e) {
     e.dead = true; e.state = "dead"; e.st = 0; e.deadT = 0; e.vy = -260; e.vx = Math.sign(e.x - G.player.x) * 160;
-    G.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
+    G.kills++; G.lv.kills++; G.autoKillT = G.t; // the autopilot's proof that the fight is going somewhere
     DS.Fam.onKill(); DS.Loot.onKill(e); // currencies drop (src/loot.js)
     if (e.enc && e.enc.boss) e.enc.won = true; // remembered: his body is cleared away 1.4 s later
     const p = G.player, k = p.k;
@@ -460,7 +464,7 @@
   function spark(x, y, color, n) { for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), v = rnd(120, 380); G.fx.push({ kind: "spark", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: rnd(0.12, 0.3), c: color }); } }
   function puff(x, y, n, c) { for (let i = 0; i < n; i++) G.fx.push({ kind: "dust", x: x + rnd(-12, 12), y: y - 2, vx: rnd(-80, 80), vy: rnd(-60, -10), t: 0, life: rnd(0.3, 0.5), c, r: rnd(3, 6) }); }
   function ring(x, y, c) { G.fx.push({ kind: "ring", x, y, t: 0, life: 0.3, c }); }
-  function shake(a) { G.cam.shake = Math.max(G.cam.shake, a); }
+  function shake(a) { G.cam.shake = Math.max(G.cam.shake, a * DS.SET.shake); }
   DS.fx = { text, spark, puff, ring, shake };
 
   function updateFx(dt) {
@@ -495,6 +499,7 @@
     G.level = n; G.tok++; DS.Loot.clear();
     if (!G.auto && !G.wall) DS.Maps.reached(n); // opens maps on the map select
     G.checkpoint = 300; G.clearT = 0; G.famReward = 0;
+    G.lv = { t: 0, kills: 0, deaths: 0, best: 0, gold: DS.Loot.have("gold"), bag: {} }; // for the level-cleared screen
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
     else { const lv = Wd.level(n, 1000 + n * 7919); G.enc = lv.enc; G.bossX = lv.bossX; G.endless = false; }
@@ -550,9 +555,10 @@
     if (G.famReward > 0 && (G.famReward -= dt) <= 0) { G.famReward = 0; DS.UI.open("famWin"); return; }
     if (G.clearT > 0) {
       G.clearT -= dt;
-      if (G.clearT <= 0) { loadLevel(G.level + 1); const pl = G.player; pl.x = G.checkpoint; pl.y = Wd.FLOOR - 200; pl.vx = pl.vy = 0; G.cam.x = pl.x - DS.Render.vw / 2; }
+      if (G.clearT <= 0) { if (G.wall || G.auto) nextLevel(); else DS.UI.open("cleared"); } // the cleared screen's button calls DS.nextLevel
     }
   }
+  function nextLevel() { loadLevel(G.level + 1); const pl = G.player; pl.x = G.checkpoint; pl.y = Wd.FLOOR - 200; pl.vx = pl.vy = 0; G.cam.x = pl.x - DS.Render.vw / 2; }
   function setScroll(on) {
     G.scroll = on; G.waves = !on;
     if (on) loadLevel(DS.START_LEVEL || 0); else { DS.Explore.clear(); Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
@@ -652,7 +658,7 @@
     if (G.wall && (G.wallT += dt) > WALL_SWAP) nextWallKnight();
     if (I.p.kit) { DS.UI.cycleKit(1); }
     if (G.auto && G.scroll) autopilot(dt);
-    G.t += dt;
+    G.t += dt; if (G.lv && !G.clearT) G.lv.t += dt;
     G.comboT -= dt; if (G.comboT <= 0) G.combo = 0;
     G.redT = Math.max(0, (G.redT || 0) - dt);
     if (G.banner) { G.banner.t += dt; if (G.banner.t > 2.2) G.banner = null; }
@@ -702,7 +708,7 @@
     if (old) { G.player.x = old.x; G.player.y = old.y; G.player.dir = old.dir; }
     try { localStorage.setItem("dl-side-kit", kitId); } catch (e) { /* storage blocked */ }
   }
-  Object.assign(DS, { start, restart, switchKit });
+  Object.assign(DS, { start, restart, switchKit, respawn, nextLevel });
 
   let last = 0;
   function frame(now) {

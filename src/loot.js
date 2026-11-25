@@ -65,7 +65,7 @@
     return true;
   };
   function add(bag, k, n) { bag[k] = (bag[k] | 0) + n; }
-  L.give = (k, n) => { wallet = load("dl-side-wallet", wallet); add(wallet, k, n); save("dl-side-wallet", wallet); };
+  L.give = (k, n) => { wallet = load("dl-side-wallet", wallet); add(wallet, k, n); save("dl-side-wallet", wallet); if (G.lv && n > 0) add(G.lv.bag, k, n); }; // G.lv.bag: this level's takings
   L.resetAll = () => { wallet = {}; ranks = {}; save("dl-side-wallet", wallet); save("dl-side-ranks", ranks); };
 
   // what the ranks change (read by explore.js and game.js)
@@ -184,8 +184,11 @@
     ctx.font = '700 12px "Pixelify Sans", monospace'; ctx.textAlign = "left";
     const items = [["gold", L.have("gold")], ["amethyst", L.have("amethyst")]];
     const widths = items.map(([, n]) => 22 + ctx.measureText(String(n)).width + 12), total = widths.reduce((a, b) => a + b, 0);
-    let x = Math.round(vw / 2 - total / 2); const y = 12;
-    ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 4, total + 4, 22);
+    // Robert's coin-purse plate (434 x 150; its dark slot runs from 27% across)
+    const purse = DS.Render.hudImg && DS.Render.hudImg("purse"), pw = Math.max(150, total / 0.62), ph = pw * 150 / 434;
+    let x = Math.round(vw / 2 - pw / 2 + pw * 0.3 + (pw * 0.62 - total) / 2); const y = purse ? 4 + ph * 0.5 - 7 : 12;
+    if (purse) { ctx.imageSmoothingEnabled = true; ctx.drawImage(purse, vw / 2 - pw / 2, 4, pw, ph); ctx.imageSmoothingEnabled = false; }
+    else { ctx.fillStyle = "rgba(6,12,18,0.55)"; ctx.fillRect(x - 6, y - 4, total + 4, 22); }
     items.forEach(([k, n], i) => {
       const r = DS.LOOTART[k], s = 14 / r[3];
       ctx.drawImage(A, r[0], r[1], r[2], r[3], x, y, Math.round(r[2] * s), 14);
