@@ -11,6 +11,15 @@ ART = os.path.join(os.path.dirname(__file__), "..", "art")
 KNIGHT_H, FOE_H, BOSS_H = 42, 36, 56
 VIOLET = {"chain-reaper", "rift-throne", "seething-seraph"}  # his purple turns neon magenta at 1.35
 CRIMSON = {"deadly-rose", "pike-warden", "rose-paladin", "bloodsworn", "bloodsworn-f2", "bloodsworn-f3", "cinderbrand", "flame-bastion"}
+# The bosses' minions (2026-11-24, Robert: they guard the Mist Wells, src/explore.js): main-game folder, height in pixel px
+MINIONS = {"cairn": ("minions/cairn", 26), "servitor": ("minions/servitor", 58), "siltfist": ("minions/siltfist", 54),
+           "drakeling": ("minions/drakeling", 26), "raptor": ("minions/raptor", 30), "screecher": ("minions/screecher", 42),
+           "skitterer": ("minions/skitterer", 26), "leech": ("minions/leech", 24), "tollwretch": ("minions/tollwretch", 44),
+           "handmaiden": ("minions/handmaiden", 50), "rosewretch": ("minions/rosewretch", 30), "thornling": ("minions/thornling", 19),
+           "mite": ("spires-foes/mite", 22), "swisp": ("spires-foes/swisp", 30), "warden": ("spires-foes/warden", 50),
+           "tidestalker": ("minions/tidestalker", 26), "wisp": ("minions/wisp", 42), "tideleech": ("minions/tideleech", 26),
+           "wretch": ("mines-foes/wretch", 28), "ashguard": ("mines-foes/ashguard", 42), "acolyte": ("mines-foes/acolyte", 38)}
+for m in MINIONS: os.makedirs(os.path.join(OUT, "drowned", m), exist_ok=True)
 # the frame whose height sets each folder's scale
 REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1", "mother-wyvern": "side/fly1", "furnace-hydra": "idle1", "sunken-king": "fnKingStill", "sunken-king-body": "fnKingStill"}
 # The later levels' bosses (2026-11-24): drowned/<folder> here, but their main-game frames live elsewhere; height in pixel px
@@ -70,16 +79,16 @@ def fam_frames(src):
 for fam in FAMILIARS: os.makedirs(os.path.join(OUT, "familiars", fam), exist_ok=True)
 for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H), ("familiars", None)):
     for folder in sorted(os.listdir(os.path.join(OUT, group))):
-        src = SRC + (BOSSES[folder][0] if folder in BOSSES else "drowned/" + folder if group == "drowned" else folder) + "/"
+        src = SRC + (BOSSES[folder][0] if folder in BOSSES else MINIONS[folder][0] if folder in MINIONS else "drowned/" + folder if group == "drowned" else folder) + "/"
         ref = Image.open(src + REF.get(folder, "side/walk1") + ".png").convert("RGBA")
         bb = ref.getbbox(); hgt = bb[3] - bb[1]
-        s = (BOSS_H if folder == "champion" else BOSSES[folder][1] if folder in BOSSES else target) / hgt if target else FAM_X / FAMILIARS[folder]
+        s = (BOSS_H if folder == "champion" else BOSSES[folder][1] if folder in BOSSES else MINIONS[folder][1] if folder in MINIONS else target) / hgt if target else FAM_X / FAMILIARS[folder]
         scales[group + "/" + folder] = round(s, 4)
-        sat = 1.0 if group == "familiars" else 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
+        sat = 1.0 if group == "familiars" else 1.15 if folder in MINIONS else 0.95 if folder in CRIMSON else 1.0 if folder in VIOLET else 1.35
         art = os.path.join(ART, group, folder) + "/"  # frames cut from the side-view sheets (tools/cut_side.py)
         rels = {os.path.relpath(f, os.path.join(OUT, group, folder)) for f in glob.glob(os.path.join(OUT, group, folder, "**/*.png"), recursive=True) if not f.endswith("/atlas.png")}
         rels |= {os.path.relpath(f, art) for f in glob.glob(art + "**/*.png", recursive=True)}
-        if group == "familiars": rels |= set(fam_frames(src))
+        if group == "familiars" or folder in MINIONS: rels |= set(fam_frames(src))
         for rel in sorted(rels):
             f = os.path.join(OUT, group, folder, rel); os.makedirs(os.path.dirname(f), exist_ok=True)
             pixelize(Image.open(art + rel if os.path.exists(art + rel) else src + rel).convert("RGBA"), s, sat=sat).save(f)
