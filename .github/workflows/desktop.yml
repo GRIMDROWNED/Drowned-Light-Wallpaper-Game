@@ -24,7 +24,7 @@ jobs:
           Copy-Item index.html, wallpaper.html, style.css $tmp
           Copy-Item -Recurse src "$tmp/src"
           New-Item -ItemType Directory "$tmp/assets" | Out-Null
-          Copy-Item -Recurse assets/fx, assets/ground, assets/scenery, assets/pickups, assets/maps, assets/loot, assets/ui "$tmp/assets/"
+          Copy-Item -Recurse assets/fx, assets/ground, assets/scenery, assets/pickups, assets/maps, assets/loot, assets/ui, assets/jade "$tmp/assets/"
           foreach ($g in "knights", "drowned", "familiars") {
             Get-ChildItem "assets/$g" -Directory | ForEach-Object {
               $d = "$tmp/assets/$g/$($_.Name)"; New-Item -ItemType Directory -Force $d | Out-Null
