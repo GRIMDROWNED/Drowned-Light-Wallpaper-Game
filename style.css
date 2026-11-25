@@ -252,8 +252,8 @@ button.khint.back:not([disabled]):hover { color: #fff; }
 .ulist .upg .un { left: calc(108 * var(--u)); width: calc(216 * var(--u)); display: flex; flex-direction: column; gap: calc(2 * var(--u)); text-shadow: 0 1px 2px #000; }
 .ulist .upg .un b { font: 700 max(10px, calc(19 * var(--u))) var(--display); color: #f6efdc; }
 .ulist .upg .ef { font: 600 max(8px, calc(11.5 * var(--u)))/1.15 var(--body); color: #cfc6b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ulist .upg .pips { left: calc(353 * var(--u)); width: calc(287 * var(--u)); height: calc(40 * var(--u)); display: grid; grid-template-columns: repeat(10, 1fr); place-items: center; gap: 0; }
-.ulist .upg .pips i { width: calc(15 * var(--u)); height: calc(15 * var(--u)); transform: rotate(45deg); background: none; }
+.ulist .upg .pips { left: calc(351 * var(--u)); width: calc(291 * var(--u)); height: calc(40 * var(--u)); display: grid; grid-template-columns: repeat(9, 1fr); place-items: center; gap: 0; }
+.ulist .upg .pips i { width: calc(14 * var(--u)); height: calc(14 * var(--u)); transform: rotate(45deg); background: none; }
 .ulist .upg .pips i.on { background: linear-gradient(135deg, #fff1b8, #e0a83a); box-shadow: 0 0 calc(8 * var(--u)) rgba(255, 210, 110, 0.9); }
 .ulist .upg .cost { left: calc(662 * var(--u)); width: calc(251 * var(--u)); height: calc(52 * var(--u)); }
 .ulist .upg .cost .chip { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: calc(4 * var(--u));
@@ -265,8 +265,12 @@ button.khint.back:not([disabled]):hover { color: #fff; }
 .ulist .upg.three .cost .chip:nth-child(3) { left: calc(178 * var(--u)); width: calc(73 * var(--u)); }
 .ulist .upg.two .cost .chip:nth-child(1) { left: calc(23 * var(--u)); width: calc(100 * var(--u)); }
 .ulist .upg.two .cost .chip:nth-child(2) { left: calc(138 * var(--u)); width: calc(103 * var(--u)); }
-.ulist .upg.two .cost .chip:nth-child(3) { left: calc(138 * var(--u)); width: calc(103 * var(--u)); top: auto; bottom: calc(-16 * var(--u)); } /* the art has two plates here */
-.ulist .upg .cost .chip.maxed { left: 0; width: 100%; }
+/* the art has two plates here: a third cost (Amethyst) shares the second plate */
+.ulist .upg.two .cost .chip:nth-child(2):not(:last-child) { width: calc(54 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(3) { left: calc(188 * var(--u)); width: calc(50 * var(--u)); }
+.ulist .upg.two .cost .chip:nth-child(n+2):not(:only-child) img { height: calc(18 * var(--u)); }
+.ulist .upg.max .pips i.on { box-shadow: 0 0 calc(12 * var(--u)) rgba(255, 225, 140, 1); }
+.ulist .upg .cost .chip.maxed { white-space: nowrap; font-size: max(6px, calc(12 * var(--u))); color: #ffd27a; letter-spacing: 0; }
 .menu .ulist button.upg.can .un b { color: #9ff0c0; }
 .menu .ulist button.upg.max .un b { color: #ffd27a; }
 .ks.uinfo, .ks.hsub { display: block; align-content: center; margin: 0; padding: 0 calc(16 * var(--u)); text-align: center; font: 600 max(9px, calc(15 * var(--u)))/1.2 var(--body); color: #efe6d2; text-shadow: 0 1px 2px #000; overflow: hidden; }

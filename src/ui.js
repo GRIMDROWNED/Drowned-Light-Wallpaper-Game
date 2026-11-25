@@ -155,7 +155,8 @@
       // Robert's forge art paints three cost plates on rows 1, 3 and 5 and two on the others
       const b = el("button", "opt upg" + (row % 2 ? " two" : " three") + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
       b.dataset.up = u.id;
-      const pips = Array.from({ length: L().MAX_RANK }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
+      // the art paints 9 diamonds: ranks 1-9 light them, rank 10 (max) makes them all glow
+      const pips = Array.from({ length: 9 }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
       const costs = max ? "<span class=\"chip maxed\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
       b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="pips">${pips}</span><span class="cost">${costs}</span>`;
       b.addEventListener("click", () => {
