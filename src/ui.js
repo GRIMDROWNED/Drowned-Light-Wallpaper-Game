@@ -33,7 +33,7 @@
     const por = `<span class="por"><img alt="" src="assets/ui/portraits/${id}.png?v=${DS.VERSION}" onerror="this.onerror=null;this.src='assets/${k.sprite.folder}/right.png?v=${DS.VERSION}';this.className='px'"></span>`;
     b.innerHTML = on ? por + `<span class="info"><b>${k.name}</b><span class="tag">${k.tag}</span>
         <span class="row"><i>Attack:</i> ${k.attack.name}</span><span class="row"><i>Ability:</i> ${k.ability.name}</span></span>`
-      : por + `<span class="info"><b>???</b><span class="tag">Locked</span><span class="row">Beat the boss of</span><span class="row">level ${at} to win</span></span>`;
+      : por.replace("</span>", "<i class=\"lk\"></i></span>") + `<span class="info"><b>???</b><span class="tag">Locked</span><span class="row">Beat the boss of</span><span class="row">level ${at} to win</span></span>`;
     b.title = on ? k.ability.text + "\n" + k.passiveText : "";
   }
   // the knight screen has one info bar: it shows the knight, map or familiar last pointed at
@@ -110,14 +110,15 @@
     $("#famWinText").textContent = "Choose well: the others wait for the next map's fifth level.";
   }
 
-  // ---------------- a new knight won (a map's last boss): a pop-up over the Level cleared screen ----------------
+  // ---------------- a new knight won (a map's last boss): Robert's arch art, after the Level cleared screen ----------------
   let kBack = null, kId = null;
   function kitWin(id) {
     const k = DS.KITS[id]; if (!k) return;
     kBack = open || "cleared"; kId = id;
-    $("#kitWinBody").innerHTML = `<span class="kwpic" style="--kc:${k.color}"><img alt="" src="assets/ui/portraits/${id}.png?v=${DS.VERSION}" onerror="this.onerror=null;this.src='assets/${k.sprite.folder}/right.png?v=${DS.VERSION}';this.className='px'"></span>
-      <span class="kwtext"><small>A new knight answers your light</small><b style="color:rgb(${k.color})">${k.name}</b>
-      <span>${k.attack.name} · <i style="color:rgb(${k.color})">${k.ability.name}:</i> ${k.ability.text}</span></span>`;
+    const pic = $("#kitWinPic"); pic.style.setProperty("--kc", k.color);
+    pic.innerHTML = `<img alt="" src="assets/ui/portraits/${id}.png?v=${DS.VERSION}" onerror="this.onerror=null;this.src='assets/${k.sprite.folder}/right.png?v=${DS.VERSION}';this.className='px'">`;
+    $("#kitWinName").innerHTML = `<b style="color:rgb(${k.color})">${k.name}</b>`;
+    $("#kitWinText").innerHTML = `<span>${k.attack.name} · <b style="color:rgb(${k.color})">${k.ability.name}:</b> ${k.ability.text} <span class="pas">${k.passiveText}</span></span>`;
     openMenu("kitWin");
     syncKits();
   }
@@ -127,41 +128,53 @@
     openMenu(kBack || "cleared");
   }
 
-  // ---------------- the wallpaper's level, in the pause panel: levels already beaten only (src/unlocks.js) ----------------
+  // ---------------- the wallpaper's level, on Robert's art: levels already beaten only (src/unlocks.js) ----------------
+  // ring centres and slots in art px (assets/ui/wallpaper-screen.jpg): Roam is the wide slot, then levels 1-10 of the map
+  const W_RING = [392, 540, 685, 832, 980, 1128], W_RING_Y = 185;
+  const W_SLOT = [[232, 318, 205, 107], [457, 318, 103, 107], [580, 318, 105, 107], [703, 318, 105, 107], [826, 318, 106, 107],
+    [242, 450, 100, 105], [359, 450, 101, 105], [476, 450, 101, 105], [594, 450, 101, 105], [711, 450, 101, 105], [829, 450, 101, 105]];
   let wMap = 0;
-  function openWallPanel() {
+  function openWallMenu() {
     const p = DS.Unlock.wallPick();
     wMap = Math.min(DS.MAPS.length - 1, Math.floor(Math.max(0, p >= 0 ? p : DS.Unlock.beat() - 1) / 10));
-    panel("#wallPanel"); syncWall();
-    const o = opts(), b = o.find((x) => x.classList.contains("sel") && x.dataset.lv != null);
-    focus = Math.max(0, o.indexOf(b || $("#btnWallStart"))); setFocus();
+    openMenu("wallMenu");
+  }
+  function wallSay(html) { $("#wallInfo").innerHTML = `<span>${html}</span>`; } // one span: the bar is a grid
+  function wallDefault() {
+    const beat = Math.min(DS.Unlock.beat(), DS.Unlock.LAST), pick = DS.Unlock.wallPick();
+    wallSay(!beat ? "Beat level 1 to choose here. Until then the wallpaper fights on level 1."
+      : pick < 0 ? `<b>Roam</b> · a different beaten level each time (1 to ${beat})`
+        : `<b style="color:rgb(${DS.MAPS[Math.floor(pick / 10)].c})">Level ${pick + 1}</b> · ${DS.MAPS[Math.floor(pick / 10)].name}`);
   }
   function syncWall() {
     const beat = Math.min(DS.Unlock.beat(), DS.Unlock.LAST), pick = DS.Unlock.wallPick();
     const maps = $("#wallMaps"); maps.innerHTML = "";
     DS.MAPS.forEach((m, i) => {
       const ok = beat > i * 10; // a map shows once one of its levels is beaten
-      const b = el("button", "opt small wmap" + (i === wMap ? " cur" : "") + (ok ? "" : " locked"));
-      b.style.setProperty("--mc", m.c); b.disabled = !ok;
-      b.innerHTML = `<img alt="" src="${DS.Maps.badge(i)}"><span>${ok ? m.short || m.name.replace(/^The /, "") : "???"}</span>`;
-      b.addEventListener("click", () => { wMap = i; syncWall(); });
+      const b = el("button", "opt map" + (i === wMap ? " sel" : "") + (ok ? "" : " locked"));
+      b.style.setProperty("--mc", m.c); b.style.left = W_RING[i] / 1672 * 100 + "%"; b.style.top = W_RING_Y / 941 * 100 + "%";
+      b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}" style="--ex:${m.em[0]};--ey:${m.em[1]}"></span>`;
+      b.addEventListener("click", () => { if (ok) { wMap = i; syncWall(); } });
+      const say = () => wallSay(ok ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}` : "<b>???</b> · Not reached yet.");
+      b.addEventListener("focus", say); b.addEventListener("mouseenter", say);
       maps.appendChild(b);
     });
     const lv = $("#wallLevels"); lv.innerHTML = "";
-    const roam = el("button", "opt small wlv roam" + (pick < 0 ? " sel" : ""), "Roam");
-    roam.dataset.lv = -1; roam.title = "A different beaten level each time the wallpaper starts";
-    roam.addEventListener("click", () => { DS.Unlock.setWallPick(-1); syncWall(); });
-    lv.appendChild(roam);
-    for (let k = 0; k < 10; k++) {
-      const n = wMap * 10 + k, ok = n < beat;
-      const b = el("button", "opt small wlv" + (n === pick ? " sel" : "") + (ok ? "" : " locked"), ok ? String(n + 1) : "🔒");
-      b.dataset.lv = n; b.disabled = !ok; b.title = ok ? "Level " + (n + 1) : "Beat level " + (n + 1) + " first";
-      b.addEventListener("click", () => { DS.Unlock.setWallPick(n); syncWall(); });
+    W_SLOT.forEach(([x, y, w, h], k) => {
+      const n = k === 0 ? -1 : wMap * 10 + k - 1, ok = n < beat, sel = n === pick;
+      const b = el("button", "ks opt wslot" + (k === 0 ? " wide" : "") + (sel ? " sel" : "") + (ok ? "" : " locked"), ok ? (k === 0 ? "Roam" : String(n + 1)) : "");
+      b.style.cssText = `--x:${x};--y:${y};--w:${w};--h:${h}`; b.dataset.lv = n;
+      b.addEventListener("click", () => { if (!ok) return; DS.Unlock.setWallPick(n); syncWall(); });
+      const say = () => wallSay(k === 0 ? (beat ? `<b>Roam</b> · a different beaten level each time (1 to ${beat})` : "<b>Roam</b> · beat level 1 first.")
+        : ok ? `<b>Level ${n + 1}</b> · ${DS.MAPS[wMap].name}` : `<b>Level ${n + 1}</b> · beat it first.`);
+      b.addEventListener("focus", say); b.addEventListener("mouseenter", say);
       lv.appendChild(b);
+    });
+    wallDefault();
+    if (open === "wallMenu") { // keep the focus on the picked slot (the buttons were just rebuilt)
+      const o = opts(), f = o.findIndex((x) => x.classList.contains("wslot") && x.classList.contains("sel"));
+      focus = f >= 0 ? f : Math.max(0, o.indexOf($("#btnWallStart"))); setFocus();
     }
-    $("#wallInfo").innerHTML = !beat ? "Beat level 1 to choose a level here. Until then the wallpaper fights on level 1."
-      : pick < 0 ? `<b>Roam</b> · a different level you have beaten each time it starts (levels 1 to ${beat}).`
-        : `<b style="color:rgb(${DS.MAPS[Math.floor(pick / 10)].c})">Level ${pick + 1}</b> · ${DS.MAPS[Math.floor(pick / 10)].name}. Only knights and familiars you have won fight on it.`;
   }
 
   // ---------------- tester view of the unlocks: your progress / everything open / everything locked ----------------
@@ -170,7 +183,7 @@
     syncKits(); syncFams(); syncMaps();
     if (G.player && !DS.Unlock.kitOpen(G.kit)) DS.switchKit(DS.Unlock.usableKit(G.kit));
     if (!G.wall && G.player) { const f = DS.Fam.picked(); if ((G.fam ? G.fam.id : null) !== f) DS.Fam.set(f, true); }
-    if (!$("#wallPanel").hidden) syncWall();
+    if (open === "wallMenu") syncWall();
     syncToggles();
   }
 
@@ -416,7 +429,7 @@
     };
     $("#kitWinLater").onclick = () => kitWinDone(false);
     $("#kitWinTake").onclick = () => kitWinDone(true);
-    $("#btnWallStart").onclick = () => { panel(null); close(); G.mode = "play"; DS.setWall(true); };
+    $("#btnWallStart").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnUpReset").onclick = (e) => { DS.Loot.resetAll(); flash(e.target); };
     $("#btnWave").onclick = (e) => {
       if (G.scroll) { for (const en of G.enc) if (!en.boss) en.on = true; const p = G.player; p.x = G.bossX - 200; p.y = DS.World.FLOOR - 200; p.vx = p.vy = 0; G.foes = G.foes.filter((f) => f.d.dummy); }
@@ -435,7 +448,8 @@
     $("#btnClearNext").onclick = () => { close(); DS.nextLevel(); G.mode = "play"; };
     $("#btnClearUp").onclick = () => openUpgrades("cleared");
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
-    $("#btnWall").onclick = () => { if ($("#wallPanel").hidden) openWallPanel(); else { panel(null); setFocus(); } }; // pick its level, then start it
+    $("#btnWall").onclick = () => openWallMenu(); // pick its level, then start it
+    for (const b of document.querySelectorAll("#wallMenu .wback")) b.addEventListener("click", () => openMenu("pause"));
     $("#btnSettings").onclick = () => openMenu("settings");
     $("#btnSetControls").onclick = () => openControls("settings");
     for (const t of document.querySelectorAll("#controls .ctab")) t.addEventListener("click", () => { ctlTab = t.dataset.tab; syncControls(); });
@@ -447,11 +461,10 @@
   }
   // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
   function panel(sel) {
-    for (const id of ["#codePad", "#wallPanel"]) $(id).hidden = id !== sel;
-    $("#devTools").hidden = !DS.TESTER || !!sel; // the tester tools step aside while the keypad or wallpaper picker is open
+    for (const id of ["#codePad"]) $(id).hidden = id !== sel;
     syncPanel();
   }
-  function syncPanel() { $("#pPanel").hidden = ["#codePad", "#wallPanel", "#devTools"].every((id) => $(id).hidden); }
+  function syncPanel() { $("#pPanel").hidden = ["#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -491,7 +504,7 @@
     refreshUnlocks(); // a tester's view of the unlocks ends with the tools
   }
   function syncToggles() {
-    $("#devTools").hidden = !DS.TESTER || !$("#codePad").hidden || !$("#wallPanel").hidden; syncPanel();
+    $("#devTools").hidden = !DS.TESTER; syncPanel();
     $("#btnUnlocks").textContent = "Unlocks: " + UNLOCK_NAMES[DS.Unlock.mode()];
     $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
@@ -504,10 +517,11 @@
   function flash(b) { b.classList.add("done"); setTimeout(() => b.classList.remove("done"), 300); }
 
   function openMenu(name) {
-    const over = name === "confirm" || name === "kitWin"; // a pop-up sits over its menu
+    const over = name === "confirm"; // a pop-up sits over its menu
     for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name && !(over && m.id === open);
     open = name; focus = 0;
     if (name === "pause") { panel(null); syncToggles(); }
+    if (name === "wallMenu") syncWall(); // (it puts the focus on the picked slot)
     if (name === "famWin") buildFamWin();
     if (name === "upgrades") buildUpgrades();
     if (name === "journalMenu") { buildJournal(); syncJournal(); }
@@ -566,7 +580,7 @@
       if (open === "controls") { openMenu(ctlBack); return; }
       if (open === "confirm") { openMenu(cBack || "pause"); return; }
       if (open === "kitWin") { kitWinDone(false); return; }
-      if (open === "pause" && !$("#wallPanel").hidden) { panel(null); setFocus(); return; } // back closes the wallpaper picker first
+      if (open === "wallMenu") { openMenu("pause"); return; }
       if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
