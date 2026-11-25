@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.13.2">
+<link rel="stylesheet" href="style.css?v=0.14.0">
 </head>
 <body>
 <!--BODY-->
@@ -100,6 +100,16 @@
   </div>
 </section>
 
+<section id="kitWin" class="menu confirm" hidden>
+  <!-- a map's last boss wins a knight: shown over the Level cleared screen. A stand-in on the pop-up art until Robert's
+       own "new knight" art (prompts: art-prompts/ui/unlock-prompts.md) -->
+  <div class="cstage">
+    <div id="kitWinBody" class="ks kwbody" style="--x:200;--y:282;--w:1030;--h:156"></div>
+    <button id="kitWinLater" class="ks opt ubtn" style="--x:212;--y:532;--w:452;--h:122">Later</button>
+    <button id="kitWinTake" class="ks opt ubtn teal" style="--x:762;--y:532;--w:456;--h:122">Take them up</button>
+  </div>
+</section>
+
 <section id="confirm" class="menu confirm" hidden>
   <!-- Robert's pop-up (assets/ui/confirm.webp, 1430 x 875 art px), shown over the menu that asked -->
   <div class="cstage">
@@ -174,6 +184,14 @@
         <p id="codeShow" class="codeShow">Enter the tester code</p>
         <div class="row2 keyRow"></div>
       </div>
+      <!-- the wallpaper's level (Robert 2026-11-25): only levels already beaten (src/unlocks.js) -->
+      <div id="wallPanel" class="wallPanel" hidden>
+        <h2>Wallpaper</h2>
+        <p id="wallInfo" class="wallInfo"></p>
+        <div id="wallMaps" class="wallMaps"></div>
+        <div id="wallLevels" class="wallGrid"></div>
+        <button id="btnWallStart" class="opt wallGo">Start the wallpaper</button>
+      </div>
       <div id="devTools" hidden>
         <h2>Spawn the Drowned</h2>
         <div id="spawnRow" class="row2"></div>
@@ -185,9 +203,8 @@
           <button id="btnGod" class="opt small">God mode</button>
           <button id="btnBoxes" class="opt small">Hitboxes</button>
           <button id="btnGrow" class="opt small">Grow familiar</button>
-          <button id="btnWinFams" class="opt small">Unlock all familiars</button>
+          <button id="btnUnlocks" class="opt small">Unlocks: your progress</button>
           <button id="btnRich" class="opt small">Give 500 of each currency</button>
-          <button id="btnMaps" class="opt small">Open all maps</button>
           <button id="btnUpReset" class="opt small">Reset upgrades</button>
         </div>
       </div>
@@ -197,23 +214,24 @@
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.13.2"></script>
-<script src="src/pixscale.js?v=0.13.2"></script>
-<script src="src/sprites.js?v=0.13.2"></script>
-<script src="src/input.js?v=0.13.2"></script>
-<script src="src/scenery.js?v=0.13.2"></script>
-<script src="src/world.js?v=0.13.2"></script>
-<script src="src/game.js?v=0.13.2"></script>
-<script src="src/kits.js?v=0.13.2"></script>
-<script src="src/bosses.js?v=0.13.2"></script>
-<script src="src/familiars.js?v=0.13.2"></script>
-<script src="src/pickart.js?v=0.13.2"></script>
-<script src="src/explore.js?v=0.13.2"></script>
-<script src="src/lootart.js?v=0.13.2"></script>
-<script src="src/loot.js?v=0.13.2"></script>
-<script src="src/maps.js?v=0.13.2"></script>
-<script src="src/render.js?v=0.13.2"></script>
-<script src="src/ui.js?v=0.13.2"></script>
+<script src="src/data.js?v=0.14.0"></script>
+<script src="src/unlocks.js?v=0.14.0"></script>
+<script src="src/pixscale.js?v=0.14.0"></script>
+<script src="src/sprites.js?v=0.14.0"></script>
+<script src="src/input.js?v=0.14.0"></script>
+<script src="src/scenery.js?v=0.14.0"></script>
+<script src="src/world.js?v=0.14.0"></script>
+<script src="src/game.js?v=0.14.0"></script>
+<script src="src/kits.js?v=0.14.0"></script>
+<script src="src/bosses.js?v=0.14.0"></script>
+<script src="src/familiars.js?v=0.14.0"></script>
+<script src="src/pickart.js?v=0.14.0"></script>
+<script src="src/explore.js?v=0.14.0"></script>
+<script src="src/lootart.js?v=0.14.0"></script>
+<script src="src/loot.js?v=0.14.0"></script>
+<script src="src/maps.js?v=0.14.0"></script>
+<script src="src/render.js?v=0.14.0"></script>
+<script src="src/ui.js?v=0.14.0"></script>
 <script>DS.boot();</script>
 </body>
 </html>

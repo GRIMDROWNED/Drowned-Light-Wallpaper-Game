@@ -19,12 +19,13 @@
   const def = () => (G.fam ? DS.FAMILIARS[G.fam.id] : null);
   const form = (f = G.fam) => DS.FAMILIARS[f.id].forms[f.form];
   F.def = def; F.form = () => (G.fam ? form() : null);
-  F.picked = () => pick;
+  F.picked = () => (pick && F.won(pick) ? pick : null); // (a tester's "all locked" view hides it without forgetting it)
 
   // ---------------- choosing ----------------
   F.set = function (id, keep) {
     id = id && DS.FAMILIARS[id] ? id : null;
     if (!keep) { pick = id; try { localStorage.setItem("dl-side-fam", id || ""); } catch (e) { /* storage blocked */ } } // (the wallpaper's random ones aren't kept)
+    if (id && !F.won(id)) id = null; // never one still to be won
     G.famWalls = []; G.caps = [];
     if (!id) { G.fam = null; return; }
     for (const fm of DS.FAMILIARS[id].forms) S.loadSet(fm.sprite);
@@ -37,10 +38,11 @@
 
   // ---------------- winning them (Robert 2026-11-20) ----------------
   // Every map is 10 levels; the boss of each map's level 5 lets the player choose one familiar to win, for good (kept on
-  // this device). Until won, a familiar stays a secret "???" in the pickers. The wallpaper still shows them all.
+  // this device). Until won, a familiar stays a secret "???" in the pickers, and the wallpaper leaves it out too.
+  // A tester can view them all won or all locked (src/unlocks.js) without changing what is saved.
   let won = new Set();
-  F.won = (id) => won.has(id);
-  F.locked = () => DS.FAM_ORDER.filter((id) => !won.has(id));
+  F.won = (id) => { const t = DS.Unlock.mode(); return t === "all" ? !!DS.FAMILIARS[id] : t === "none" ? false : won.has(id); };
+  F.locked = () => DS.FAM_ORDER.filter((id) => !F.won(id));
   F.win = function (id) {
     if (!DS.FAMILIARS[id]) return;
     won.add(id);

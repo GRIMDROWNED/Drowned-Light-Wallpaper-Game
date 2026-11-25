@@ -499,7 +499,7 @@
   function loadLevel(n) {
     G.level = n; G.tok++; DS.Loot.clear();
     if (!G.auto && !G.wall) DS.Maps.reached(n); // opens maps on the map select
-    G.checkpoint = 300; G.clearT = 0; G.famReward = 0;
+    G.checkpoint = 300; G.clearT = 0; G.famReward = 0; G.kitReward = null;
     G.lv = { t: 0, kills: 0, deaths: 0, best: 0, gold: DS.Loot.have("gold"), bag: {} }; // for the level-cleared screen
     G.foes = G.foes.filter((f) => f.d.dummy); G.shots = []; G.zones = [];
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
@@ -551,12 +551,20 @@
       for (const f of G.foes) if (!f.dead && !f.d.dummy) kill(f);
       G.clearT = 3.5; G.banner = { txt: "Level " + (G.level + 1) + " cleared", t: 0 };
       DS.Loot.onClear(G.level);
+      if (!G.wall) { // a played clear: the level counts as beaten (src/unlocks.js); a map's last boss wins a knight
+        G.kitReward = DS.Unlock.kitFor(G.level);
+        DS.Unlock.cleared(G.level);
+      }
       if (!G.wall && DS.Fam.rewardLevel(G.level)) G.famReward = 1.6; // a familiar to choose, once the dust settles
     }
     if (G.famReward > 0 && (G.famReward -= dt) <= 0) { G.famReward = 0; DS.UI.open("famWin"); return; }
     if (G.clearT > 0) {
       G.clearT -= dt;
-      if (G.clearT <= 0) { if (G.wall || G.auto) nextLevel(); else DS.UI.open("cleared"); } // the cleared screen's button calls DS.nextLevel
+      if (G.clearT <= 0) {
+        const won = G.kitReward; G.kitReward = null;
+        if (G.wall || G.auto) { nextLevel(); if (won) G.banner = { txt: "A new knight: " + DS.KITS[won].name, t: 0 }; }
+        else { DS.UI.open("cleared"); if (won) DS.UI.kitWin(won); } // the cleared screen's button calls DS.nextLevel
+      }
     }
   }
   function nextLevel() { loadLevel(G.level + 1); const pl = G.player; pl.x = G.checkpoint; pl.y = Wd.FLOOR - 200; pl.vx = pl.vy = 0; G.cam.x = pl.x - DS.Render.vw / 2; }
@@ -626,26 +634,27 @@
   // ---------------- wallpaper ----------------
   // ?wallpaper (for wallpaper apps) or the pause-menu button: no HUD or buttons, the knight fights on forever
   // through the endless level, and a different knight takes over every WALL_SWAP seconds and after each fall.
+  // Only what the player has unlocked shows (Robert 2026-11-25): won knights and familiars, on a level already beaten.
   const WALL_SWAP = 75;
   // a shuffled bag: every knight takes a turn before any comes round again, and never the same one twice running
   let bag = [];
   function nextWallKnight() {
     if (!bag.length) {
-      bag = DS.KIT_ORDER.slice();
+      bag = DS.Unlock.kits();
       for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
       if (bag[bag.length - 1] === G.kit) bag.unshift(bag.pop());
     }
     const id = bag.pop();
     DS.switchKit(id); G.wallT = 0;
     // each knight brings a familiar along (or none, now and then); it grows as the knight fights on
-    const fams = DS.FAM_ORDER.concat([null]), fam = fams[Math.floor(Math.random() * fams.length)];
+    const fams = DS.FAM_ORDER.filter(DS.Fam.won).concat([null]), fam = fams[Math.floor(Math.random() * fams.length)];
     DS.Fam.set(fam, true);
     G.banner = { txt: DS.KITS[id].name, t: 0 };
   }
   function setWall(on) {
     G.wall = on; G.wallT = 0; document.body.classList.toggle("wall", on);
-    if (on) { G.scroll = true; bag = []; G.kit = null; nextWallKnight(); G.auto = true; restart(); }
-    else { DS.Loot.flush(); setAuto(innerHeight > innerWidth); DS.Fam.set(DS.Fam.picked()); } // hand over what it gathered
+    if (on) { DS.Maps.wallStart(); G.scroll = true; bag = []; G.kit = null; nextWallKnight(); G.auto = true; restart(); }
+    else { DS.START_LEVEL = DS.Maps.playStart(); DS.Loot.flush(); setAuto(innerHeight > innerWidth); DS.Fam.set(DS.Fam.picked()); } // hand over what it gathered
   }
   Object.assign(DS, { setWall });
 
@@ -688,6 +697,7 @@
   }
 
   function start(kitId) {
+    kitId = DS.Unlock.usableKit(kitId); // never a knight still to be won
     G.kit = kitId;
     G.player = newPlayer(kitId);
     G.cam.x = G.player.x - DS.Render.vw / 2;
@@ -703,6 +713,7 @@
     start(G.kit);
   }
   function switchKit(kitId) {
+    if (!DS.Unlock.kitOpen(kitId)) return;
     const old = G.player;
     G.kit = kitId;
     G.player = newPlayer(kitId);
@@ -727,7 +738,7 @@
     for (const id of DS.ENEMY_ORDER) if (!DS.ENEMIES[id].minion) DS.Sprites.loadSet(DS.ENEMIES[id].sprite); // minions load with their level
     DS.Sprites.loadSet(DS.KING_BODY);
     DS.Fam.load();
-    if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); DS.Maps.wallStart(); setWall(true); }
+    if (/[?&]wallpaper/.test(location.search) || /wallpaper\.html$/.test(location.pathname)) { G.wallLocked = true; DS.UI.close(); setWall(true); }
     requestAnimationFrame(frame);
   };
   DS.step = step; // for tests

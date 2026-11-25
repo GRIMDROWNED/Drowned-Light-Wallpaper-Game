@@ -384,3 +384,32 @@ button.khint.resume:hover { color: #fff; }
 .tb.ab { background-image: url("assets/ui/hud/btnCrimson.png"); }
 .tb.fl { background-image: url("assets/ui/hud/btnEmber.png"); }
 .tb.on { background-color: transparent; filter: brightness(1.35) drop-shadow(0 0 8px rgba(255, 220, 140, 0.8)); }
+
+/* ---------- locks (2026-11-25): knights still to win, the new-knight pop-up, the wallpaper level picker ---------- */
+.kgrid .kit.locked .por img { filter: brightness(0) drop-shadow(0 0 calc(4 * var(--u)) rgba(160, 200, 210, 0.45)); }
+.kgrid .kit.locked b { color: #a49d8c; filter: none; }
+.kgrid .kit.locked .tag { color: #c9bfa8; }
+.kgrid .kit.locked .row { color: #a49d8c; }
+.kgrid .kit.locked:is(:hover, .focus, :focus-visible) { background: rgba(255, 235, 190, 0.08); }
+.ks.kwbody { display: flex; gap: calc(24 * var(--u)); align-items: center; padding: 0 calc(14 * var(--u)); overflow: hidden; }
+.kwpic { flex: 0 0 calc(120 * var(--u)); height: calc(146 * var(--u)); overflow: hidden; border-radius: calc(14 * var(--u));
+  display: grid; place-items: center; background: radial-gradient(closest-side, rgba(var(--kc), 0.45), transparent); }
+.kwpic img { width: 100%; height: 100%; object-fit: cover; object-position: top; filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(var(--kc), 0.8)); }
+.kwpic img.px { width: auto; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.kwtext { display: flex; flex-direction: column; gap: calc(4 * var(--u)); min-width: 0; text-shadow: 0 1px 2px #000; }
+.kwtext small { font: 600 max(8px, calc(24 * var(--u))) var(--body); color: #e6dcc4; }
+.kwtext b { font: 700 max(12px, calc(46 * var(--u)))/1 var(--display); }
+.kwtext span { font: 600 max(7.5px, calc(22 * var(--u)))/1.2 var(--body); color: #efe6d2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.kwtext span i { font-style: normal; }
+.wallInfo { margin: 0 0 10px; color: var(--text); min-height: 2.4em; }
+.wallMaps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.menu button.opt.wmap { display: flex; align-items: center; gap: 6px; justify-content: flex-start; }
+.wmap img { height: 26px; width: 26px; object-fit: contain; }
+.wmap.locked img { filter: brightness(0.15) saturate(0); }
+.menu button.opt.wmap.cur { border-color: rgb(var(--mc)); box-shadow: inset 0 0 0 1px rgb(var(--mc)); color: #fff; }
+.wallGrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
+.menu button.opt.wlv { justify-content: center; text-align: center; min-width: 0; }
+.wlv.roam { grid-column: span 1; }
+.menu button.opt.wlv.sel { border-color: #f0c46a; box-shadow: inset 0 0 0 1px #f0c46a; color: #fff; background: rgba(120, 90, 30, 0.6); }
+.menu button.opt:disabled { opacity: 0.45; cursor: default; }
+.menu button.opt.wallGo { width: 100%; justify-content: center; }
