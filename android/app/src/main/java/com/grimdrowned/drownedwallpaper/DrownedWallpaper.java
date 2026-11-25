@@ -52,6 +52,10 @@ public class DrownedWallpaper extends WallpaperService {
         if (p.endsWith(".js")) return "application/javascript";
         if (p.endsWith(".png")) return "image/png";
         if (p.endsWith(".json")) return "application/json";
+        if (p.endsWith(".jpg") || p.endsWith(".jpeg")) return "image/jpeg";
+        if (p.endsWith(".webp")) return "image/webp";
+        if (p.endsWith(".svg")) return "image/svg+xml";
+        if (p.endsWith(".woff2")) return "font/woff2";
         return "application/octet-stream";
     }
 
