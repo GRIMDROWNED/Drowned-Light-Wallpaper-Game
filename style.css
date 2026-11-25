@@ -288,7 +288,7 @@ button.khint.resume:hover { color: #fff; }
   left: calc((var(--i) * 202.2 + 5) * var(--u)); width: calc(184 * var(--u)); border-radius: calc(14 * var(--u)) calc(14 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)); }
 .fwcard .fwpic { position: absolute; left: calc(29 * var(--u)); top: calc(66 * var(--u)); width: calc(126 * var(--u)); height: calc(126 * var(--u));
   border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: radial-gradient(closest-side, rgba(var(--fc), 0.35), transparent); }
-.fwcard .fwpic img { width: 80%; height: 74%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(var(--fc), 0.7)); }
+.fwcard .fwpic img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(var(--fc), 0.7)); }
 .fwcard > b { position: absolute; left: calc(12 * var(--u)); right: calc(12 * var(--u)); top: calc(222 * var(--u)); text-align: center;
   font: 700 max(9px, calc(21 * var(--u))) var(--display); color: rgb(var(--fc)); text-shadow: 0 1px 2px #000, 0 0 calc(6 * var(--u)) #000; }
 .fwcard .fwtext { position: absolute; left: calc(18 * var(--u)); right: calc(18 * var(--u)); top: calc(258 * var(--u)); bottom: calc(34 * var(--u)); overflow: hidden;

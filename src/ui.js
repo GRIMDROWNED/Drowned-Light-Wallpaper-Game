@@ -86,7 +86,7 @@
       const d = DS.FAMILIARS[id], have = DS.Fam.won(id);
       const b = el("button", "opt fwcard" + (have ? " have" : ""));
       b.style.setProperty("--i", i); b.style.setProperty("--fc", d.color); b.disabled = have;
-      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
+      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/ui/portraits/fam-${id}.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
       b.addEventListener("click", () => {
         if (have) return;
         DS.Fam.win(id); DS.Fam.set(id);
