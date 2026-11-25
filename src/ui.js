@@ -77,24 +77,68 @@
     for (const b of document.querySelectorAll(".fam")) { famButton(b); b.classList.toggle("sel", (b.dataset.fam || null) === (cur || null)); }
     showFamText(cur);
   }
-  // after a map's level 5 boss: the familiars still to win, one to choose
+  // after a map's level 5 boss: Robert's shrine art has a card per familiar (DS.FAM_ORDER, frame colours bone, grey,
+  // gold, blue, green, red); the ones still to win can be chosen, the ones you have are dimmed
   function buildFamWin() {
     const row = $("#famWinRow"); row.innerHTML = "";
-    for (const id of DS.Fam.locked()) {
-      const d = DS.FAMILIARS[id];
-      const b = el("button", "opt famCard");
-      b.style.setProperty("--fc", d.color);
-      b.innerHTML = `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"><b>${d.name}</b><span>${d.text}</span>`;
+    const say = (d) => { $("#famWinText").innerHTML = `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} <span class="pas">Forms: ${d.forms.map((f) => f.name).join(" → ")}</span>`; };
+    DS.FAM_ORDER.forEach((id, i) => {
+      const d = DS.FAMILIARS[id], have = DS.Fam.won(id);
+      const b = el("button", "opt fwcard" + (have ? " have" : ""));
+      b.style.setProperty("--i", i); b.style.setProperty("--fc", d.color); b.disabled = have;
+      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
       b.addEventListener("click", () => {
+        if (have) return;
         DS.Fam.win(id); DS.Fam.set(id);
         close(); G.mode = "play";
         G.banner = { txt: d.name + " joins you", t: 0 };
       });
-      b.addEventListener("focus", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
-      b.addEventListener("mouseenter", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
+      b.addEventListener("focus", () => say(d));
+      b.addEventListener("mouseenter", () => say(d));
       row.appendChild(b);
-    }
-    $("#famWinText").textContent = "";
+    });
+    $("#famWinText").textContent = "Choose well: the others wait for the next map's fifth level.";
+  }
+
+  // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
+  // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
+  const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
+  const J_TAB = [200, 272, 348, 426, 502, 580], J_TABC = ["224,165,60", "60,170,165", "200,50,60", "150,70,190", "230,120,30", "215,80,130"];
+  const J_PER_MAP = 30, J_SPREADS = J_PER_MAP / 6; // 10 levels x 3 pages
+  let jMap = 0, jSpread = 0;
+  function buildJournal() {
+    const tabs = $("#jTabs"); tabs.innerHTML = "";
+    DS.MAPS.forEach((m, i) => {
+      const t = el("button", "opt jtab");
+      t.style.setProperty("--t", J_TAB[i] - 176); t.style.setProperty("--tc", J_TABC[i]);
+      const ok = DS.Maps.open(i);
+      t.disabled = !ok; t.textContent = ok ? (m.short || m.name.replace(/^The /, "")) : "???";
+      t.title = ok ? m.name : "Not reached yet";
+      t.addEventListener("click", () => { if (ok) { jMap = i; jSpread = 0; syncJournal(); } });
+      tabs.appendChild(t);
+    });
+    $("#jPrev").onclick = () => { if (jSpread > 0) { jSpread--; syncJournal(); } };
+    $("#jNext").onclick = () => { if (jSpread < J_SPREADS - 1) { jSpread++; syncJournal(); } };
+  }
+  function syncJournal() {
+    const have = new Set(DS.Explore.pages()), box = $("#jEntries"); box.innerHTML = "";
+    J_BOX.forEach(([x, y, w, h], k) => {
+      const n = jSpread * 6 + k, lv = jMap * 10 + Math.floor(n / 3), pg = n % 3, key = lv + ":" + pg, got = have.has(key);
+      const e = el("div", "jentry" + (got ? "" : " missing"));
+      e.style.cssText = `--l:${x - 550};--t:${y - 185};--bw:${w};--bh:${h}`;
+      e.innerHTML = `<b>Level ${lv + 1} · page ${pg + 1}</b>` + (got ? `<span>“${DS.Explore.pageText(key)}”</span>` : "<span>Not found yet. Look up on the high planks and deep in the mist.</span>");
+      box.appendChild(e);
+    });
+    document.querySelectorAll("#jTabs .jtab").forEach((t, i) => t.classList.toggle("cur", i === jMap));
+    $("#jPrev").disabled = jSpread === 0; $("#jNext").disabled = jSpread === J_SPREADS - 1;
+    const m = DS.MAPS[jMap], found = [...have].filter((k) => Math.floor(+k.split(":")[0] / 10) === jMap).length;
+    $("#jPage").innerHTML = `<b style="color:rgb(${m.c})">${m.name}</b> · ${found} of ${J_PER_MAP} pages found`;
+    $("#jSpread").textContent = `Levels ${jMap * 10 + jSpread * 2 + 1} and ${jMap * 10 + jSpread * 2 + 2}`;
+  }
+  function openJournal() {
+    const lv = G.level | 0; jMap = Math.min(DS.MAPS.length - 1, Math.floor(lv / 10));
+    jSpread = Math.floor(((lv % 10) * 3) / 6);
+    openMenu("journalMenu");
   }
 
   // ---------------- the map select: Robert's spiked badges (src/maps.js) ----------------
@@ -221,24 +265,17 @@
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
     $("#btnHelp").onclick = () => panel($("#help").hidden ? "#help" : null);
-    $("#btnJournal").onclick = () => { // Drowned pages found so far, in level order (src/explore.js)
-      const j = $("#journal"), X = DS.Explore;
-      if (!j.hidden) { panel(null); return; }
-      const list = X.pages().sort((a, b) => { const [la, ia] = a.split(":").map(Number), [lb, ib] = b.split(":").map(Number); return la - lb || ia - ib; });
-      j.innerHTML = list.length ? list.map((k) => `<p><b>Level ${+k.split(":")[0] + 1}</b>${X.pageText(k)}</p>`).join("")
-        : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
-      panel("#journal");
-    };
+    $("#btnJournal").onclick = () => openJournal(); // Drowned pages found so far (src/explore.js)
     for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
     syncToggles();
   }
   // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
   function panel(sel) {
-    for (const id of ["#journal", "#help", "#codePad"]) $(id).hidden = id !== sel;
+    for (const id of ["#help", "#codePad"]) $(id).hidden = id !== sel;
     syncPanel();
   }
-  function syncPanel() { $("#pPanel").hidden = ["#journal", "#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
+  function syncPanel() { $("#pPanel").hidden = ["#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -295,6 +332,7 @@
     if (name === "pause") syncToggles();
     if (name === "famWin") buildFamWin();
     if (name === "upgrades") buildUpgrades();
+    if (name === "journalMenu") { buildJournal(); syncJournal(); }
     if (name === "kits") syncMaps();
     syncFams();
     if (G.mode === "play") G.mode = "menu";
@@ -309,7 +347,7 @@
     for (const m of document.querySelectorAll(".menu")) m.hidden = true;
     open = null;
   }
-  function opts() { return open ? [...document.querySelectorAll(`#${open} .opt`)].filter((b) => b.offsetParent) : []; }
+  function opts() { return open ? [...document.querySelectorAll(`#${open} .opt`)].filter((b) => b.offsetParent && !b.disabled) : []; }
   function setFocus() {
     const o = opts(); if (!o.length) return;
     focus = Math.max(0, Math.min(o.length - 1, focus));
@@ -342,6 +380,7 @@
       if (open === "kits" && G.mode === "title") return;
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
+      if (open === "journalMenu") { openMenu("pause"); return; }
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
     }
