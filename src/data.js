@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.12.9";
+  DS.VERSION = "0.13.1";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
@@ -210,6 +210,15 @@
     "furnace-hydra": boss("furnace-hydra", { idle: ["side/hurt"], run: ["side/hurt"], jump: ["side/rise"], fall: ["side/rise"], death: ["side/dying"] },
       ["breath", "lob", "strike", "strikeUp", "roar", "hurt", "cut1", "cut2", "regrow", "sink", "rise"],
       { name: "Furnace Hydra", title: "The Furnace Hydra", fallen: "THE HYDRA SINKS INTO THE LAVA", hp: 1900, speed: 0, dmg: 24, reach: 250, windup: 0.6, cd: 0.9, w: 140, h: 120 }),
+    "cinder-colossus": boss("cinder-colossus", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], hurt: ["side/hurt"], death: ["side/death"] },
+      ["chainWind", "chain", "poundUp", "pound", "towerFire", "stun", "stomp", "crouch", "jump", "fall", "land", "knock"],
+      { name: "Cinder Colossus", title: "The Cinder Colossus", fallen: "THE BASTION FALLS", hp: 2000, speed: 90, dmg: 24, reach: 160, windup: 0.6, cd: 1.0, w: 110, h: 125 }),
+    "ashen-sovereign": boss("ashen-sovereign", { idle: ["right"], jump: ["side/leap"], fall: ["side/plunge"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], hurt: ["side/hurt"], death: ["side/death"] },
+      ["sweepWind", "sweep", "thrust", "pillar", "cloak", "stun", "crouch", "leap", "apex", "plunge", "land", "knock"],
+      { name: "Ashen Sovereign", title: "The Ashen Sovereign", fallen: "THE ASHEN CROWN FALLS", hp: 2100, speed: 135, dmg: 25, reach: 200, windup: 0.6, cd: 0.9, w: 70, h: 125 }),
+    "sunken-king": boss("sunken-king", { idle: ["side/raised"], run: ["side/raised"], jump: ["side/raised"], fall: ["side/raised"], hurt: ["side/rest"], death: ["side/rest"] },
+      ["raised", "slam", "sweep", "grab", "rest", "rise"],
+      { name: "The Sunken King", title: "The Sunken King", fallen: "THE SUNKEN KING SINKS AT LAST", hp: 3000, speed: 0, dmg: 26, reach: 120, windup: 0.8, cd: 0.9, w: 150, h: 80, back: "KING_BODY" }),
   };
   /* The bosses' minions (Robert 2026-11-24): they guard the Mist Wells of the levels before their boss (src/explore.js,
      DS.GUARDS). Art = the main game's minion sprites shrunk by tools/pixelize.py. Each borrows one of the side view's AIs. */
@@ -232,8 +241,13 @@
     warden: minion("warden", { name: "Throne Warden", ai: "shield", hp: 120, speed: 75, dmg: 15, reach: 90, windup: 0.6, cd: 1.6, w: 40, h: 96, lunge: 280, shield: 0.25, poise: true }),
     wretch: minion("wretch", { name: "Molten Wretch", ai: "walker", hp: 28, speed: 170, dmg: 7, reach: 52, windup: 0.32, cd: 1.0, w: 42, h: 52, jumpy: true }),
     ashguard: minion("ashguard", { name: "Ash Guard", ai: "shield", hp: 150, speed: 55, dmg: 18, reach: 80, windup: 0.8, cd: 2.0, w: 60, h: 80, shield: 0.2, poise: true }),
+    tidestalker: minion("tidestalker", { name: "Tide Stalker", ai: "walker", hp: 30, speed: 165, dmg: 8, reach: 54, windup: 0.3, cd: 0.9, w: 44, h: 52, jumpy: true }),
+    wisp: minion("wisp", { name: "Sunken Wisp", ai: "caster", hp: 60, speed: 80, dmg: 10, reach: 500, keep: 280, windup: 0.7, cd: 2.2, w: 40, h: 84, orb: 240 }),
+    tideleech: minion("tideleech", { name: "Tide Leech", ai: "leaper", hp: 90, speed: 110, dmg: 14, reach: 220, windup: 0.5, cd: 1.8, w: 70, h: 50, leap: [440, -300], poise: true }),
     acolyte: minion("acolyte", { name: "Cinder Acolyte", ai: "caster", hp: 55, speed: 90, dmg: 12, reach: 500, keep: 260, windup: 0.6, cd: 2.4, w: 40, h: 72, orb: 230 }),
   });
+  // the Sunken King's body, drawn huge behind the hall (src/render.js drawBack)
+  DS.KING_BODY = { folder: "drowned/sunken-king-body", still: ["fnKingStill"], open: ["fnKingOpen"], roar: ["fnKingRoar"], dying: ["fnKingDying"] };
   DS.ENEMY_ORDER = Object.keys(DS.ENEMIES);
 
   // Which boss ends level n (0-based). Robert 2026-11-20: a map is 10 levels; its level 5 boss lets you choose a familiar,
@@ -247,14 +261,17 @@
     champion: ["defiler", "hexbearer", "blackguard"], "drowned-colossus": ["cairn", "servitor", "siltfist"],
     "mother-wyvern": ["drakeling", "screecher", "raptor"], "crucible-wyrm": MINES, "starved-bell": ["skitterer", "tollwretch", "leech"],
     "deadly-rose": ["thornling", "rosewretch", "handmaiden"], "seething-seraph": MINES, "rift-throne": ["mite", "swisp", "warden"],
-    "magma-golem": MINES, "furnace-hydra": MINES,
+    "magma-golem": MINES, "furnace-hydra": MINES, "cinder-colossus": MINES, "ashen-sovereign": MINES,
+    "sunken-king": ["tidestalker", "wisp", "tideleech"],
   };
   DS.nextBoss = function (n) { // the next map boss (level 5 or 10 of the map), whether it is built yet or not
+    if (n > 0 && n % 60 === 0) return "sunken-king";
     const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length];
     return m[n % 10 <= 4 ? 0 : 1];
   };
   DS.bossFor = function (n) {
     const m = DS.MAP_BOSSES[Math.floor(n / 10) % DS.MAP_BOSSES.length], at = n % 10;
+    if (n > 0 && n % 60 === 0) return "sunken-king"; // the finale: level 61 (and every loop after)
     const t = at === 4 ? m[0] : at === 9 ? m[1] : "champion";
     return DS.ENEMIES[t] ? t : "champion";
   };

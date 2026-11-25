@@ -1,7 +1,8 @@
 /* The later levels' bosses, ported from the main game (Robert 2026-11-18/20): the Drowned Colossus (map 1, level 5),
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
    The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35), the Lord of the Rift Throne (level 40), the Magma Golem (map 5, level 45)
-   and the Furnace Hydra (level 50). DS.bossFor in data.js puts them at the
+   and the Furnace Hydra (level 50), the Cinder Colossus (map 6, level 55), the Ashen Sovereign (level 60) and the
+   Sunken King (the finale, level 61). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -37,6 +38,7 @@
   function start(e, move, wind) { e.move = move; e.wind = wind; e.state = "windup"; e.st = 0; e.vx *= 0.2; e.boss.count = (e.boss.count || 0) + 1; }
   const pick = (list) => { let r = Math.random() * list.reduce((a, b) => a + b[1], 0); for (const [m, w] of list) if ((r -= w) <= 0) return m; return list[0][0]; };
   const groundY = (x, y) => Wd.surfaceBelow(x, y - 2);
+  const camL = () => G.cam.x, camR = () => G.cam.x + DS.Render.vw; // the screen's edges in the world
   // a falling boulder with a warning mark on the ground first
   function rock(e, x, delay, dmg, landed) {
     const p = G.player, gy = groundY(x, p.y - 40);
@@ -49,10 +51,10 @@
   }
 
   // a pool of burning lava on the ground that stays for `life` seconds (hurts on touch; the knight's i-frames space it)
-  function pool(e, x, dmg, life) {
+  function pool(e, x, dmg, life, r = 42, delay = 0) {
     const gy = groundY(x, e.y - 40);
-    if (Math.abs(gy - e.y) > 80) return;
-    G.shots.push({ team: "f", kind: "pool", x, y: gy - 8, vx: 0, vy: 0, r: 42, h: 16, dmg: Math.round(dmg), life, life0: life, ghost: true, stay: true, src: e, by: e.d.name });
+    if (Math.abs(gy - e.y) > 80) return; // only on the boss's own floor: ledges stay safe
+    G.shots.push({ team: "f", kind: "pool", x, y: gy - 8, vx: 0, vy: 0, r, h: 16, dmg: Math.round(dmg), life, life0: life, ghost: true, stay: true, src: e, by: e.d.name, delay, warn: delay ? gy : 0 });
   }
 
   // ---------------- the Drowned Colossus (map 1, level 5: wins a familiar) ----------------
@@ -787,6 +789,265 @@
       if (e.state === "strike") return m === "sink" ? (b.rose ? "rise" : "sink") : { breath: "breath", lob: "lob", strike: "strike", strikeUp: "strikeUp", roar: "roar" }[m];
       if (e.state === "recover") return { breath: "breath", lob: "lob", strike: "strike", strikeUp: "strikeUp", roar: "roar", sink: "rise" }[m];
       return null;
+    },
+  };
+
+  // ---------------- the Cinder Colossus (map 6, level 55: wins a familiar) ----------------
+  // A walking bastion. Chain Fist: the fist flies out on its chain; it only hits at the END of the chain, so the safe
+  // place is right up against it. Brand: both fists pound and, after a glow, the floor around the knight burns
+  // (get up on a ledge). Tower Fire: each tower on its back lobs fire that burns where it lands. Bastion Drop: it
+  // jumps out of sight, its shadow hunts the knight, then it crashes down. Its towers break off at 2/3 and 1/3
+  // health: fewer fire lobs, but it moves faster with every one lost.
+  AI["cinder-colossus"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Colossus's chains glow white");
+      e.dir = Math.sign(dx) || e.dir;
+      const b = e.boss; if (b.towers == null) b.towers = 2;
+      if (e.cd <= 0) {
+        let m;
+        if (b.next) { m = b.next; b.next = null; }
+        else m = b.count % 5 === 4 ? "drop"
+          : adx < 110 ? pick([["pound", 4], ["drop", 1]])
+          : adx < 460 ? pick([["chain", 5], ["pound", 2], ["towers", b.towers ? 2 : 0]])
+          : pick([["towers", b.towers ? 4 : 0], ["drop", 3], ["pound", 1]]);
+        start(e, m, { chain: 0.7, pound: 0.8, towers: 0.7, drop: 0.5 }[m] * (hot ? 0.9 : 1));
+        if (m === "chain" && hot && !b.again) { b.next = "chain"; b.again = true; } else b.again = false;
+        return 0;
+      }
+      return adx > 300 ? Math.sign(dx) : 0;
+    },
+    frame(e, dt) {
+      const b = e.boss; if (b.towers == null) b.towers = 2;
+      if (!e.dead && b.towers > 0 && e.hp < e.max * b.towers / 3) { // a tower cracks off
+        b.towers--; fx().text(e.x, e.y - e.h - 30, "A TOWER BREAKS", "#ffd27a", 15); fx().shake(8);
+        rock(e, clamp(e.x - e.dir * 90, 60, Wd.W - 60), 0.2, e.d.dmg * 0.6);
+      }
+      if (e.state === "move" && e.cd > 0) e.cd -= dt * (2 - b.towers) * 0.3; // lighter, angrier
+      if (e.move === "drop" && e.state === "strike" && b.air === "up") b.shadowX = clamp(G.player.x, 60, Wd.W - 60);
+      else b.shadowX = null;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, b = e.boss, hot = b.phase > 1;
+      e.hitDone = false;
+      if (e.move === "chain") { e.strikeDur = 0.45; fx().shake(4); }
+      else if (e.move === "pound") {
+        e.strikeDur = 0.5; fx().shake(10);
+        pool(e, p.x, d.dmg * 0.4, hot ? 3.2 : 2.6, hot ? 200 : 160, 0.55);
+      } else if (e.move === "towers") {
+        e.strikeDur = 0.6;
+        const g = 1000, n = Math.max(1, b.towers) * (hot ? 2 : 1);
+        for (let i = 0; i < n; i++) {
+          const sx = e.x + e.dir * (i % 2 ? 10 : -20), sy = e.y - e.h * 1.05;
+          const tx = clamp(p.x + (i % 2 ? 1 : -1) * rnd(20, 110), 60, Wd.W - 60), ty = groundY(tx, p.y - 40) - 8;
+          const T = clamp(Math.abs(tx - sx) / 460, 0.75, 1.3) + Math.floor(i / 2) * 0.35, v = lobAt(sx, sy, tx, ty, T, g);
+          G.shots.push({ team: "f", kind: "orb", c: LAVA, x: sx, y: sy, vx: v.vx, vy: v.vy, g, r: 12, dmg: Math.round(d.dmg * 0.55), life: 3.5, land: true, src: e, by: d.name,
+            onEnd: (s) => pool(e, s.x, d.dmg * 0.3, 2.5, 50) });
+        }
+      } else if (e.move === "drop") {
+        e.strikeDur = 3; b.air = "up"; e.vy = -1500; e.onGround = false; e.vx = 0; e.under = true;
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, b = e.boss;
+      if (e.move === "chain") {
+        if (!e.hitDone && e.st < 0.2) { // only the end of the chain hurts
+          const a = e.x + e.dir * 110, z = e.x + e.dir * 440;
+          if (DS.boxHitsPlayer(Math.min(a, z), e.y - e.h * 0.9, Math.max(a, z), e.y - e.h * 0.15)) { e.hitDone = true; hurt(e, d.dmg); p.vx = e.dir * 380; }
+        }
+      } else if (e.move === "pound") {
+        if (!e.hitDone && e.st < 0.12 && front(e, 120, 0.8, 30)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "drop") {
+        if (b.air === "up") {
+          if (e.st > 0.55) { b.air = "fall"; e.x = clamp(p.x, 80, Wd.W - 80); e.y = groundY(e.x, p.y - 40) - 900; e.vy = 300; }
+          else if (e.st > 0.4) e.vy = Math.min(e.vy, -200);
+        } else if (b.air === "fall") {
+          if (e.st > 0.95) e.under = false;
+          if (e.onGround) {
+            b.air = "land"; e.under = false; e.st = e.strikeDur - 0.5; fx().shake(13);
+            if (DS.boxHitsPlayer(e.x - 140, e.y - e.h, e.x + 140, e.y)) hurt(e, d.dmg * 1.2);
+            for (const k of [1, -1]) for (let i = 0; i < 3; i++) flame(e, e.x + k * (50 + i * 40), e.y - 16, k * rnd(200, 360), -rnd(0, 60), d.dmg * 0.35, 0.6);
+            fx().puff(e.x, e.y, 20, "rgba(255,140,60,0.5)");
+          }
+        }
+        if (b.air !== "land" && e.st > e.strikeDur - 0.55) e.st = e.strikeDur - 0.55;
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return { chain: "chainWind", pound: "poundUp", towers: "towerFire", drop: "crouch" }[m];
+      if (e.state === "strike" && m === "drop") return { up: "jump", fall: "fall", land: "land" }[b.air];
+      if (e.state === "strike" || e.state === "recover") return { chain: "chain", pound: "pound", towers: "towerFire", drop: "land" }[m];
+      return Math.abs(e.vx) > 15 && Math.sin(G.t * 6) > 0.6 ? "stomp" : null;
+    },
+  };
+
+  // ---------------- the Ashen Sovereign (map 6, level 60: wins a kit) ----------------
+  // Trident Sweep with a fan of flame left hanging in the air; Thrust, a lunge across the hall (below half it leaves
+  // fire behind); Pillar Call: he plants the trident and pillars of fire rise in two alternating rows, so the knight
+  // must step from the first row's gaps into the second's; Flame Cloak: for a while he burns to the touch and every
+  // blow struck on him up close burns the striker back. Plunge: he leaps out of sight and drives straight down on the
+  // knight, then is stuck pulling the trident from the floor (open to blows).
+  AI["ashen-sovereign"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Sovereign's crown flares");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const b = e.boss;
+        const m = b.count % 6 === 5 ? "cloak"
+          : adx < 160 ? pick([["sweep", 5], ["plunge", 1], ["pillars", 1]])
+          : adx < 480 ? pick([["thrust", 4], ["pillars", 3], ["plunge", 2]])
+          : pick([["pillars", 3], ["plunge", 3], ["thrust", 2]]);
+        start(e, m, { sweep: 0.55, thrust: 0.5, pillars: 0.8, cloak: 0.45, plunge: 0.45 }[m] * (hot ? 0.85 : 1));
+        return 0;
+      }
+      return adx > 130 ? Math.sign(dx) : 0;
+    },
+    frame(e, dt) {
+      const b = e.boss;
+      e.thorns = e.state === "strike" && e.move === "cloak" ? Math.round(e.d.dmg * 0.3) : 0;
+      e.vuln = e.state === "strike" && e.move === "plunge" && b.air === "stuck" ? 1.4 : 0;
+      b.shadowX = e.state === "strike" && e.move === "plunge" && (b.air === "up" || b.air === "hang") ? clamp(G.player.x, 60, Wd.W - 60) : null;
+    },
+    strike(e) {
+      const p = G.player, d = e.d, b = e.boss, hot = b.phase > 1;
+      e.hitDone = false;
+      if (e.move === "sweep") {
+        e.strikeDur = 0.35;
+        for (let i = 0; i < 4; i++) flame(e, e.x + e.dir * (60 + i * 45), e.y - e.h * (0.85 - i * 0.15), e.dir * 30, 0, d.dmg * 0.35, 0.7);
+      } else if (e.move === "thrust") {
+        e.strikeDur = 0.45; e.dir = Math.sign(p.x - e.x) || e.dir; e.vx = e.dir * 720; b.trail = 0;
+      } else if (e.move === "pillars") {
+        e.strikeDur = hot ? 2.0 : 1.4;
+        const rows = hot ? [0, 1, 0] : [0, 1];
+        rows.forEach((r, k) => {
+          for (const sd of [1, -1]) for (let i = 0; i < 5; i++) {
+            const x = e.x + sd * (110 + r * 100 + i * 200);
+            if (x > 40 && x < Wd.W - 40) spike(e, "beam", x, 0.35 + k * 0.7, d.dmg * 0.75, 200, 0.4, LAVA);
+          }
+        });
+      } else if (e.move === "cloak") {
+        e.strikeDur = 4; fx().text(e.x, e.y - e.h - 30, "FLAME CLOAK", "#ff9a5a", 15);
+      } else if (e.move === "plunge") {
+        e.strikeDur = 4; b.air = "up"; e.vy = -1450; e.onGround = false; e.vx = 0;
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, b = e.boss, hot = b.phase > 1;
+      if (e.move === "sweep") {
+        if (!e.hitDone && e.st < 0.15 && front(e, d.reach, 1, 20)) { e.hitDone = true; hurt(e, d.dmg); }
+      } else if (e.move === "thrust") {
+        if (!e.hitDone && front(e, 150, 0.8, 0)) { e.hitDone = true; hurt(e, d.dmg); }
+        if (hot && (b.trail -= dt) <= 0) { b.trail = 0.09; pool(e, e.x - e.dir * 30, d.dmg * 0.3, 2.5, 30); }
+        if (e.st > 0.3) e.vx *= 0.8;
+      } else if (e.move === "cloak") {
+        e.vx = e.dir * 110; e.dir = Math.sign(p.x - e.x) || e.dir;
+        if (DS.boxHitsPlayer(e.x - 80, e.y - e.h, e.x + 80, e.y)) hurt(e, d.dmg * 0.4);
+        if (Math.random() < 0.5) G.fx.push({ kind: "mote", x: e.x + rnd(-40, 40), y: e.y - rnd(0, e.h), vx: 0, vy: -90, t: 0, life: 0.5, c: "rgba(255,140,50," });
+      } else if (e.move === "plunge") {
+        if (b.air === "up" && e.st > 0.5) { b.air = "hang"; e.fly = true; e.vy = 0; e.y = groundY(p.x, p.y - 40) - 700; e.x = clamp(p.x, 80, Wd.W - 80); b.hang = 0; }
+        else if (b.air === "hang") { e.x += clamp(p.x - e.x, -500 * dt, 500 * dt); if ((b.hang += dt) > 0.45) { b.air = "dive"; e.fly = false; e.vy = 1700; } }
+        else if (b.air === "dive" && e.onGround) {
+          b.air = "stuck"; e.st = e.strikeDur - 1.3; fx().shake(12); fx().text(e.x, e.y - e.h - 30, "STUCK", "#ffd27a", 14);
+          if (DS.boxHitsPlayer(e.x - 90, e.y - e.h, e.x + 90, e.y)) hurt(e, d.dmg * 1.2);
+          for (const k of [1, -1]) flame(e, e.x + k * 40, e.y - 14, k * 300, 0, d.dmg * 0.35, 0.6);
+        }
+        if (b.air !== "stuck" && e.st > e.strikeDur - 1.35) e.st = e.strikeDur - 1.35;
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return { sweep: "sweepWind", thrust: "sweepWind", pillars: "pillar", cloak: "cloak", plunge: "crouch" }[m];
+      if (e.state === "strike" && m === "plunge") return { up: "leap", hang: "apex", dive: "plunge", stuck: "land" }[b.air];
+      if (e.state === "strike" || e.state === "recover") return { sweep: "sweep", thrust: "thrust", pillars: "pillar", cloak: "cloak", plunge: "land" }[m];
+      return null;
+    },
+  };
+
+  // ---------------- the Sunken King (the finale, level 61) ----------------
+  // A giant in the black water behind the hall (his body is drawn behind the world; DS.KING_BODY). Only his hands
+  // reach the causeway. Slam: a hand rises over the knight, follows, and crashes down, then lies there: his heart
+  // opens and ONLY the resting hand can be wounded. Sweep: a hand comes in flat from the side of the hall and slides
+  // the whole way across (jump it). Grab: a fist closes on the knight and flings them. Below half: Drowning Hands
+  // burst up out of the floor under the knight, and he roars down a rain of black water.
+  AI["sunken-king"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Sunken King roars");
+      const b = e.boss;
+      if (e.cd <= 0) {
+        const m = b.count % 3 === 2 ? "slam" : pick([["slam", 3], ["sweep", 3], ["grab", 3], ["rise", hot ? 3 : 0], ["rain", hot ? 2 : 0]]);
+        b.side = Math.random() < 0.5 ? -1 : 1;
+        start(e, m, { slam: 0.9, sweep: 0.8, grab: 0.7, rise: 0.8, rain: 0.9 }[m]);
+      }
+      return 0;
+    },
+    frame(e, dt) {
+      const b = e.boss, p = G.player;
+      if (b.home == null) { b.home = e.x - 380; b.side = 1; b.hx = e.x; }
+      e.fly = true; e.vx = 0; e.vy = 0; e.onGround = false;
+      const gy = groundY(e.x, p.y - 40);
+      const rest = (e.state === "strike" || e.state === "recover") && e.move === "slam" && e.st > 0.25 || e.state === "hurt" && b.wasRest;
+      e.under = !rest && !e.dead; // only the resting hand can be struck
+      if (rest) b.wasRest = true; else if (e.state !== "hurt") b.wasRest = false;
+      b.body = e.dead ? "dying" : rest ? "open" : e.move === "rain" && e.state !== "move" ? "roar" : "still";
+      if (e.state === "move") { // hovering out of reach above the water's edge
+        e.x += clamp(b.home + b.side * 420 - e.x, -400 * dt, 400 * dt); e.y = groundY(e.x, p.y - 40) - 260;
+      } else if (e.state === "windup") {
+        if (e.move === "slam" || e.move === "grab") { e.x += clamp(p.x - b.side * 20 - e.x, -520 * dt, 520 * dt); e.y += (groundY(e.x, p.y - 40) - (e.move === "slam" ? 170 : 90) - e.y) * Math.min(1, dt * 8); }
+        if (e.move === "sweep") { e.x = b.side < 0 ? camL() + 30 : camR() - 30; e.y = groundY(e.x, p.y - 40); }
+        if (e.move === "rise" || e.move === "rain") e.y = gy + 400; // hidden in the deep
+        e.dir = e.move === "sweep" ? -b.side : Math.sign(p.x - e.x) || 1;
+      }
+    },
+    strike(e) {
+      const p = G.player, d = e.d, b = e.boss, hot = b.phase > 1;
+      e.hitDone = false;
+      if (e.move === "slam") { e.strikeDur = hot ? 2.0 : 2.4; e.y = groundY(e.x, p.y - 40); fx().shake(12); fx().puff(e.x, e.y, 20, "rgba(120,215,255,0.5)"); }
+      else if (e.move === "sweep") { e.strikeDur = 2.2; }
+      else if (e.move === "grab") { e.strikeDur = 0.5; }
+      else if (e.move === "rise") {
+        e.strikeDur = 1.2; e.x = clamp(p.x, 60, Wd.W - 60); b.riseY = groundY(e.x, p.y - 40); e.y = b.riseY + 400; b.riseT = 0;
+        b.shadowX = e.x; // the dark patch where the hand will burst up
+        for (const k of [1, -1]) spike(e, "beam", clamp(p.x + k * 220, 60, Wd.W - 60), 0.55, d.dmg * 0.7, 150, 0.4, WATER);
+      } else if (e.move === "rain") {
+        e.strikeDur = 1.2; fx().shake(6);
+        for (let i = 0; i < 9; i++) {
+          const x = clamp(p.x + (i - 4) * 110 + rnd(-30, 30), 60, Wd.W - 60), gy = groundY(x, p.y - 40);
+          G.shots.push({ team: "f", kind: "orb", c: WATER, x, y: gy - 560, vx: 0, vy: 300, g: 1200, r: 11, dmg: Math.round(d.dmg * 0.5), life: 3, delay: 0.3 + (i % 3) * 0.25, warn: gy, land: true, src: e, by: d.name });
+        }
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, b = e.boss;
+      if (e.move === "slam") {
+        if (!e.hitDone && e.st < 0.12 && DS.boxHitsPlayer(e.x - e.w * 0.55, e.y - e.h * 1.2, e.x + e.w * 0.55, e.y)) { e.hitDone = true; hurt(e, d.dmg * 1.2); }
+      } else if (e.move === "sweep") {
+        e.x += -b.side * 640 * dt; e.y = groundY(e.x, p.y - 40);
+        if (!e.hitDone && DS.boxHitsPlayer(e.x - e.w * 0.5, e.y - 46, e.x + e.w * 0.5, e.y)) { e.hitDone = true; hurt(e, d.dmg); }
+        if (e.x < camL() - 100 || e.x > camR() + 100) e.st = e.strikeDur;
+      } else if (e.move === "grab") {
+        if (e.st < 0.15) e.y += (groundY(e.x, p.y - 40) - e.y) * Math.min(1, dt * 20);
+        if (!e.hitDone && e.st < 0.2 && DS.boxHitsPlayer(e.x - 60, e.y - 90, e.x + 60, e.y + 10)) {
+          e.hitDone = true; hurt(e, d.dmg * 1.1); p.vy = -720; p.vx = (p.x < b.home ? 1 : -1) * 520; p.onGround = false; fx().text(p.x, p.y - 100, "FLUNG", "#9fe8ff", 14);
+        }
+      } else if (e.move === "rise") {
+        b.riseT += dt;
+        if (b.riseT > 0.45) {
+          b.shadowX = null; e.y += (b.riseY - e.y) * Math.min(1, dt * 18);
+          if (!e.hitDone && DS.boxHitsPlayer(e.x - 60, b.riseY - 110, e.x + 60, b.riseY)) { e.hitDone = true; hurt(e, d.dmg); p.vy = -600; p.onGround = false; }
+        }
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (b.wasRest && e.state === "hurt") return "rest";
+      if (e.state === "windup") return { slam: "raised", sweep: "sweep", grab: "raised", rise: "rise", rain: "rise" }[m];
+      if (e.state === "strike" || e.state === "recover") {
+        if (m === "slam") return e.st > 0.25 || e.state === "recover" ? "rest" : "slam";
+        return { sweep: "sweep", grab: "grab", rise: "rise", rain: "rise" }[m];
+      }
+      return "raised";
     },
   };
 })(window.DS = window.DS || {});

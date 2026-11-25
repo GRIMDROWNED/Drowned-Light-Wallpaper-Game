@@ -35,6 +35,11 @@
     ctx = lctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
     Wd.drawBackdrop(ctx, cam, LW, LH, G.t);
+    if (G.player) { // a boss drawn behind the world (the Sunken King's body in the black water)
+      ctx.setTransform(0.5, 0, 0, 0.5, -cam.x / 2, -cam.y / 2);
+      for (const e of G.foes) if (e.d.back && e.boss) drawBack(e);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
     Wd.drawWorld(ctx, cam, LW, LH);
     ctx.setTransform(0.5, 0, 0, 0.5, -cam.x / 2, -cam.y / 2);
     if (G.player) {
@@ -140,7 +145,19 @@
   }
 
   // ---------------- the Drowned ----------------
+  function drawBack(e) {
+    const set = DS[e.d.back], b = e.boss, x = b.home != null ? b.home : e.x;
+    const rec = S.frame(set, b.body || "still", 0);
+    const a = e.dead ? Math.max(0, 1 - e.deadT / 2.5) : 1;
+    // waist-deep in the black water, shaded back so the hands and the knight read in front of him
+    S.draw(ctx, rec, x, Wd.FLOOR + 230 + (e.dead ? e.deadT * 60 : 0), 1, 1, ["#0b1820", b.body === "open" ? 0.22 : 0.4], a * 0.92);
+  }
   function drawFoe(e) {
+    if (e.boss && e.boss.shadowX != null && !e.dead) { // a boss about to land here
+      const gy = Wd.surfaceBelow(e.boss.shadowX, G.player.y - 42);
+      ctx.fillStyle = `rgba(0,0,0,${0.35 + 0.15 * Math.sin(G.t * 20)})`; ctx.beginPath(); ctx.ellipse(e.boss.shadowX, gy, 70, 9, 0, 0, TAU); ctx.fill();
+    }
+    if (e.thorns) glowDot(e.x, e.y - e.h * 0.5, 90, "255,120,40", 0.35 + 0.1 * Math.sin(G.t * 12));
     if (e.boss && e.boss.rubble) for (const r of e.boss.rubble) // the Colossus's fallen stones (cover from its surge)
       S.drawFx(ctx, "boulder11", r.x, r.y - 15, { scale: 1.3, alpha: Math.min(1, r.t) });
     if (e.d.dummy) return drawDummy(e);

@@ -17,15 +17,18 @@ MINIONS = {"cairn": ("minions/cairn", 26), "servitor": ("minions/servitor", 58),
            "skitterer": ("minions/skitterer", 26), "leech": ("minions/leech", 24), "tollwretch": ("minions/tollwretch", 44),
            "handmaiden": ("minions/handmaiden", 50), "rosewretch": ("minions/rosewretch", 30), "thornling": ("minions/thornling", 19),
            "mite": ("spires-foes/mite", 22), "swisp": ("spires-foes/swisp", 30), "warden": ("spires-foes/warden", 50),
+           "tidestalker": ("minions/tidestalker", 26), "wisp": ("minions/wisp", 42), "tideleech": ("minions/tideleech", 26),
            "wretch": ("mines-foes/wretch", 28), "ashguard": ("mines-foes/ashguard", 42), "acolyte": ("mines-foes/acolyte", 38)}
 for m in MINIONS: os.makedirs(os.path.join(OUT, "drowned", m), exist_ok=True)
 # the frame whose height sets each folder's scale
-REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1", "mother-wyvern": "side/fly1", "furnace-hydra": "idle1"}
+REF = {"jade-breaker": "side/idle1", "flame-bastion": "side/idle1", "mother-wyvern": "side/fly1", "furnace-hydra": "idle1", "sunken-king": "fnKingStill", "sunken-king-body": "fnKingStill"}
 # The later levels' bosses (2026-11-24): drowned/<folder> here, but their main-game frames live elsewhere; height in pixel px
 BOSSES = {"drowned-colossus": ("colossus", 64), "mother-wyvern": ("wyvern-mother", 70), "crucible-wyrm": ("mines-bosses/wyrm", 66),
            "starved-bell": ("starved-bell", 58), "deadly-rose": ("deadly-rose", 74),
            "rift-throne": ("rift-throne", 62), "seething-seraph": ("mines-bosses/seraph", 64),
-           "magma-golem": ("mines-bosses/golem", 66), "furnace-hydra": ("mines-bosses/hydra", 74)}
+           "magma-golem": ("mines-bosses/golem", 66), "furnace-hydra": ("mines-bosses/hydra", 74),
+           "cinder-colossus": ("mines-bosses/colossus", 70), "ashen-sovereign": ("mines-bosses/sovereign", 66),
+           "sunken-king": ("props", 140), "sunken-king-body": ("props", 240)}  # the King: hands (side frames) + his body behind the arena
 
 def pixelize(im, scale, colors=10, outline=(14, 10, 18), sat=1.35, bright=1.1):
     w, h = im.size; nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
