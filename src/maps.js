@@ -2,7 +2,7 @@
    assets/maps). Lantern = the Mire, trident = the Reaches, rose = the Abyss, crystal = the Spires, stone face = the
    Molten Mines, winged skull = the Crucible Throne. A map opens once a played run reaches its first level
    (dl-side-best); the chosen map (dl-side-map) is where a run starts. ?level=N in the address still wins for testers.
-   The wallpaper starts on a random open map, so farming moves around the maps you have reached. */
+   The wallpaper runs a level already beaten (src/unlocks.js: the one picked in Pause -> Wallpaper, or a random one). */
 "use strict";
 (function (DS) {
   const MAPS = DS.MAPS = [
@@ -23,8 +23,11 @@
 
   const M = DS.Maps = {
     best: () => best,
-    open: (m) => m === 0 || best >= m * LEVELS,
-    picked: () => pick,
+    open(m) { // (a tester can view them all open or all shut: src/unlocks.js)
+      const t = DS.Unlock.mode();
+      return m === 0 || (t === "all" ? m < MAPS.length : t === "none" ? false : best >= m * LEVELS);
+    },
+    picked: () => (M.open(pick) ? pick : 0),
     reached(n) { if (n > best) { best = n; set("dl-side-best", n); } },
     pick(m) {
       if (!M.open(m)) return false;
@@ -34,12 +37,11 @@
     },
     unlockAll() { best = Math.max(best, (MAPS.length - 1) * LEVELS); set("dl-side-best", best); },
     badge: (m) => `assets/maps/${MAPS[m].id}.png?v=${DS.VERSION}`,
-    // the wallpaper roams: a random open map each time it starts
-    wallStart() {
-      if (fromUrl) return;
-      const open = MAPS.map((_, i) => i).filter(M.open);
-      DS.START_LEVEL = open[Math.floor(Math.random() * open.length)] * LEVELS;
-    },
+    // where a played run starts: the picked map's first level (or the tester's ?level=)
+    playStart: () => (fromUrl ? urlStart : M.open(pick) ? pick * LEVELS : 0),
+    // the wallpaper runs a beaten level: the one picked for it, or a random one (src/unlocks.js)
+    wallStart() { if (!fromUrl) DS.START_LEVEL = DS.Unlock.wallLevel(); },
   };
+  const urlStart = DS.START_LEVEL;
   if (!fromUrl && M.open(pick)) DS.START_LEVEL = pick * LEVELS;
 })(window.DS = window.DS || {});

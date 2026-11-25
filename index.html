@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a1420">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=0.13.2">
+<link rel="stylesheet" href="style.css?v=0.14.0">
 </head>
 <body>
 <!--BODY-->
@@ -100,6 +100,37 @@
   </div>
 </section>
 
+<section id="kitWin" class="menu art" hidden>
+  <!-- Robert's new-knight art (assets/ui/newknight-screen.jpg): a map's last boss is down, the won knight stands in the lit arch -->
+  <div class="kstage">
+    <h1 class="ks kbanner nkbanner" style="--x:530;--y:32;--w:610;--h:76">A new knight</h1>
+    <div id="kitWinPic" class="ks nkpic" style="--x:662;--y:206;--w:340;--h:348"></div>
+    <p id="kitWinName" class="ks nkname" style="--x:622;--y:568;--w:446;--h:58"></p>
+    <p id="kitWinText" class="ks uinfo nktext" style="--x:492;--y:662;--w:686;--h:88"></p>
+    <button id="kitWinLater" class="ks opt ubtn" style="--x:530;--y:785;--w:236;--h:68">Later</button>
+    <button id="kitWinTake" class="ks opt ubtn teal" style="--x:808;--y:785;--w:326;--h:68">Take them up</button>
+  </div>
+</section>
+
+<section id="wallMenu" class="menu art" hidden>
+  <!-- Robert's wallpaper art (assets/ui/wallpaper-screen.jpg): a ring per map, Roam + ten level slots, the hint bar.
+       Only levels already beaten can be picked (src/unlocks.js); slot states use assets/ui/locks -->
+  <div class="kstage">
+    <h1 class="ks kbanner" style="--x:480;--y:20;--w:710;--h:74">Wallpaper</h1>
+    <div id="wallMaps" class="ks kmaps wmaps" style="--x:0;--y:0;--w:1672;--h:941"></div>
+    <div id="wallLevels"></div>
+    <p id="wallInfo" class="ks uinfo winfo" style="--x:262;--y:586;--w:645;--h:38"></p>
+    <button class="ks opt ubtn wback" style="--x:302;--y:654;--w:196;--h:60">Back</button>
+    <button id="btnWallStart" class="ks opt ubtn teal" style="--x:578;--y:654;--w:285;--h:60">Start</button>
+    <div class="ks khint" style="--x:220;--y:820;--w:180;--h:56"><b>&larr;&rarr;</b> Select</div>
+    <div class="ks khint" style="--x:432;--y:820;--w:180;--h:56"><b>Enter</b> Pick</div>
+    <button class="ks khint wback" style="--x:642;--y:820;--w:180;--h:56"><b>Esc</b> Back</button>
+    <div class="ks khint" style="--x:854;--y:820;--w:180;--h:56"><b>Stick</b> Move</div>
+    <div class="ks khint" style="--x:1064;--y:820;--w:180;--h:56"><b class="pa">A</b> Pick</div>
+    <button class="ks khint wback" style="--x:1274;--y:820;--w:180;--h:56"><b class="pb">B</b> Back</button>
+  </div>
+</section>
+
 <section id="confirm" class="menu confirm" hidden>
   <!-- Robert's pop-up (assets/ui/confirm.webp, 1430 x 875 art px), shown over the menu that asked -->
   <div class="cstage">
@@ -185,9 +216,8 @@
           <button id="btnGod" class="opt small">God mode</button>
           <button id="btnBoxes" class="opt small">Hitboxes</button>
           <button id="btnGrow" class="opt small">Grow familiar</button>
-          <button id="btnWinFams" class="opt small">Unlock all familiars</button>
+          <button id="btnUnlocks" class="opt small">Unlocks: your progress</button>
           <button id="btnRich" class="opt small">Give 500 of each currency</button>
-          <button id="btnMaps" class="opt small">Open all maps</button>
           <button id="btnUpReset" class="opt small">Reset upgrades</button>
         </div>
       </div>
@@ -197,23 +227,24 @@
 
 <div id="rotate">Turn your phone sideways to play</div>
 <!--/BODY-->
-<script src="src/data.js?v=0.13.2"></script>
-<script src="src/pixscale.js?v=0.13.2"></script>
-<script src="src/sprites.js?v=0.13.2"></script>
-<script src="src/input.js?v=0.13.2"></script>
-<script src="src/scenery.js?v=0.13.2"></script>
-<script src="src/world.js?v=0.13.2"></script>
-<script src="src/game.js?v=0.13.2"></script>
-<script src="src/kits.js?v=0.13.2"></script>
-<script src="src/bosses.js?v=0.13.2"></script>
-<script src="src/familiars.js?v=0.13.2"></script>
-<script src="src/pickart.js?v=0.13.2"></script>
-<script src="src/explore.js?v=0.13.2"></script>
-<script src="src/lootart.js?v=0.13.2"></script>
-<script src="src/loot.js?v=0.13.2"></script>
-<script src="src/maps.js?v=0.13.2"></script>
-<script src="src/render.js?v=0.13.2"></script>
-<script src="src/ui.js?v=0.13.2"></script>
+<script src="src/data.js?v=0.14.0"></script>
+<script src="src/unlocks.js?v=0.14.0"></script>
+<script src="src/pixscale.js?v=0.14.0"></script>
+<script src="src/sprites.js?v=0.14.0"></script>
+<script src="src/input.js?v=0.14.0"></script>
+<script src="src/scenery.js?v=0.14.0"></script>
+<script src="src/world.js?v=0.14.0"></script>
+<script src="src/game.js?v=0.14.0"></script>
+<script src="src/kits.js?v=0.14.0"></script>
+<script src="src/bosses.js?v=0.14.0"></script>
+<script src="src/familiars.js?v=0.14.0"></script>
+<script src="src/pickart.js?v=0.14.0"></script>
+<script src="src/explore.js?v=0.14.0"></script>
+<script src="src/lootart.js?v=0.14.0"></script>
+<script src="src/loot.js?v=0.14.0"></script>
+<script src="src/maps.js?v=0.14.0"></script>
+<script src="src/render.js?v=0.14.0"></script>
+<script src="src/ui.js?v=0.14.0"></script>
 <script>DS.boot();</script>
 </body>
 </html>

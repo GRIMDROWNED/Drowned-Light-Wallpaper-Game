@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.13.2";
+  DS.VERSION = "0.14.0";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
@@ -155,6 +155,9 @@
     },
   };
   DS.KIT_ORDER = Object.keys(DS.KITS);
+  // Knights won by beating the boss of a map's last level (Robert 2026-11-20, locked 2026-11-25): level -> knight.
+  // The four not listed are open from the start. Until won a knight shows as a dark "???" (src/unlocks.js).
+  DS.KIT_UNLOCK = { flameBastion: 10, pikeWarden: 20, rosePaladin: 30, chainReaper: 40, relicBearer: 50, cinderbrand: 60 };
 
   // The Drowned. ai: walker | leaper | archer | shield | caster | boss. All side-walk sheets face right.
   // mv: frames from the side-view move sheets (side/<name>), e.g. { windup: "windup", recover: "slash" }
