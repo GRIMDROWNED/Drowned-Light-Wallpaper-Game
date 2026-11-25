@@ -51,7 +51,7 @@ public class GameActivity extends Activity {
     }
 
     @Override public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus) immersive(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); Updater.resumed(this); }
+    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
     @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onDestroy() { if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
 }
