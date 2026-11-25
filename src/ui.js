@@ -77,24 +77,90 @@
     for (const b of document.querySelectorAll(".fam")) { famButton(b); b.classList.toggle("sel", (b.dataset.fam || null) === (cur || null)); }
     showFamText(cur);
   }
-  // after a map's level 5 boss: the familiars still to win, one to choose
+  // after a map's level 5 boss: Robert's shrine art has a card per familiar (DS.FAM_ORDER, frame colours bone, grey,
+  // gold, blue, green, red); the ones still to win can be chosen, the ones you have are dimmed
   function buildFamWin() {
     const row = $("#famWinRow"); row.innerHTML = "";
-    for (const id of DS.Fam.locked()) {
-      const d = DS.FAMILIARS[id];
-      const b = el("button", "opt famCard");
-      b.style.setProperty("--fc", d.color);
-      b.innerHTML = `<img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"><b>${d.name}</b><span>${d.text}</span>`;
+    const say = (d) => { $("#famWinText").innerHTML = `<b style="color:rgb(${d.color})">${d.name}</b> · ${d.text} <span class="pas">Forms: ${d.forms.map((f) => f.name).join(" → ")}</span>`; };
+    DS.FAM_ORDER.forEach((id, i) => {
+      const d = DS.FAMILIARS[id], have = DS.Fam.won(id);
+      const b = el("button", "opt fwcard" + (have ? " have" : ""));
+      b.style.setProperty("--i", i); b.style.setProperty("--fc", d.color); b.disabled = have;
+      b.innerHTML = `<span class="fwpic"><img alt="" src="assets/${d.forms[0].sprite.folder}/right.png?v=${DS.VERSION}"></span><b>${d.name}</b><span class="fwtext">${have ? "Already at your side." : d.text}</span>`;
       b.addEventListener("click", () => {
+        if (have) return;
         DS.Fam.win(id); DS.Fam.set(id);
         close(); G.mode = "play";
         G.banner = { txt: d.name + " joins you", t: 0 };
       });
-      b.addEventListener("focus", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
-      b.addEventListener("mouseenter", () => { $("#famWinText").textContent = "Forms: " + d.forms.map((f) => f.name).join(" → "); });
+      b.addEventListener("focus", () => say(d));
+      b.addEventListener("mouseenter", () => say(d));
       row.appendChild(b);
-    }
-    $("#famWinText").textContent = "";
+    });
+    $("#famWinText").textContent = "Choose well: the others wait for the next map's fifth level.";
+  }
+
+  // ---------------- death, level cleared and the confirm pop-up (Robert's art) ----------------
+  function syncDeath() {
+    const by = G.player && G.player.lastHit;
+    $("#deathText").innerHTML = (by ? `Struck down by the <b>${by}</b>` : "The light gutters out") + `<small>Level ${G.level + 1} · you rise again at the last checkpoint</small>`;
+  }
+  function syncCleared() {
+    const lv = G.lv, n = G.level, pages = DS.Explore.pages().filter((k) => +k.split(":")[0] === n).length;
+    const t = Math.round(lv.t), time = Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+    $("#clearTitle").textContent = "Level " + (n + 1) + " cleared";
+    const rows = [["⌛", "Time", time], ["☠", "Drowned felled", lv.kills], ["⚔", "Best combo", lv.best], ["✦", "Drowned pages", pages + " of 3"], ["♰", "Falls", lv.deaths]];
+    $("#clearRows").innerHTML = rows.map(([ic, k, v], r) => `<div class="crow" style="--r:${r}"><i>${ic}</i><span>${k}<b>${v}</b></span></div>`).join("");
+    const got = DS.CUR_ORDER.filter((k) => lv.bag[k] > 0).slice(0, 8);
+    $("#clearLoot").innerHTML = Array.from({ length: 8 }, (_, i) => got[i] ? `<span class="lc" title="${DS.CURRENCY[got[i]].name}"><img alt="" src="${L().icon(got[i])}"><b>${lv.bag[got[i]]}</b></span>` : "<span class=\"lc\"></span>").join("");
+  }
+  // a yes/no question over the menu that asked; no (or back) returns to it
+  let cBack = null, cYes = null;
+  function confirmBox(q, yes, fn) {
+    cBack = open; cYes = fn;
+    $("#confirmText").textContent = q; $("#confirmYes").textContent = yes;
+    openMenu("confirm");
+  }
+
+  // ---------------- the Journal on Robert's book art: a tab per map, six Drowned pages a spread ----------------
+  // entry boxes and tabs in art px (assets/ui/journal-screen.jpg)
+  const J_BOX = [[550, 185, 415, 130], [550, 340, 415, 130], [550, 500, 415, 135], [1045, 185, 405, 130], [1045, 340, 405, 130], [1045, 500, 405, 135]];
+  const J_TAB = [200, 272, 348, 426, 502, 580], J_TABC = ["224,165,60", "60,170,165", "200,50,60", "150,70,190", "230,120,30", "215,80,130"];
+  const J_PER_MAP = 30, J_SPREADS = J_PER_MAP / 6; // 10 levels x 3 pages
+  let jMap = 0, jSpread = 0;
+  function buildJournal() {
+    const tabs = $("#jTabs"); tabs.innerHTML = "";
+    DS.MAPS.forEach((m, i) => {
+      const t = el("button", "opt jtab");
+      t.style.setProperty("--t", J_TAB[i] - 176); t.style.setProperty("--tc", J_TABC[i]);
+      const ok = DS.Maps.open(i);
+      t.disabled = !ok; t.textContent = ok ? (m.short || m.name.replace(/^The /, "")) : "???";
+      t.title = ok ? m.name : "Not reached yet";
+      t.addEventListener("click", () => { if (ok) { jMap = i; jSpread = 0; syncJournal(); } });
+      tabs.appendChild(t);
+    });
+    $("#jPrev").onclick = () => { if (jSpread > 0) { jSpread--; syncJournal(); } };
+    $("#jNext").onclick = () => { if (jSpread < J_SPREADS - 1) { jSpread++; syncJournal(); } };
+  }
+  function syncJournal() {
+    const have = new Set(DS.Explore.pages()), box = $("#jEntries"); box.innerHTML = "";
+    J_BOX.forEach(([x, y, w, h], k) => {
+      const n = jSpread * 6 + k, lv = jMap * 10 + Math.floor(n / 3), pg = n % 3, key = lv + ":" + pg, got = have.has(key);
+      const e = el("div", "jentry" + (got ? "" : " missing"));
+      e.style.cssText = `--l:${x - 550};--t:${y - 185};--bw:${w};--bh:${h}`;
+      e.innerHTML = `<b>Level ${lv + 1} · page ${pg + 1}</b>` + (got ? `<span>“${DS.Explore.pageText(key)}”</span>` : "<span>Not found yet. Look up on the high planks and deep in the mist.</span>");
+      box.appendChild(e);
+    });
+    document.querySelectorAll("#jTabs .jtab").forEach((t, i) => t.classList.toggle("cur", i === jMap));
+    $("#jPrev").disabled = jSpread === 0; $("#jNext").disabled = jSpread === J_SPREADS - 1;
+    const m = DS.MAPS[jMap], found = [...have].filter((k) => Math.floor(+k.split(":")[0] / 10) === jMap).length;
+    $("#jPage").innerHTML = `<b style="color:rgb(${m.c})">${m.name}</b> · ${found} of ${J_PER_MAP} pages found`;
+    $("#jSpread").textContent = `Levels ${jMap * 10 + jSpread * 2 + 1} and ${jMap * 10 + jSpread * 2 + 2}`;
+  }
+  function openJournal() {
+    const lv = G.level | 0; jMap = Math.min(DS.MAPS.length - 1, Math.floor(lv / 10));
+    jSpread = Math.floor(((lv % 10) * 3) / 6);
+    openMenu("journalMenu");
   }
 
   // ---------------- the map select: Robert's spiked badges (src/maps.js) ----------------
@@ -150,13 +216,15 @@
   function buildUpgrades() {
     buildWallet($("#wallet"));
     const list = $("#upList"); list.innerHTML = "";
-    for (const u of DS.UPGRADES) {
+    DS.UPGRADES.forEach((u, row) => {
       const r = L().rank(u.id), max = r >= L().MAX_RANK, c = L().cost(u.id);
-      const b = el("button", "opt upg" + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
+      // Robert's forge art paints three cost plates on rows 1, 3 and 5 and two on the others
+      const b = el("button", "opt upg" + (row % 2 ? " two" : " three") + (max ? " max" : L().canBuy(u.id) ? " can" : ""));
       b.dataset.up = u.id;
-      const pips = Array.from({ length: L().MAX_RANK }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
-      const costs = max ? "<span class=\"chip\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
-      b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="pips">${pips}</span><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="cost">${costs}</span>`;
+      // the art paints 9 diamonds: ranks 1-9 light them, rank 10 (max) makes them all glow
+      const pips = Array.from({ length: 9 }, (_, i) => `<i class="${i < r ? "on" : ""}"></i>`).join("");
+      const costs = max ? "<span class=\"chip maxed\">Max rank</span>" : Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => chip(k, n, L().have(k) >= n)).join("");
+      b.innerHTML = `<img class="mat" alt="" src="${L().icon(u.mat)}"><span class="un"><b>${u.name}</b><span class="ef">${r ? u.text(r) : "no ranks yet"}${max ? "" : " → " + u.text(r + 1)}</span></span><span class="pips">${pips}</span><span class="cost">${costs}</span>`;
       b.addEventListener("click", () => {
         if (L().buy(u.id)) { $("#upText").innerHTML = `<b>${u.name}</b> rank ${L().rank(u.id)}: ${u.text(L().rank(u.id))}.`; const f = focus; buildUpgrades(); focus = f; setFocus(); }
         else $("#upText").textContent = max ? `${u.name} is at its highest rank.` : `Not enough yet. ${DS.CURRENCY[u.mat].name} and Gold drop from the Drowned; Amethyst from bosses.`;
@@ -164,10 +232,13 @@
       b.addEventListener("focus", () => showUpText(u));
       b.addEventListener("mouseenter", () => showUpText(u));
       list.appendChild(b);
-    }
+    });
   }
   function showUpText(u) { $("#upText").innerHTML = `<b>${u.name}</b> takes Gold and ${DS.CURRENCY[u.mat].name}. Each rank: ${u.text(1)}.`; }
-  function openUpgrades(from) { back = from || open || "kits"; openMenu("upgrades"); }
+  function openUpgrades(from) {
+    back = from || open || "kits"; openMenu("upgrades");
+    $("#upText").textContent = "Spend what the Drowned drop on lasting upgrades for every knight. Ranks 6 to 10 also take Amethyst.";
+  }
   // what the wallpaper gathered: taken into the wallet as the screen opens
   function showHaul(from) {
     const got = L().collect(); if (!got) return false;
@@ -211,22 +282,28 @@
     $("#btnWaves").onclick = () => { DS.setScroll(!G.scroll); DS.restart(); close(); G.mode = "play"; };
     $("#btnGod").onclick = () => { G.god = !G.god; syncToggles(); };
     $("#btnBoxes").onclick = () => { G.boxes = !G.boxes; syncToggles(); };
-    $("#btnRestart").onclick = () => { DS.restart(); close(); G.mode = "play"; };
+    $("#btnRestart").onclick = () => confirmBox(G.scroll ? "Start this map again from its first level?" : "Restart the arena?", "Restart", () => { DS.restart(); close(); G.mode = "play"; });
+    $("#confirmNo").onclick = () => openMenu(cBack || "pause");
+    $("#confirmYes").onclick = () => { const f = cYes; cYes = null; if (f) f(); };
+    $("#btnTryAgain").onclick = () => { DS.respawn(); close(); G.mode = "play"; };
+    $("#btnDeathKits").onclick = () => { DS.respawn(); openMenu("kits"); };
+    $("#btnClearNext").onclick = () => { close(); DS.nextLevel(); G.mode = "play"; };
+    $("#btnClearUp").onclick = () => openUpgrades("cleared");
     $("#btnGrow").onclick = (e) => { if (G.fam) { const d = DS.Fam.def(); DS.Fam.grow((G.fam.form + 1) % d.forms.length); } flash(e.target); };
     $("#btnWinFams").onclick = (e) => { DS.Fam.winAll(); syncFams(); flash(e.target); };
     $("#btnWall").onclick = () => { close(); G.mode = "play"; DS.setWall(true); };
-    $("#btnHelp").onclick = () => { $("#help").hidden = !$("#help").hidden; };
-    $("#btnJournal").onclick = () => { // Drowned pages found so far, in level order (src/explore.js)
-      const j = $("#journal"), X = DS.Explore;
-      if (!j.hidden) { j.hidden = true; return; }
-      const list = X.pages().sort((a, b) => { const [la, ia] = a.split(":").map(Number), [lb, ib] = b.split(":").map(Number); return la - lb || ia - ib; });
-      j.innerHTML = list.length ? list.map((k) => `<p><b>Level ${+k.split(":")[0] + 1}</b>${X.pageText(k)}</p>`).join("")
-        : "<p>No Drowned pages yet. Three are hidden in every level: up on the high planks and deep in the mist.</p>";
-      j.hidden = false;
-    };
+    $("#btnHelp").onclick = () => panel($("#help").hidden ? "#help" : null);
+    $("#btnJournal").onclick = () => openJournal(); // Drowned pages found so far (src/explore.js)
+    for (const b of document.querySelectorAll("#pause .resume")) b.addEventListener("click", () => { close(); G.mode = "play"; });
     buildCodePad();
     syncToggles();
   }
+  // the pause art's right-hand panel: Journal, Controls or the tester keypad (one at a time), and the tester tools
+  function panel(sel) {
+    for (const id of ["#help", "#codePad"]) $(id).hidden = id !== sel;
+    syncPanel();
+  }
+  function syncPanel() { $("#pPanel").hidden = ["#help", "#codePad", "#devTools"].every((id) => $(id).hidden); }
 
   // ---------------- the tester code (src/data.js DS.TESTER): a keypad the pad, keys and touch can all use ----------------
   let code = "";
@@ -239,7 +316,7 @@
     }
     $("#btnCode").onclick = () => {
       if (DS.TESTER) { setTester(false); return; }
-      const pad = $("#codePad"); pad.hidden = !pad.hidden; code = ""; showCode("Enter the tester code");
+      const was = $("#codePad").hidden; panel(was ? "#codePad" : null); code = ""; showCode("Enter the tester code");
     };
     addEventListener("keydown", (e) => {
       if (open !== "pause" || $("#codePad").hidden) return;
@@ -258,7 +335,7 @@
   function setTester(on) {
     DS.TESTER = on;
     try { if (on) localStorage.setItem("dl-side-tester", "1"); else localStorage.removeItem("dl-side-tester"); } catch (e) { /* storage blocked */ }
-    code = ""; $("#codePad").hidden = true;
+    code = ""; $("#codePad").hidden = true; syncPanel();
     if (!on) { // put the run back the way a player has it
       G.god = false; G.boxes = false;
       if (!G.scroll) { DS.setScroll(true); DS.restart(); }
@@ -266,7 +343,7 @@
     syncToggles();
   }
   function syncToggles() {
-    $("#devTools").hidden = !DS.TESTER;
+    $("#devTools").hidden = !DS.TESTER; syncPanel();
     $("#btnCode").textContent = DS.TESTER ? "Lock tester tools" : "Tester code";
     $("#btnJournal").textContent = "Journal (" + DS.Explore.pages().length + " pages)";
     $("#btnWaves").textContent = G.scroll ? "Switch to the arena" : "Switch to the scrolling level";
@@ -278,11 +355,14 @@
   function flash(b) { b.classList.add("done"); setTimeout(() => b.classList.remove("done"), 300); }
 
   function openMenu(name) {
-    for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name;
+    for (const m of document.querySelectorAll(".menu")) m.hidden = m.id !== name && !(name === "confirm" && m.id === open); // the pop-up sits over its menu
     open = name; focus = 0;
     if (name === "pause") syncToggles();
     if (name === "famWin") buildFamWin();
     if (name === "upgrades") buildUpgrades();
+    if (name === "journalMenu") { buildJournal(); syncJournal(); }
+    if (name === "death") syncDeath();
+    if (name === "cleared") syncCleared();
     if (name === "kits") syncMaps();
     syncFams();
     if (G.mode === "play") G.mode = "menu";
@@ -297,7 +377,7 @@
     for (const m of document.querySelectorAll(".menu")) m.hidden = true;
     open = null;
   }
-  function opts() { return open ? [...document.querySelectorAll(`#${open} .opt`)].filter((b) => b.offsetParent) : []; }
+  function opts() { return open ? [...document.querySelectorAll(`#${open} .opt`)].filter((b) => b.offsetParent && !b.disabled) : []; }
   function setFocus() {
     const o = opts(); if (!o.length) return;
     focus = Math.max(0, Math.min(o.length - 1, focus));
@@ -330,6 +410,9 @@
       if (open === "kits" && G.mode === "title") return;
       if (open === "famWin") return; // the reward has to be chosen
       if (open === "upgrades" || open === "haul") { openMenu(back || "kits"); return; }
+      if (open === "journalMenu") { openMenu("pause"); return; }
+      if (open === "confirm") { openMenu(cBack || "pause"); return; }
+      if (open === "death" || open === "cleared") return; // choose a button
       if (open === "kits") { openMenu("pause"); return; }
       close(); G.mode = "play";
     }
