@@ -625,6 +625,7 @@
       DS.setWall(false); openMenu("pause"); showHaul("pause");
     });
     $("#ver").textContent = "v" + DS.VERSION;
+    fullscreen();
     applySettings();
     openMenu("kits");
     showHaul("kits"); // what the wallpaper gathered since last time
@@ -633,6 +634,24 @@
       if (document.hidden || G.wall || G.mode === "title" || open === "haul" || open === "famWin") return;
       if (L().haul().gold || Object.keys(L().haul()).length > 1) { if (G.mode === "play") G.mode = "menu"; showHaul(open || "pause"); }
     });
+  }
+
+  // ---------------- Full screen, like a real game ----------------
+  // In a browser the page asks for full screen on the first click, tap or key press (browsers only allow it after one);
+  // F11 is the browser's own toggle. Chrome also lets the game keep Esc (it pauses), so Esc held down leaves full screen.
+  // The Windows app opens its window full screen itself (desktop/Program.cs, F11 or Alt+Enter toggles) and the Android
+  // app hides the system bars (GameActivity.immersive), so neither page asks; nor does a page a wallpaper app opened.
+  function fullscreen() {
+    const d = document.documentElement, app = !!(window.chrome && window.chrome.webview) || /; wv\)/.test(navigator.userAgent);
+    if (app || !d.requestFullscreen) return; // iPhone Safari has no full screen for pages
+    const go = (e) => {
+      if (G.wallLocked || document.fullscreenElement || (e.type === "keydown" && e.key === "F11")) return;
+      removeEventListener("pointerup", go, true); removeEventListener("keydown", go, true);
+      d.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(["Escape"]).catch(() => {});
+      }).catch(() => { /* refused: carry on in the window */ });
+    };
+    addEventListener("pointerup", go, true); addEventListener("keydown", go, true);
   }
 
   DS.UI = { init, update, open: openMenu, close, cycleKit, showHaul, kitWin };

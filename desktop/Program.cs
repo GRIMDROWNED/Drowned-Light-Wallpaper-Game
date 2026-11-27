@@ -245,34 +245,55 @@ namespace DrownedLight
         }
     }
 
-    /// <summary>The play window: the full game with menus, keyboard, mouse and pad. F11 toggles full screen.</summary>
+    /// <summary>The play window: the full game with menus, keyboard, mouse and pad. It opens full screen (borderless, over
+    /// the taskbar, on the screen the mouse is on) like a game does; F11 or Alt+Enter switches to a window and back.</summary>
     class PlayForm : Form
     {
         readonly WebView2 view = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(10, 20, 32) };
-        FormWindowState before;
+        Rectangle windowed; // where the window goes when full screen is switched off
+        bool full;
         public PlayForm()
         {
             Text = "Drowned Light";
             Icon = TrayApp.LoadIcon();
-            ClientSize = new Size(1280, 720);
-            StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(10, 20, 32);
             KeyPreview = true;
+            StartPosition = FormStartPosition.Manual;
+            var screen = Screen.FromPoint(Cursor.Position);
+            var work = screen.WorkingArea;
+            var size = new Size(Math.Min(1280, work.Width), Math.Min(720, work.Height));
+            windowed = new Rectangle(work.Left + (work.Width - size.Width) / 2, work.Top + (work.Height - size.Height) / 2, size.Width, size.Height);
+            SetFull(true, screen);
             Controls.Add(view);
             Load += async (s, e) =>
             {
                 await Web.Load(view, "index.html");
-                // F11 inside the page asks the window to go full screen
+                // F11 and Alt+Enter inside the page ask the window to switch
                 await view.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-                    "addEventListener('keydown', e => { if (e.key === 'F11') { e.preventDefault(); chrome.webview.postMessage('f11'); } });");
-                view.CoreWebView2.WebMessageReceived += (o, a) => { if (a.TryGetWebMessageAsString() == "f11") ToggleFull(); };
+                    "addEventListener('keydown', e => { if (e.key === 'F11' || (e.key === 'Enter' && e.altKey)) { e.preventDefault(); chrome.webview.postMessage('f11'); } }, true);");
+                view.CoreWebView2.WebMessageReceived += (o, a) => { if (a.TryGetWebMessageAsString() == "f11") SetFull(!full, Screen.FromControl(this)); };
+                // a page asking for full screen itself fills the window, so make sure the window is full screen too
+                view.CoreWebView2.ContainsFullScreenElementChanged += (o, a) => { if (view.CoreWebView2.ContainsFullScreenElement && !full) SetFull(true, Screen.FromControl(this)); };
                 view.CoreWebView2.Reload();
             };
         }
-        void ToggleFull()
+        void SetFull(bool on, Screen screen)
         {
-            if (FormBorderStyle != FormBorderStyle.None) { before = WindowState; FormBorderStyle = FormBorderStyle.None; WindowState = FormWindowState.Normal; Bounds = Screen.FromControl(this).Bounds; }
-            else { FormBorderStyle = FormBorderStyle.Sizable; WindowState = before; }
+            if (on == full && IsHandleCreated) return;
+            if (on)
+            {
+                if (IsHandleCreated && WindowState == FormWindowState.Normal) windowed = Bounds;
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Normal;
+                Bounds = screen.Bounds;
+            }
+            else
+            {
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Normal;
+                Bounds = windowed;
+            }
+            full = on;
         }
         protected override void OnFormClosed(FormClosedEventArgs e) { view.Dispose(); base.OnFormClosed(e); }
     }

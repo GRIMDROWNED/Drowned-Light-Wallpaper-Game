@@ -3,6 +3,7 @@
 A side-on Drowned Light game that doubles as a live wallpaper: plain JavaScript on a canvas, no build step, no npm.
 Open `index.html` through any static server, or play it on GitHub Pages.
 
+- **Full screen:** the game fills the screen like a game does. In a browser it goes full screen on the first click, tap or key press (browsers don't allow it sooner; F11 toggles, and in Chrome Esc still pauses: hold Esc to leave). The Windows app opens full screen over the taskbar (F11 or Alt+Enter for a window) and the Android app hides the system bars.
 - **Portrait:** the knight fights on its own through an endless drowned swamp.
 - **Landscape:** you take the knight, and a boss waits at the end of the level (the Drowned Sovereign, or a map's own boss on its levels 5 and 10).
 - **Wallpaper:** `wallpaper.html` (or `index.html?wallpaper`, or Pause → Wallpaper → Start) hides every button and HUD, swaps in a random knight every 75 s and runs at 30 fps. It only shows what the player has unlocked: won knights and familiars, on a level already beaten. Pause → Wallpaper opens its own screen on Robert's art (`assets/ui/wallpaper-screen.jpg`): a ring per map, then Roam plus ten level slots for that map, locked ones chained shut with his lock pieces (`assets/ui/locks`, cut by `tools/cut_locks.py`). It picks a beaten level (1-60) or Roam, a random beaten level each start (`dl-side-wall-level`).
