@@ -29,7 +29,7 @@ BOSSES = {"drowned-colossus": ("colossus", 64), "mother-wyvern": ("wyvern-mother
            "magma-golem": ("mines-bosses/golem", 66), "furnace-hydra": ("mines-bosses/hydra", 74),
            "cinder-colossus": ("mines-bosses/colossus", 70), "ashen-sovereign": ("mines-bosses/sovereign", 66),
            "sunken-king": ("props", 140), "sunken-king-body": ("props", 240),  # the King: hands (side frames) + his body behind the arena
-           "jade-stag": (None, 74)}  # None: drawn for the side view only, every frame is in art/ (no main-game folder)
+           "jade-stag": (None, 74), "jade-carapace": (None, 64)}  # None: drawn for the side view only, every frame is in art/ (no main-game folder)
 
 def pixelize(im, scale, colors=10, outline=(14, 10, 18), sat=1.35, bright=1.1):
     w, h = im.size; nw, nh = max(1, round(w * scale)), max(1, round(h * scale))

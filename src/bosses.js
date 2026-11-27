@@ -2,7 +2,7 @@
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
    The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35), the Lord of the Rift Throne (level 40), the Magma Golem (map 5, level 45)
    and the Furnace Hydra (level 50), the Cinder Colossus (map 6, level 55), the Ashen Sovereign (level 60) and the
-   Sunken King (the finale, level 71, after the Jade Hollow), and the Jade Hollow's Hollow Stag (level 65). DS.bossFor in data.js puts them at the
+   Sunken King (the finale, level 71, after the Jade Hollow), and the Jade Hollow's Hollow Stag (level 65) and Jade Carapace (level 70). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -1142,6 +1142,103 @@
       return null;
     },
   };
+  // ---------------- the Jade Carapace (map 7, the Jade Hollow, level 70: wins the Jade Breaker) ----------------
+  // Robert drew it 2026-11-27. Slow and heavy, under a crystal shell that turns blows from the front (e.shell, see
+  // hitFoe): strike it from behind or from above. Bite: a short lunge of the tusks. Jade Line: it stabs the floor and
+  // crystals burst up in a running line toward the knight (the Jade Breaker's own tide; below half a second line runs
+  // behind it). Crystal Shake: it heaves its shell and crystals rain down all round; where they land they STAY as
+  // jade shards on the floor for a while. Shell Guard: it pulls in and waits, then rolls out in a Spin across the
+  // hall, rebounding off the screen's edges (twice below half). Plunge on to its guarded shell and it flips on its
+  // back, legs waving, open to blows.
+  AI["jade-carapace"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Carapace's crystals blaze");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const b = e.boss;
+        let m;
+        if (b.next) { m = b.next; b.next = null; }
+        else m = b.count % 5 === 4 ? "guard"
+          : adx < 190 ? pick([["bite", 4], ["shake", 2], ["line", 1]])
+          : adx < 600 ? pick([["line", 4], ["shake", 3], ["guard", 1]])
+          : pick([["line", 3], ["shake", 2], ["guard", 2]]);
+        start(e, m, { bite: 0.55, line: 0.75, shake: 0.8, guard: 0.3, spin: 0.6 }[m] * (hot ? 0.85 : 1));
+        return 0;
+      }
+      return adx > 170 ? Math.sign(dx) : 0;
+    },
+    frame(e, dt) {
+      const b = e.boss;
+      const shelled = (e.move === "guard" && e.state !== "move") || (e.move === "spin" && e.state === "strike" && b.roll);
+      e.shell = shelled && e.state !== "hurt" ? b.shellObj || (b.shellObj = { flip: () => flip(e) }) : null;
+      if (b.flipped && e.state !== "hurt") { b.flipped = false; e.vuln = 0; }
+    },
+    strike(e) {
+      const p = G.player, d = e.d, b = e.boss, hot = b.phase > 1;
+      e.hitDone = false;
+      if (e.move === "bite") { e.strikeDur = 0.35; e.vx = e.dir * 460; }
+      else if (e.move === "line") {
+        e.strikeDur = 0.8; fx().shake(7);
+        for (const sd of hot ? [e.dir, -e.dir] : [e.dir])
+          for (let i = 0; i < (hot ? 12 : 10); i++) {
+            const x = e.x + sd * (e.w * 0.5 + 20 + i * 52);
+            if (x > 30 && x < Wd.W - 30) spike(e, "crystal", x, 0.1 + i * 0.07 + (sd !== e.dir ? 0.35 : 0), d.dmg * 0.65, 64 + (i % 3) * 14, 0.45, JADE);
+          }
+      } else if (e.move === "shake") {
+        e.strikeDur = 0.7; fx().shake(6);
+        const n = hot ? 9 : 6, g = 1300, sx = e.x, sy = e.y - e.h * 0.9;
+        for (let i = 0; i < n; i++) {
+          const tx = clamp(i === 0 ? p.x : e.x + (i % 2 ? 1 : -1) * rnd(90, 460), camL() + 30, camR() - 30), gy = groundY(tx, e.y - 40);
+          const T = 1.0 + rnd(0, 0.5), v = lobAt(sx, sy, tx, gy - 6, T, g);
+          G.shots.push({ team: "f", kind: "jshard", x: sx + rnd(-30, 30), y: sy, vx: v.vx, vy: v.vy, g, r: 9, dmg: Math.round(d.dmg * 0.55), life: T + 0.3, land: true, warn: gy, tx, src: e, by: d.name,
+            onEnd: (s) => { // it stays where it fell: a shard in the floor
+              fx().spark(s.x, s.y, "#7affc0", 5);
+              if (Math.abs(gy - e.y) < 80) G.shots.push({ team: "f", kind: "crystal", x: tx, y: gy - 16, vx: 0, vy: 0, r: 12, h: 32, dmg: Math.round(d.dmg * 0.35), life: hot ? 5 : 4, warn: gy, ghost: true, stay: true, src: e, by: d.name, c: JADE });
+            } });
+        }
+      } else if (e.move === "guard") {
+        e.strikeDur = 2.2; e.vx = 0; fx().text(e.x, e.y - e.h - 24, "SHELL GUARD", "#7affc0", 14);
+        b.next = "spin";
+      } else if (e.move === "spin") {
+        e.dir = Math.sign(p.x - e.x) || e.dir; e.strikeDur = 6; b.roll = true; b.bounces = hot ? 2 : 1; b.endT = 0;
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, b = e.boss;
+      if (e.move === "bite") {
+        e.vx *= 0.86;
+        if (!e.hitDone && front(e, e.w * 0.5 + 70, 0.7, 10)) { e.hitDone = true; hurt(e, d.dmg); p.vx = e.dir * 320; }
+      } else if (e.move === "guard") { e.vx = 0; }
+      else if (e.move === "spin") {
+        if (b.roll) {
+          e.vx = e.dir * 720;
+          if (!e.hitDone && DS.boxHitsPlayer(e.x - e.w * 0.45, e.y - e.h * 0.8, e.x + e.w * 0.45, e.y)) { e.hitDone = true; hurt(e, d.dmg * 1.1); p.vx = e.dir * 480; p.vy = -420; p.onGround = false; }
+          const edge = e.dir > 0 ? e.x > camR() - e.w * 0.5 : e.x < camL() + e.w * 0.5;
+          if (edge || e.hitWall) {
+            fx().shake(8); fx().puff(e.x + e.dir * e.w * 0.4, e.y - 30, 10, "rgba(120,255,180,0.5)");
+            if (b.bounces-- > 0) { e.dir = -e.dir; e.hitDone = false; }
+            else { b.roll = false; e.vx = -e.dir * 120; e.st = e.strikeDur - 0.6; }
+          }
+          if (e.st > e.strikeDur - 0.7) e.st = e.strikeDur - 0.7; // it rolls until it runs out of rebounds
+        } else e.vx *= 0.9;
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (e.state === "hurt") return b.flipped ? "flipped" : null;
+      if (e.state === "windup") return { bite: "biteWind", line: "spikeWind", shake: "shakeWind", guard: "guard", spin: "spinStart" }[m];
+      if (e.state === "strike") return m === "spin" ? (b.roll ? "spin" : "spinEnd") : { bite: "bite", line: "spike", shake: "shake", guard: "guard" }[m];
+      if (e.state === "recover") return { bite: "bite", line: "spike", shake: "shake", guard: "guard", spin: "spinEnd" }[m];
+      return null;
+    },
+  };
+  // a plunge on to the Carapace's guarded shell tips it on its back: legs waving, open to blows
+  function flip(e) {
+    const b = e.boss; if (b.flipped) return;
+    b.flipped = true; b.roll = false; b.next = null; e.shell = null; e.vuln = 1.6;
+    e.state = "hurt"; e.st = 0; e.stun = 2.6; e.vx = 0;
+    fx().text(e.x, e.y - e.h - 30, "FLIPPED!", "#ffd27a", 16); fx().shake(9);
+  }
   // roots bursting up from a marked spot: a knight they catch is held fast (follow: aimed under the knight when they burst)
   function roots(e, x, delay, dmg, follow) {
     const gy0 = groundY(x, G.player.y - 40);

@@ -172,6 +172,16 @@
       spark(e.x + e.dir * e.w * 0.5, e.y - e.h * 0.55, "#cfd8dc", 6);
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
+    // the Jade Carapace's shell (src/bosses.js): it turns blows from the front; a plunge on it while it guards flips it
+    if (e.shell && !blocked) {
+      const above = opt.plunge || p.y < e.y - e.h * 0.8;
+      if (above && e.move === "guard") e.shell.flip();
+      else if (!above && Math.sign(dir) === -e.dir) {
+        dmg *= 0.12; blocked = true; e.blockT = 0.3;
+        spark(e.x + e.dir * e.w * 0.4, e.y - e.h * 0.5, "#9affc8", 6);
+        text(e.x, e.y - e.h - 6, "SHELL", "#9affc8", 12);
+      }
+    }
     if (e.brittle) dmg *= 1.2;
     if (e.vuln) dmg *= e.vuln; // a boss's weak spot is open (the Magma Golem's core, the Hydra's stumps)
     if (e.thorns && Math.abs(e.x - p.x) < 150) hurtPlayer(e.thorns, null, e.d.name + "'s flame cloak"); // the Ashen Sovereign burns back
