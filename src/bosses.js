@@ -1054,8 +1054,8 @@
   // Robert drew it 2026-11-27. Fast and tall. Antler Charge: it scrapes the floor, then gallops flat out straight
   // through where the knight stood (jump it); below half it wheels round and charges back. Shard Volley: it throws
   // its head back and flings its antlers, and jade shards arc high and rain down on marked spots round the knight.
-  // Crown Leap: it leaps on to the knight and its landing raises a ring of jade spikes that runs outward both ways,
-  // nearest first (jump the ripple). Root Call: it rears and stamps, and roots burst up on marked spots; a knight
+  // Crown Leap: it leaps on to the knight and its landing bucks the whole floor round it (Crown Quake): a knight on
+  // the ground is thrown and hurt, one in the air at that moment is safe. Root Call: it rears and stamps, and roots burst up on marked spots; a knight
   // caught in them is HELD fast for a moment. Every fourth move is a leap.
   const JADE = "90,255,160";
   AI["jade-stag"] = {
@@ -1123,12 +1123,13 @@
         if (b.air !== "land" && e.onGround && e.st > 0.1) {
           b.air = "land"; e.vx = 0; e.st = e.strikeDur - 0.7; fx().shake(12);
           if (DS.boxHitsPlayer(e.x - e.w * 0.5, e.y - e.h, e.x + e.w * 0.5, e.y)) hurt(e, d.dmg * 1.2);
-          const n = e.boss.phase > 1 ? 5 : 4;
-          for (const k of [1, -1]) for (let i = 0; i < n; i++) {
-            const x = e.x + k * (e.w * 0.5 + 30 + i * 62);
-            if (x > 30 && x < Wd.W - 30) spike(e, "crystal", x, 0.08 + i * 0.13, d.dmg * 0.6, 70 + i * 8, 0.4, JADE);
+          // Crown Quake: the whole floor round it bucks; a knight standing on it is thrown up, one in the air is safe
+          const R = e.boss.phase > 1 ? 380 : 300;
+          if (!e.hitDone && p.onGround && !p.dead && Math.abs(p.x - e.x) < R && Math.abs(p.y - e.y) < 60) {
+            e.hitDone = true; hurt(e, d.dmg * 0.8); p.vy = -620; p.vx = Math.sign(p.x - e.x || 1) * 260; p.onGround = false;
+            fx().text(p.x, p.y - 100, "THROWN", "#b8ff9a", 14);
           }
-          fx().puff(e.x, e.y, 18, "rgba(120,255,180,0.45)");
+          for (let i = -6; i <= 6; i++) fx().puff(e.x + i * R / 6, e.y, 2, "rgba(120,255,180,0.45)");
         }
         if (b.air !== "land" && e.st > e.strikeDur - 0.75) e.st = e.strikeDur - 0.75;
       }
@@ -1145,8 +1146,9 @@
   // ---------------- the Jade Carapace (map 7, the Jade Hollow, level 70: wins the Jade Breaker) ----------------
   // Robert drew it 2026-11-27. Slow and heavy, under a crystal shell that turns blows from the front (e.shell, see
   // hitFoe): strike it from behind or from above. Bite: a short lunge of the tusks. Jade Line: it stabs the floor and
-  // crystals burst up in a running line toward the knight (the Jade Breaker's own tide; below half a second line runs
-  // behind it). Crystal Shake: it heaves its shell and crystals rain down all round; where they land they STAY as
+  // crystals burst up in a running line toward the knight and STAY as a hedge for a couple of seconds (unlike the Rift
+  // Throne's, which vanish), herding the knight round behind it where the shell is weak; below half a second line runs
+  // behind it too. Crystal Shake: it heaves its shell and crystals rain down all round; where they land they STAY as
   // jade shards on the floor for a while. Shell Guard: it pulls in and waits, then rolls out in a Spin across the
   // hall, rebounding off the screen's edges (twice below half). Plunge on to its guarded shell and it flips on its
   // back, legs waving, open to blows.
@@ -1182,7 +1184,7 @@
         for (const sd of hot ? [e.dir, -e.dir] : [e.dir])
           for (let i = 0; i < (hot ? 12 : 10); i++) {
             const x = e.x + sd * (e.w * 0.5 + 20 + i * 52);
-            if (x > 30 && x < Wd.W - 30) spike(e, "crystal", x, 0.1 + i * 0.07 + (sd !== e.dir ? 0.35 : 0), d.dmg * 0.65, 64 + (i % 3) * 14, 0.45, JADE);
+            if (x > 30 && x < Wd.W - 30) { spike(e, "crystal", x, 0.1 + i * 0.07 + (sd !== e.dir ? 0.35 : 0), d.dmg * 0.65, 64 + (i % 3) * 14, hot ? 3 : 2.4, JADE); G.shots[G.shots.length - 1].stay = true; }
           }
       } else if (e.move === "shake") {
         e.strikeDur = 0.7; fx().shake(6);
