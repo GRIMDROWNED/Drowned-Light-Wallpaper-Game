@@ -12,7 +12,7 @@
   const G = DS.G, Wd = DS.World;
   const fx = () => DS.fx;
   const PX = 2; // world units per art pixel
-  const N = { watchers: 3, wake: 90, sight: 460, shotCd: 1.6, shotSpeed: 520, hp: 150, shards: 2, feed: 3, pool: 640, poolDps: 9, foeTick: 0.5, foeDmg: 10, sbSpeed: 60, sbPause: 2.5 };
+  const N = { watchers: 3, wake: 90, sight: 460, shotCd: 1.6, shotSpeed: 520, hp: 150, shards: 2, feed: 3, pool: 640, poolDps: 9, poolHit: 0.15, foeTick: 0.5, foeDmg: 10, sbSpeed: 60, sbPause: 2.5 };
   const J = DS.Jade = { on: false, watchers: [], gate: null, pool: null, sb: null, shots: [], shards: 0 };
 
   let img = null;
@@ -40,7 +40,7 @@
 
   J.clear = function () {
     if (J.sb) { const i = Wd.plats.indexOf(J.sb.plat); if (i >= 0) Wd.plats.splice(i, 1); }
-    J.on = false; J.watchers = []; J.gate = null; J.pool = null; J.sb = null; J.shots = []; J.shards = 0;
+    J.on = false; J.watchers = []; J.gate = null; J.pool = null; J.sb = null; J.shots = []; J.shards = 0; J.thrown = null;
   };
 
   // after Explore.build: find room on the floor for the pool, the Gatekeeper and the Watchers
@@ -200,12 +200,21 @@
     // carry whoever stands on it
     for (const o of [p, ...G.foes]) if (o && !o.dead && o.onPlat === plat) { o.x += dx; o.y = plat.y; }
     if (p.onPlat === plat && oy !== plat.y) p.y = plat.y;
+    if (J.thrown) { const t = J.thrown; t.t -= dt; p.x += (t.to - p.x) * Math.min(1, dt * 9); if (t.t <= 0 || p.dead) J.thrown = null; }
     // the jade water burns
     const wet = (o) => o.onGround && !o.onPlat && o.x > q.a && o.x < q.b && o.y >= Wd.FLOOR - 2;
+    // Robert 2026-11-27: walking through made the Shellback pointless. A knight who steps or falls in is scalded and
+    // thrown back out toward the nearer bank, so the only way over is on its back (the autopilot just wades, slowly).
     if (!p.dead && wet(p) && !G.god) {
-      p.hp -= N.poolDps * dt; p.vx *= Math.max(0, 1 - 4 * dt);
-      if (Math.random() < dt * 4) fx().spark(p.x, Wd.FLOOR - 6, "#7affc0", 2);
-      if (p.hp <= 0) { p.hp = 0; p.dead = 0.001; p.lastHit = "jade water"; fx().text(p.x, p.y - p.h - 30, "Fell to the jade water", "#ff9a9a", 14); }
+      if (G.auto) { p.hp -= N.poolDps * dt; p.vx *= Math.max(0, 1 - 4 * dt); }
+      else {
+        const home = p.x - q.a < q.b - p.x ? -1 : 1;
+        DS.hurtPlayer(Math.round(p.max * N.poolHit), null, "the jade water", p.x - home);
+        p.vy = -620; p.onGround = false; p.atk = null;
+        J.thrown = { to: home < 0 ? q.a - 50 : q.b + 50, t: 0.5 }; // carried out over the bank (air control would stall a plain push)
+        fx().spark(p.x, Wd.FLOOR - 6, "#7affc0", 12); fx().text(p.x, p.y - p.h - 20, "SCALDED", "#7affc0", 14);
+      }
+      if (p.hp <= 0 && !p.dead) { p.hp = 0; p.dead = 0.001; p.lastHit = "jade water"; fx().text(p.x, p.y - p.h - 30, "Fell to the jade water", "#ff9a9a", 14); }
     }
     for (const f of G.foes) if (!f.dead && !f.d.boss && !f.d.custom && f.spawnT <= 0 && wet(f)) {
       f.poolT = (f.poolT || 0) - dt;
@@ -246,6 +255,14 @@
   };
   J.drawFront = function (g) {
     if (!J.on) return;
+    const q = J.pool;
+    if (q) { // the water's surface in front: deep jade water, not a floor
+      const y = Wd.FLOOR - 16;
+      g.fillStyle = "rgba(10,70,50,0.55)"; g.fillRect(q.a, y, q.b - q.a, 18);
+      g.fillStyle = "rgba(120,255,190,0.6)";
+      for (let x = q.a; x < q.b; x += 6) { const h = Math.sin(x * 0.05 + q.t * 2.4) * 2; g.fillRect(x, y + h, 6, 2); }
+      if (Math.random() < 0.15) fx().spark(q.a + Math.random() * (q.b - q.a), y, "#7affc0", 1);
+    }
     for (const s of J.shots) { // a jade spike: a bright sliver along its path
       const a = Math.atan2(s.vy, s.vx);
       glow(g, s.x, s.y, 22, "90,255,160", 0.5);
