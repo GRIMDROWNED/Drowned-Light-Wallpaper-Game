@@ -350,12 +350,11 @@ function reeds(){
         "tpillar2", "tbanner3", "tbrazier3", "tpillar3", "tbanner4", "tbrazier4", "tbroken2"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [240, 560], pick: ["throne", "curtain", "statue", "statue"] },
     ] },
-    // map 7, the Jade Hollow (Robert's concept 2026-11-25): a stand-in until his pictures come back. tools/standin_jade.py
-    // turns the Spires' cut scenery jade green, so it borrows the Spires' rects (rectsFrom) and leaves out the floating isles.
-    jade: { rectsFrom: "spires", reeds: false, sky: true, far: true, plats: true, ground: "jade", top: "#04100c", fog: "#0c2a20", wisp: ["#7affc0", "#2a8a5a"],
+    // map 7, the Jade Hollow: Robert's cavern sky and middle layer (2026-11-26); its walkways, posts and blocks are still
+    // the Spires' turned jade green (BORROW in tools/cut_scenery.py) until he draws them
+    jade: { reeds: false, sky: true, plats: true, ground: "jade", top: "#04100c", fog: "#0c2a20", wisp: ["#7affc0", "#2a8a5a"],
       posts: ["post1", "post2", "post3"], rows: [
-      { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["arch", "cpillar", "wall", "chpillar"] },
-      { f: 0.75, ty: 0.9, sink: 3, gap: [220, 520], pick: ["pylon", "portal", "pylonBroken", "pylon"] },
+      { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["jarch", "jroot", "jcrystal", "jpillar", "jcpillar", "jstub"] },
     ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
@@ -375,7 +374,7 @@ function reeds(){
     themeName = LEVEL_THEMES[m % LEVEL_THEMES.length];
     T = THEMES[themeName];
     if (!T.ready) { // load its pictures and lay out each row once: a loop of pieces long enough not to notice
-      const sc = (DS.SCENERY || {})[themeName] || (DS.SCENERY || {})[T.rectsFrom]; // a stand-in borrows another map's cut
+      const sc = (DS.SCENERY || {})[themeName];
       T.atlas = sc && img(`assets/scenery/${themeName}/atlas.png`);
       T.rects = sc ? sc.atlas : {};
       if (T.sky) T.skyImg = img(`assets/scenery/${themeName}/sky.png`);

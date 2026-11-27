@@ -1,8 +1,7 @@
 """Stand-in art for the Jade Hollow (map 7, Robert 2026-11-25) until his pictures come back from the prompts in
-/mnt/project-files/art-prompts/side-view/jade-map-prompts.md: the Abyssal Spires' cut scenery (arches, crystal
-pillars, portal, pylons, isles, sky, far layer) and map badge turned from violet to jade green.
-world.js THEMES.jade borrows the Spires' rects (rectsFrom) while this stand-in atlas is in use.
-Once the real art is in, add "jade" to tools/cut_scenery.py (magenta key) and drop rectsFrom.
+/mnt/project-files/art-prompts/side-view/jade-map-prompts.md: turn() makes the Abyssal Spires' violet jade green.
+Run on its own it writes the map badge (assets/maps/jade.png); tools/cut_scenery.py uses turn() for the walkways,
+posts and blocks the Jade Hollow still borrows from the Spires (BORROW there).
 Usage: python3 tools/standin_jade.py"""
 import os
 import numpy as np
@@ -12,8 +11,8 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SHIFT = -0.33  # hue turn: violet (~0.75) to jade green (~0.42)
 
 
-def jade(src, dst, sat=1.0, val=1.0, only_violet=False):
-    im = Image.open(src).convert("RGBA")
+def turn(im, sat=1.0, val=1.0, only_violet=False):
+    im = im.convert("RGBA")
     a = np.array(im)
     hsv = np.array(im.convert("RGB").convert("HSV")).astype(np.float32)
     turn = (hsv[..., 0] > 0.6 * 255) & (hsv[..., 0] < 0.92 * 255) if only_violet else np.ones(hsv.shape[:2], bool)
@@ -21,13 +20,10 @@ def jade(src, dst, sat=1.0, val=1.0, only_violet=False):
     hsv[..., 1] = np.clip(hsv[..., 1] * sat, 0, 255)
     hsv[..., 2] = np.clip(hsv[..., 2] * val, 0, 255)
     rgb = np.array(Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB"))
-    out = np.dstack([rgb, a[..., 3]])
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    Image.fromarray(out, "RGBA").save(dst, optimize=True)
+    return Image.fromarray(np.dstack([rgb, a[..., 3]]), "RGBA")
 
 
-sc = os.path.join(ROOT, "assets", "scenery")
-for f in ("atlas.png", "sky.png", "far.png"):
-    jade(os.path.join(sc, "spires", f), os.path.join(sc, "jade", f), sat=1.1)
-jade(os.path.join(ROOT, "assets", "maps", "spires.png"), os.path.join(ROOT, "assets", "maps", "jade.png"), sat=1.15, only_violet=True)  # keep its bronze ring
-print("jade stand-ins written")
+if __name__ == "__main__":  # the map badge (Robert's sky and middle layer came in 2026-11-26: tools/cut_scenery.py cuts those)
+    turn(Image.open(os.path.join(ROOT, "assets", "maps", "spires.png")), sat=1.15, only_violet=True).save(  # keep its bronze ring
+        os.path.join(ROOT, "assets", "maps", "jade.png"), optimize=True)
+    print("jade badge written")
