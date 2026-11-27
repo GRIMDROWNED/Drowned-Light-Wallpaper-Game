@@ -2,7 +2,7 @@
    - Watchers (his ideas 1 + 2): a cluster of jade crystals like any other, until the knight comes close. Then the shell
      lifts, the eye opens and it shoots jade spikes at whatever is nearest: the knight or the Drowned. Killed, it spills
      jade shards and a pile of loot. While awake it is a foe in G.foes (d.custom), so every attack can hit it.
-   - The Gatekeeper (idea 3): coiled across a tunnel mouth. Bring it 3 jade shards (stand by it) and it eats them,
+   - The Gatekeeper (idea 3): coiled across Robert's vault gate. Bring it 3 jade shards (stand by it) and it eats them,
      slides aside and opens its vault: a relic, an ember, a flare and a heap of gold.
    - The Shellback (idea 4): a gentle giant wading back and forth across a pool of jade water that burns the knight and
      the Drowned alike. Its flat shell is a moving platform: ride it across.
@@ -169,7 +169,7 @@
     } else if (k.state === "eat") {
       if ((k.st += dt) > 0.7) k.state = k.fed >= N.feed ? "move" : "hungry";
     } else if (k.state === "move") { // slides aside: the tunnel is open
-      k.moveT += dt; k.x = k.x0 + Math.min(1, k.moveT / 1.4) * 230;
+      k.moveT += dt; k.x = k.x0 + Math.min(1, k.moveT / 1.4) * 280;
       if (k.moveT > 1.4) { k.state = "aside"; open(k); }
     }
   }
@@ -217,12 +217,10 @@
   J.drawBack = function (g) {
     if (!J.on) return;
     const k = J.gate;
-    if (k) { // the tunnel mouth behind it, glowing once it opens
+    if (k) { // Robert's vault gate behind it: dark with eyes inside, then lit gold with the treasure once it opens
       const x = k.x0, y = Wd.FLOOR;
-      g.fillStyle = "#050a08"; g.beginPath(); g.ellipse(x, y, 110, 170, 0, Math.PI, 0); g.fill();
-      g.strokeStyle = "#2a3a34"; g.lineWidth = 10; g.beginPath(); g.ellipse(x, y, 116, 176, 0, Math.PI, 0); g.stroke();
-      g.strokeStyle = "#a08a40"; g.lineWidth = 2; g.beginPath(); g.ellipse(x, y, 122, 182, 0, Math.PI, 0); g.stroke();
-      glow(g, x, y - 70, k.open ? 160 : 90, k.open ? "255,210,120" : "90,255,160", k.open ? 0.45 : 0.18 + 0.06 * Math.sin(k.t * 2));
+      glow(g, x, y - 100, k.open ? 180 : 100, k.open ? "255,210,120" : "90,255,160", k.open ? 0.4 : 0.12 + 0.05 * Math.sin(k.t * 2));
+      draw(g, k.open ? "vOpen" : "vClosed", x, y + 4, 1);
       const f = k.state === "sleep" ? "gSleep" : k.state === "wake" ? "gWake" : k.state === "hungry" ? "gHungry" : k.state === "eat" ? "gEat" : k.state === "move" ? "gMove" : "gAside";
       if (k.state === "hungry") glow(g, k.x - 30, Wd.FLOOR - 70, 70, "90,255,160", 0.35);
       draw(g, f, k.x, Wd.FLOOR + 4, k.state === "move" || k.state === "aside" ? 1 : -1);

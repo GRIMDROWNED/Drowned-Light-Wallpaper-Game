@@ -1,5 +1,5 @@
 """Cut Robert's Jade Hollow creature sheets (2026-11-25, magenta key) into pixel frames for src/jade.js.
-Sources: /mnt/project-files/art-prompts/returned/side-view/levels/jade/{watcher,gatekeeper,shellback}.png
+Sources: /mnt/project-files/art-prompts/returned/side-view/levels/jade/{watcher,gatekeeper,shellback,vault-gate}.png
 Writes assets/jade/creatures.png (one atlas) and src/jadeart.js (DS.JADEART: name -> [x, y, w, h] (+ top row for the shellback), in pixel px;
 1 px = 2 world units, a knight stands ~42 px). Every frame of a creature keeps the sheet's relative sizes; the
 shellback's wading frame is cut at the waterline (the game draws its own water).
@@ -18,6 +18,7 @@ SHEETS = {
     "watcher.png": (3, 2, ["wDisguise", "wWake", "wAwake", "wShoot", "wHurt", "wDead"], 30),
     "gatekeeper.png": (3, 2, ["gSleep", "gWake", "gHungry", "gEat", "gMove", "gAside"], 96),
     "shellback.png": (2, 3, ["sWalk1", "sWalk2", "sWalk3", "sWalk4", "sWade", "sSleep"], 82),
+    "vault-gate.png": (2, 1, ["vClosed", "vOpen"], 124),  # the Gatekeeper's vault (Robert 2026-11-26)
 }
 
 def pixelize(im, scale, colors=14, outline=(10, 14, 12)):
