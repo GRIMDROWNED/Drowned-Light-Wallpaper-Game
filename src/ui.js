@@ -151,8 +151,8 @@
     const maps = $("#wallMaps"); maps.innerHTML = "";
     // six rings are painted: with more maps (the Jade Hollow is map 7) they page, 6 at a time, with arrows either side
     const page = Math.floor(wMap / W_RING.length), pages = Math.ceil(DS.MAPS.length / W_RING.length);
-    const turn = (d, x) => { // a page arrow, shown when that page has a beaten level
-      const to = page + d; if (to < 0 || to >= pages || beat <= to * W_RING.length * 10) return;
+    const turn = (d, x) => { // a page arrow (always there, so a map not yet reached still shows as "???")
+      const to = page + d; if (to < 0 || to >= pages) return;
       const a = el("button", "opt wpage", d < 0 ? "\u2039" : "\u203a");
       a.setAttribute("aria-label", d < 0 ? "Earlier maps" : "Later maps");
       a.style.left = x / 1672 * 100 + "%"; a.style.top = W_RING_Y / 941 * 100 + "%";
@@ -167,7 +167,7 @@
       b.style.setProperty("--mc", m.c); b.style.left = W_RING[i % W_RING.length] / 1672 * 100 + "%"; b.style.top = W_RING_Y / 941 * 100 + "%";
       b.innerHTML = `<span class="hole"><img alt="" src="${DS.Maps.badge(i)}" style="--ex:${m.em[0]};--ey:${m.em[1]}"></span>`;
       b.addEventListener("click", () => { if (ok) { wMap = i; syncWall(); } });
-      const say = () => wallSay(ok ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}` : "<b>???</b> · Not reached yet.");
+      const say = () => wallSay(ok ? `<b style="color:rgb(${m.c})">${m.name}</b> · levels ${i * 10 + 1} to ${i * 10 + 10}` : `<b>???</b> · Beat level ${i * 10 + 1} to fight here.`);
       b.addEventListener("focus", say); b.addEventListener("mouseenter", say);
       maps.appendChild(b);
     });
@@ -337,24 +337,27 @@
       b.dataset.map = i;
       b.addEventListener("click", () => {
         if (!DS.Maps.open(i)) { showMapText(i); return; }
-        DS.Maps.pick(i); syncMaps(); flash(b);
+        kView = i; DS.Maps.pick(i); syncMaps(); flash(b);
         if (G.player && G.mode !== "title") { close(); DS.restart(); G.mode = "play"; } // mid-run: go there now
       });
       b.addEventListener("focus", () => showMapText(i));
       b.addEventListener("mouseenter", () => showMapText(i));
       row.appendChild(b);
     });
-    // the painted arrows step through the open maps
+    // the painted arrows step through every map: an open one is picked, a shut one is shown as "???" with how to open
+    // it (so the maps past the six painted rings, from the Jade Hollow on, can always be seen)
     for (const a of document.querySelectorAll("#kits .karrow")) a.addEventListener("click", () => {
-      const n = DS.MAPS.length, d = +a.dataset.d; let i = DS.Maps.picked();
-      for (let k = 0; k < n; k++) { i = (i + d + n) % n; if (DS.Maps.open(i)) break; }
-      document.querySelector(`#mapPick .map[data-map="${i}"]`).click();
+      const n = DS.MAPS.length, d = +a.dataset.d, i = ((kView >= 0 ? kView : DS.Maps.picked()) + d + n) % n;
+      kView = i;
+      if (DS.Maps.open(i)) document.querySelector(`#mapPick .map[data-map="${i}"]`).click();
+      else { syncMaps(); showMapText(i); }
     });
     syncMaps();
   }
-  const K_RINGS = 6; // rings painted on the knight screen; with more maps (the Jade Hollow, map 7) the strip pages to the picked map's six
+  const K_RINGS = 6; // rings painted on the knight screen; with more maps (the Jade Hollow, map 7) the strip pages, six at a time
+  let kView = -1; // the map the arrows last stepped to (-1: the picked one); its page is shown
   function syncMaps() {
-    const cur = DS.Maps.picked(), page = Math.floor(cur / K_RINGS);
+    const cur = DS.Maps.picked(), page = Math.floor((kView >= 0 ? kView : cur) / K_RINGS);
     for (const b of document.querySelectorAll("#mapPick .map")) {
       const i = +b.dataset.map, m = DS.MAPS[i], on = DS.Maps.open(i);
       b.hidden = Math.floor(i / K_RINGS) !== page;
