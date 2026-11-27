@@ -350,11 +350,12 @@ function reeds(){
         "tpillar2", "tbanner3", "tbrazier3", "tpillar3", "tbanner4", "tbrazier4", "tbroken2"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [240, 560], pick: ["throne", "curtain", "statue", "statue"] },
     ] },
-    // map 7, the Jade Hollow: Robert's cavern sky and middle layer (2026-11-26); its walkways, posts and blocks are still
-    // the Spires' turned jade green (BORROW in tools/cut_scenery.py) until he draws them
+    // map 7, the Jade Hollow: Robert's full set (2026-11-26): cavern sky, ruins, crystals and eyed roots, his walkways,
+    // posts and blocks (post3's crystal crown would repeat when stretched; the caged lantern is cut but not placed yet)
     jade: { reeds: false, sky: true, plats: true, ground: "jade", top: "#04100c", fog: "#0c2a20", wisp: ["#7affc0", "#2a8a5a"],
-      posts: ["post1", "post2", "post3"], rows: [
+      posts: ["post1", "post2", "post4"], rows: [
       { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["jarch", "jroot", "jcrystal", "jpillar", "jcpillar", "jstub"] },
+      { f: 1, ty: 1, sink: 2, gap: [120, 380], pick: ["jcry1", "jcry2", "jcry3", "jeye", "jknot", "jcry1", "jcry3"] },
     ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
