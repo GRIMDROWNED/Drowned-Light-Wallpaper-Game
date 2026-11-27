@@ -238,6 +238,7 @@ const GROUND={
   reaches:{d:['#3a3d42','#323439','#2a2c30','#222327','#1a1b1e'],g:['#6d6a52','#55533f','#34332a'],b:'#8a8466',hi:'#9c977a',f:['#c9c7b0','#8fa0b0'],crack:['#16171a','#4a4d54']},
   abyss:{d:['#221a1c','#1c1517','#171113','#120d0f','#0c090a'],g:['#3a1c20','#2a1418','#1a0c0f'],b:'#5a2a30',hi:'#6e3238',f:['#4fa0ff','#a02030'],crack:['#0a0708','#3a2a2e']},
   mines:{d:['#2a1f1a','#231a16','#1c1512','#16100e','#0f0b09'],g:['#4a2a18','#3a2014','#24140c'],b:'#7a3a18',hi:'#a84a1a',f:['#ff8a2a','#ffc040'],crack:['#0a0706','#5a2a12']},
+  jade:{d:['#1a2220','#151c1a','#111715','#0d1211','#090d0c'],g:['#2a5a44','#1e4434','#123024'],b:'#3a8a64',hi:'#4aa878',f:['#5af5a0','#c8a040'],crack:['#070a09','#2a3a34']},
   mire:{d:['#2c2a1c','#242218','#1d1c14','#171610','#11100c'],g:['#5f6a34','#4a5428','#2c3318'],b:'#7d8840',hi:'#8f9a4c',f:['#d6d860','#9fb04a'],crack:['#12110c','#3a3624']},
 };
 function ground(pal){
@@ -349,6 +350,13 @@ function reeds(){
         "tpillar2", "tbanner3", "tbrazier3", "tpillar3", "tbanner4", "tbrazier4", "tbroken2"] },
       { f: 0.75, ty: 0.9, sink: 3, gap: [240, 560], pick: ["throne", "curtain", "statue", "statue"] },
     ] },
+    // map 7, the Jade Hollow: Robert's full set (2026-11-26): cavern sky, ruins, crystals and eyed roots, his walkways,
+    // posts and blocks (post3's crystal crown would repeat when stretched; the caged lantern is cut but not placed yet)
+    jade: { reeds: false, sky: true, plats: true, ground: "jade", top: "#04100c", fog: "#0c2a20", wisp: ["#7affc0", "#2a8a5a"],
+      posts: ["post1", "post2", "post4"], rows: [
+      { f: 0.6, ty: 0.84, sink: 2, gap: [-10, 70], pick: ["jarch", "jroot", "jcrystal", "jpillar", "jcpillar", "jstub"] },
+      { f: 1, ty: 1, sink: 2, gap: [120, 380], pick: ["jcry1", "jcry2", "jcry3", "jeye", "jknot", "jcry1", "jcry3"] },
+    ] },
     mire: { sky: true, far: true, plats: true, ground: "mire", top: "#10140e", fog: "#232a1b", wisp: ["#d8e070", "#8a9a48"], rows: [
       { f: 0.55, ty: 0.82, sink: 2, gap: [-20, 50], pick: ["tree1", "tree2", "tree3", "tree4", "tree5", "tree6"] },
       { f: 0.72, ty: 0.9, sink: 3, gap: [160, 420], pick: ["chapel", "hang1", "hang2", "hang3", "hang1", "hang2", "hang3"] },
@@ -357,9 +365,9 @@ function reeds(){
   };
   // One map per 10 levels (Robert 2026-11-19), then round again.
   // Robert 2026-11-20: maps follow the boss order (Mire, Reaches, Abyss, Spires, Mines, Crucible Throne); the Shallows
-  // is dropped from the run. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
+  // is dropped from the run; the Jade Hollow joined as map 7 on 2026-11-25. Reaches and Abyss have their full sets (2026-11-24). The code-sky path (T.code, with an
   // optional sky picture and tint) stays for maps whose pictures haven't come in yet.
-  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines", "throne"], MAP_LEVELS = 10;
+  const LEVEL_THEMES = ["mire", "reaches", "abyss", "spires", "mines", "throne", "jade"], MAP_LEVELS = 10;
   let T = THEMES.shallows, themeName = "shallows";
   const img = (src) => { const i = new Image(); i.src = src + "?v=" + DS.VERSION; return i; };
   function theme(n) {
@@ -497,7 +505,7 @@ function reeds(){
     const vis = (x, w) => X(x) < lw + 4 && X(x + w) > -4;
     const pa = T.plats && T.atlas && T.atlas.complete && T.atlas.naturalWidth ? T : null, tag = pa ? themeName : "code";
     // posts first, then planks
-    for (const p of plats) if (vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) {
+    for (const p of plats) if (!p.ride && vis(p.x, p.w)) for (const wx of [p.x + 12, p.x + p.w - 20]) { // (ride: a creature's back, drawn by its module)
       const y0 = Y(p.y) + 6, y1 = Y(surfaceBelow(wx + 4, p.y + 12));
       if (pa) { const ps = T.posts || ["post1", "post2", "post3", "post4"]; post(g, ps[((wx / 7) | 0) % ps.length], X(wx) + 2, y0 - 4, y1 + 2); continue; }
       g.fillStyle = "#160e0b"; g.fillRect(X(wx) - 1, y0, 6, y1 - y0);
@@ -515,7 +523,7 @@ function reeds(){
       const ex = s.x < 0 ? x0 + w - 1 : x0;
       for (let y = Math.max(0, Y(s.y)); y < Math.min(lh, fy + 2); y++) { px(g, ex, y, y % 2 ? "#3b2c22" : "#16110f"); }
     }
-    for (const p of plats) if (vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
+    for (const p of plats) if (!p.ride && vis(p.x, p.w)) g.drawImage(art(p, () => pa ? walk(Math.round(p.w / 2), p.x) : wood(p.w / 2), tag), X(p.x), Y(p.y) - (pa ? 2 : 0));
   }
 
   const World = DS.World = { theme, get themeName() { return themeName; }, W: W0, H, FLOOR, solids, plats, spawns, arena, level, begin, extend, finish, unfinish, prune, move, groundAt, solidAt, surfaceBelow, drawBackdrop, drawNear, drawWorld };

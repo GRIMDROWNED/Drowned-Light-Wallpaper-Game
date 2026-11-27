@@ -19,8 +19,9 @@ BOSS_REF = {"drowned-colossus": "colossus/side/walk1", "mother-wyvern": "wyvern-
             "rift-throne": "rift-throne/side/walk1", "magma-golem": "mines-bosses/golem/side/walk1", "furnace-hydra": "mines-bosses/hydra/idle1",
             "cinder-colossus": "mines-bosses/colossus/side/walk1", "ashen-sovereign": "mines-bosses/sovereign/side/walk1", "sunken-king": "props/fnKingStill"}  # (the Seraph is recoloured violet: tools/recolor_seraph.py, no matching)
 GREEN = {"mother-wyvern", "crucible-wyrm", "deadly-rose", "rift-throne", "magma-golem", "furnace-hydra", "cinder-colossus", "ashen-sovereign"}
+ART_ONLY = {"jade-stag", "jade-carapace"}  # side-view-only bosses: matched to their own walk1 (only the key spill is cleaned)
 for t in sys.argv[2:]:
-    ref = np.array(Image.open(os.path.join(sys.argv[1], "assets/sprites", BOSS_REF[t]) + ".png" if t in BOSS_REF else MAIN + t + "/side/walk1.png").convert("RGBA"))
+    ref = np.array(Image.open(os.path.join(ART, t, "side/walk1.png")).convert("RGBA")) if t in ART_ONLY else np.array(Image.open(os.path.join(sys.argv[1], "assets/sprites", BOSS_REF[t]) + ".png" if t in BOSS_REF else MAIN + t + "/side/walk1.png").convert("RGBA"))
     rm, rs = stats(ref)
     for f in glob.glob(os.path.join(ART, t, "side", "*.png")):
         a = np.array(Image.open(f).convert("RGBA")).astype(float)

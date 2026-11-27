@@ -45,6 +45,7 @@
     if (G.player) {
       for (const z of G.zones) drawZone(z, true);
       DS.Explore.drawWorld(ctx);
+      DS.Jade.drawBack(ctx); // the Jade Hollow's creatures and pool (src/jade.js)
       DS.Loot.draw(ctx); // dropped currencies
       DS.Fam.draw(ctx, false); // walking familiars, Derek's walls, Fred's glowcaps
       for (const e of G.foes) drawFoe(e);
@@ -53,6 +54,7 @@
       DS.Fam.draw(ctx, true);  // Abigail and David fly in front
       for (const z of G.zones) drawZone(z, false);
       for (const s of G.shots) drawShot(s);
+      DS.Jade.drawFront(ctx);
       for (const f of G.fx) drawFx(f);
       if (G.boxes) drawBoxes();
       DS.Explore.drawMist(ctx, cam, LW, LH);
@@ -161,6 +163,7 @@
     if (e.boss && e.boss.rubble) for (const r of e.boss.rubble) // the Colossus's fallen stones (cover from its surge)
       S.drawFx(ctx, "boulder11", r.x, r.y - 15, { scale: 1.3, alpha: Math.min(1, r.t) });
     if (e.d.dummy) return drawDummy(e);
+    if (e.d.custom) return e.d.custom.draw(ctx, e); // drawn by its own module (the Jade Watcher, src/jade.js)
     const set = e.d.sprite, f = (a, p) => S.frame(set, a, p);
     let rec, rot = 0;
     const has = (a) => set[a] && set[a].length;
@@ -234,7 +237,7 @@
   // ---------------- shots ----------------
   function drawShot(s) {
     if (s.warn && s.delay > 0) { // a boulder about to fall: a blinking mark where it lands
-      ctx.fillStyle = `rgba(${s.c && s.kind === "beam" ? s.c : s.kind === "crystal" || s.kind === "beam" ? "210,110,255" : "255,80,60"},${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(${s.c && (s.kind === "beam" || s.kind === "crystal" || s.kind === "roots") ? s.c : s.kind === "crystal" || s.kind === "beam" ? "210,110,255" : "255,80,60"},${0.35 + 0.3 * Math.sin(G.t * 30)})`; ctx.beginPath(); ctx.ellipse(s.x, s.warn - 2, 24, 5, 0, 0, TAU); ctx.fill();
     }
     if (s.delay > 0) return;
     if (s.kind === "thorn") { // the Rose's briar: thorns burst up from the ground
@@ -242,12 +245,33 @@
       S.drawFx(ctx, s.big ? "bloodThorns" : "bloodThorn", s.x, s.warn + 3, { ay: 1, sy: k * 1.5, scale: 1.4, alpha: fade });
       return;
     }
-    if (s.kind === "crystal") { // the Rift Throne's crystals bursting from the ground
+    if (s.kind === "crystal") { // the Rift Throne's crystals bursting from the ground (s.c: the Hollow Stag's jade)
       const k = Math.min(1, (s.t || 0) / 0.07), fade = Math.min(1, s.life * 4), hh = s.h * k, w = s.r * 1.3;
-      glowDot(s.x, s.warn - hh * 0.5, 30, "200,90,255", 0.35 * fade);
-      ctx.globalAlpha = fade; ctx.fillStyle = "#d9a0ff"; ctx.strokeStyle = "#4a1660"; ctx.lineWidth = 2;
+      glowDot(s.x, s.warn - hh * 0.5, 30, s.c || "200,90,255", 0.35 * fade);
+      ctx.globalAlpha = fade; ctx.fillStyle = s.c ? "#8affc4" : "#d9a0ff"; ctx.strokeStyle = s.c ? "#0c4a2c" : "#4a1660"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(s.x - w, s.warn); ctx.lineTo(s.x - 2, s.warn - hh); ctx.lineTo(s.x + w * 0.6, s.warn - hh * 0.55); ctx.lineTo(s.x + w, s.warn); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.globalAlpha = 1; return;
+    }
+    if (s.kind === "roots") { // the Hollow Stag's roots: dark tendrils clawing up out of the floor
+      const k = Math.min(1, (s.t || 0) / 0.1), fade = Math.min(1, s.life * 4), gy = s.warn;
+      ctx.globalAlpha = fade; ctx.lineCap = "round";
+      for (let i = 0; i < 5; i++) {
+        const bx = s.x + (i - 2) * 11, hh = s.h * k * (0.6 + 0.4 * ((i * 7) % 5) / 4), sw = Math.sin(G.t * 9 + i * 2) * 6;
+        ctx.strokeStyle = "#1c120c"; ctx.lineWidth = 7 - Math.abs(i - 2);
+        ctx.beginPath(); ctx.moveTo(bx, gy); ctx.quadraticCurveTo(bx + sw + (i - 2) * 6, gy - hh * 0.5, bx + sw * 1.6 + (i - 2) * 9, gy - hh); ctx.stroke();
+        ctx.strokeStyle = "#5a4a2a"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(bx, gy); ctx.quadraticCurveTo(bx + sw + (i - 2) * 6, gy - hh * 0.5, bx + sw * 1.6 + (i - 2) * 9, gy - hh); ctx.stroke();
+        glowDot(bx + sw * 1.6 + (i - 2) * 9, gy - hh, 7, "120,255,170", 0.8 * fade);
+      }
+      ctx.lineCap = "butt"; ctx.globalAlpha = 1; return;
+    }
+    if (s.kind === "jshard") { // the Hollow Stag's shard volley: a jade sliver arcing down on its marked spot
+      ctx.fillStyle = `rgba(90,255,160,${0.3 + 0.25 * Math.sin(G.t * 26)})`; ctx.beginPath(); ctx.ellipse(s.tx, s.warn - 2, 18, 4, 0, 0, TAU); ctx.fill();
+      glowDot(s.x, s.y, 18, "90,255,160", 0.5);
+      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(Math.atan2(s.vy, s.vx));
+      ctx.fillStyle = "#b8ffd8"; ctx.strokeStyle = "#0c4a2c"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-2, -4); ctx.lineTo(-10, 0); ctx.lineTo(-2, 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore(); return;
     }
     if (s.kind === "crescent") { // a scythe's arc of violet light flying on
       const d = Math.sign(s.vx) || 1, fade = Math.min(1, s.life * 3);

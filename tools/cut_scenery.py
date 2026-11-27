@@ -68,15 +68,25 @@ SHEETS = {
         "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
         "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
     },
+    # map 7 (Robert 2026-11-25/26): his full set (his second backdrop, sky-scene.png with the arches and waterfalls,
+    # was tried as the sky 2026-11-26 but crowds the platforms; kept in returned/ for later)
+    "jade": {
+        "mid.png": (["jarch", "jroot", "jcrystal", "jpillar", "jcpillar", "jstub"], 92, 0.3),
+        "crystals-roots.png": (["jcry1", "jcry2", "jcry3", "jeye", "jknot", "jlantern"], 44, 0.0),
+        "walkways.png": (["walk"], 17, 0.0),
+        "posts.png": (["post1", "post2", "post3", "post4"], 80, 0.0),
+        "blocks.png": (["block1", "block2", "block3", "steps"], 75, 0.0),
+    },
 }
+BORROW = {}  # {map: (other map, [pieces])}: another map's cut turned to this map's colours, for pieces not drawn yet
 # full-width strips: (target height px, fog). The sky is a plain picture; "far" is silhouettes on magenta.
-STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}, "spires": {"sky.png": 240, "far.png": 250}, "mines": {"sky.png": 240, "far.png": 250}, "throne": {"sky.png": 240, "far.png": 250}}
+STRIPS = {"mire": {"sky.png": 240, "far.png": 250}, "reaches": {"sky.png": 240, "far.png": 250}, "abyss": {"sky.png": 240, "far.png": 250}, "spires": {"sky.png": 240, "far.png": 250}, "mines": {"sky.png": 240, "far.png": 250}, "throne": {"sky.png": 240, "far.png": 250}, "jade": {"sky.png": 240}}
 GREEN = {"spires", "mines", "throne"}  # maps drawn on a green key
 # sheets drawn as rows stacked top to bottom: keep only the last (longest) row
-LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png"), ("spires", "walkways.png"), ("mines", "walkways.png"), ("throne", "walkways.png")}
+LAST_ROW = {("mire", "walkways.png"), ("reaches", "walkways.png"), ("abyss", "walkways.png"), ("spires", "walkways.png"), ("mines", "walkways.png"), ("throne", "walkways.png"), ("jade", "walkways.png")}
 # sheets whose pieces overlap in x (branches): rough cut columns, each moved to the emptiest column within 50 px
 SPLIT = {("mire", "mid.png"): [350, 760, 1040, 1440, 1705], ("reaches", "mid.png"): [325, 680, 1046, 1419, 1782], ("abyss", "mid.png"): [375, 770, 1068, 1469, 1808], ("mines", "lavafalls-pillars.png"): [712, 1278]}
-FOG = {"throne": (40, 14, 12), "spires": (44, 22, 60), "mines": (40, 20, 14), "shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
+FOG = {"jade": (12, 40, 30), "throne": (40, 14, 12), "spires": (44, 22, 60), "mines": (40, 20, 14), "shallows": (36, 58, 64), "mire": (52, 62, 36), "reaches": (60, 70, 80), "abyss": (40, 18, 22)}
 
 
 def key(im, green=False):
@@ -170,6 +180,12 @@ for lv, sheets in SHEETS.items():
         for name, c in zip(names, cuts):
             im = crop(shrink(c, scale, fog, FOG[lv], lv in GREEN))
             pieces.append((name, im))
+    if lv in BORROW: # pieces from another map's cut, turned to this map's colours (tools/standin_jade.py)
+        from standin_jade import turn
+        src, names = BORROW[lv]; A = Image.open(os.path.join(OUT, src, "atlas.png")).convert("RGBA")
+        for n in names:
+            x, y, w, h = data[src]["atlas"][n]
+            pieces.append((n, turn(A.crop((x, y, x + w, y + h)), sat=1.1)))
     atlas, rects = pack(pieces)
     atlas.save(os.path.join(OUT, lv, "atlas.png"))
     data[lv] = {"atlas": rects}

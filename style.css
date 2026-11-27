@@ -425,3 +425,8 @@ button.khint.resume:hover { color: #fff; }
 .menu .kstage button.ks.wslot.locked:is(.focus, :focus-visible) { box-shadow: inset 0 0 0 calc(3 * var(--u)) rgba(255, 243, 196, 0.5); }
 .ks.winfo { font-size: max(8.5px, calc(17 * var(--u))); display: grid; place-items: center; }
 #wallMenu .ubtn { font-size: max(10px, calc(24 * var(--u))); }
+/* more maps than painted rings (the Jade Hollow is map 7): the knight screen shows the picked map's six, the wallpaper screen pages with arrows */
+.menu .kmaps button.opt.map[hidden] { display: none; }
+.menu .wmaps button.opt.wpage { all: unset; pointer-events: auto; position: absolute; cursor: pointer; transform: translate(-50%, -50%); width: calc(56 * var(--u)); height: calc(80 * var(--u));
+  display: grid; place-items: center; font: 700 max(18px, calc(64 * var(--u))) var(--display); color: #f0c46a; text-shadow: 0 2px 4px #000, 0 0 8px #000; }
+.wpage:is(:hover, .focus, :focus-visible) { outline: none; color: #fff3c4; filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 220, 140, 0.9)); }

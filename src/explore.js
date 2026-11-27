@@ -595,6 +595,8 @@
     ctx.fillStyle = E.flares ? "#a0dcff" : "#5a6870"; ctx.fillText("Flares " + E.flares, x + 138, y + 8);
     const here = pages.filter((k) => k.split(":")[0] === String(G.level)).length;
     if (!E.scenic) { ctx.fillStyle = "#d8d0b0"; ctx.fillText("Pages " + here + "/3", x + 182, y + 8); }
+    const jade = DS.Jade && DS.Jade.hud(); // the Jade Hollow: shards carried for the Gatekeeper
+    if (jade) { ctx.fillStyle = "#7affc0"; ctx.fillText(jade, x + 246, y + 8); }
     if (E.relics.length) {
       ctx.fillStyle = "#ffd27a"; ctx.fillText("Relics", x, y + 24);
       const A = pickArt(); let ix = x + 40;

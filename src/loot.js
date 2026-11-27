@@ -117,6 +117,7 @@
     }
     return out;
   }
+  L.drop = drop; // a heap left by something that isn't a Drowned (the Jade Watcher, the Gatekeeper's vault)
   L.onKill = function (e) {
     if (!e || e.d.dummy || !G.scroll) return; // the arena is for testing
     for (let [k, n] of pile(e)) {

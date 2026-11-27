@@ -172,6 +172,16 @@
       spark(e.x + e.dir * e.w * 0.5, e.y - e.h * 0.55, "#cfd8dc", 6);
       text(e.x, e.y - e.h - 6, "BLOCK", "#cfd8dc", 12);
     }
+    // the Jade Carapace's shell (src/bosses.js): it turns blows from the front; a plunge on it while it guards flips it
+    if (e.shell && !blocked) {
+      const above = opt.plunge || p.y < e.y - e.h * 0.8;
+      if (above && e.move === "guard") e.shell.flip();
+      else if (!above && Math.sign(dir) === -e.dir) {
+        dmg *= 0.12; blocked = true; e.blockT = 0.3;
+        spark(e.x + e.dir * e.w * 0.4, e.y - e.h * 0.5, "#9affc8", 6);
+        text(e.x, e.y - e.h - 6, "SHELL", "#9affc8", 12);
+      }
+    }
     if (e.brittle) dmg *= 1.2;
     if (e.vuln) dmg *= e.vuln; // a boss's weak spot is open (the Magma Golem's core, the Hydra's stumps)
     if (e.thorns && Math.abs(e.x - p.x) < 150) hurtPlayer(e.thorns, null, e.d.name + "'s flame cloak"); // the Ashen Sovereign burns back
@@ -283,6 +293,7 @@
       e.deadT += dt; e.vy += P.gravity * dt; e.vx *= 0.95; Wd.move(e, dt);
       return;
     }
+    if (d.custom) { d.custom.tick(e, dt); return; } // runs itself (the Jade Watcher, src/jade.js)
     // statuses
     for (const s of ["chill", "freeze", "root", "kbT", "broken", "blockT", "landT"]) if (e[s] > 0) e[s] = Math.max(0, e[s] - dt);
     if (e.burn) {
@@ -505,6 +516,7 @@
     if (G.auto) { Wd.begin(n, 1000 + n * 7919); G.enc = Wd.extend(3600); G.bossX = 0; G.endless = true; }
     else { const lv = Wd.level(n, 1000 + n * 7919); G.enc = lv.enc; G.bossX = lv.bossX; G.endless = false; }
     if (G.endless) DS.Explore.startScenic(n); else DS.Explore.build(n, G.bossX); // mist, traps and pickups (looks only in the endless run)
+    DS.Jade.build(G.endless ? 0 : n, G.endless ? 0 : G.bossX); // the Jade Hollow's creatures (played levels only)
     G.banner = { txt: G.auto ? "Level " + (n + 1) + ": auto-fight" : "Level " + (n + 1), t: 0 };
   }
   // portrait <-> landscape in the middle of a level
@@ -570,7 +582,7 @@
   function nextLevel() { loadLevel(G.level + 1); const pl = G.player; pl.x = G.checkpoint; pl.y = Wd.FLOOR - 200; pl.vx = pl.vy = 0; G.cam.x = pl.x - DS.Render.vw / 2; }
   function setScroll(on) {
     G.scroll = on; G.waves = !on;
-    if (on) loadLevel(DS.START_LEVEL || 0); else { DS.Explore.clear(); Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
+    if (on) loadLevel(DS.START_LEVEL || 0); else { DS.Explore.clear(); DS.Jade.clear(); Wd.arena(); G.enc = []; G.tok++; G.endless = false; G.foes = G.foes.filter((f) => f.d.dummy); G.wave = 0; G.waveT = 2; }
   }
 
   // ---------------- the knight fighting on its own (portrait) ----------------
@@ -678,7 +690,7 @@
     DS.Fam.update(dt);
     for (const e of G.foes) updateFoe(e, dt);
     G.foes = G.foes.filter((e) => !e.dead || e.deadT < 1.4);
-    if (G.scroll) DS.Explore.update(dt);
+    if (G.scroll) { DS.Explore.update(dt); DS.Jade.update(dt); }
     DS.Loot.update(dt);
     updateShots(dt);
     DS.Kits.updateZones(dt);

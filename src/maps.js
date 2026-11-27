@@ -1,6 +1,6 @@
 /* The map select (Robert 2026-11-24): one spiked badge per 10-level map, from Robert's emblem sheet (tools/cut_loot.py ->
    assets/maps). Lantern = the Mire, trident = the Reaches, rose = the Abyss, crystal = the Spires, stone face = the
-   Molten Mines, winged skull = the Crucible Throne. A map opens once a played run reaches its first level
+   Molten Mines, winged skull = the Crucible Throne, root-bound crystal = the Jade Hollow (Robert 2026-11-26: only his stone disc, cut round to a 64 px disc in an 84 px picture (the badges draw 84 px tall), so it sits inside the ring under its points). A map opens once a played run reaches its first level
    (dl-side-best); the chosen map (dl-side-map) is where a run starts. ?level=N in the address still wins for testers.
    The wallpaper runs a level already beaten (src/unlocks.js: the one picked in Pause -> Wallpaper, or a random one). */
 "use strict";
@@ -12,6 +12,8 @@
     { id: "spires", name: "Abyssal Spires", short: "Spires", c: "170,120,240" , ring: [1108, 193], em: [35, 38] },
     { id: "mines", name: "Molten Mines", c: "200,190,150" , ring: [1283, 195], em: [38, 42] },
     { id: "crucible", name: "Crucible Throne", c: "220,150,190" , ring: [1455, 195], em: [40, 35] },
+    // map 7 (Robert 2026-11-25): no 7th ring is painted, so the strip pages: it sits in the first ring of page two
+    { id: "jade", name: "The Jade Hollow", short: "Jade Hollow", c: "80,220,150" , ring: [575, 193], em: [42, 42] },
   ];
   // ring: the centre of this map's spiked ring in Robert's knight-screen art (art px); em: the centre of the badge's own
   // emblem circle in its picture (px), so the emblem sits dead centre in the ring (src/ui.js syncMaps)
