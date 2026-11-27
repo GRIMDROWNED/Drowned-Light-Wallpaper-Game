@@ -28,7 +28,8 @@ BOSSES = {"drowned-colossus": ("colossus", 64), "mother-wyvern": ("wyvern-mother
            "rift-throne": ("rift-throne", 62), "seething-seraph": ("mines-bosses/seraph", 64),
            "magma-golem": ("mines-bosses/golem", 66), "furnace-hydra": ("mines-bosses/hydra", 74),
            "cinder-colossus": ("mines-bosses/colossus", 70), "ashen-sovereign": ("mines-bosses/sovereign", 66),
-           "sunken-king": ("props", 140), "sunken-king-body": ("props", 240)}  # the King: hands (side frames) + his body behind the arena
+           "sunken-king": ("props", 140), "sunken-king-body": ("props", 240),  # the King: hands (side frames) + his body behind the arena
+           "jade-stag": (None, 74)}  # None: drawn for the side view only, every frame is in art/ (no main-game folder)
 
 def pixelize(im, scale, colors=10, outline=(14, 10, 18), sat=1.35, bright=1.1):
     w, h = im.size; nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
@@ -79,7 +80,7 @@ def fam_frames(src):
 for fam in FAMILIARS: os.makedirs(os.path.join(OUT, "familiars", fam), exist_ok=True)
 for group, target in (("knights", KNIGHT_H), ("drowned", FOE_H), ("familiars", None)):
     for folder in sorted(os.listdir(os.path.join(OUT, group))):
-        src = SRC + (BOSSES[folder][0] if folder in BOSSES else MINIONS[folder][0] if folder in MINIONS else "drowned/" + folder if group == "drowned" else folder) + "/"
+        src = os.path.join(ART, group, folder) + "/" if folder in BOSSES and BOSSES[folder][0] is None else SRC + (BOSSES[folder][0] if folder in BOSSES else MINIONS[folder][0] if folder in MINIONS else "drowned/" + folder if group == "drowned" else folder) + "/"
         ref = Image.open(src + REF.get(folder, "side/walk1") + ".png").convert("RGBA")
         bb = ref.getbbox(); hgt = bb[3] - bb[1]
         s = (BOSS_H if folder == "champion" else BOSSES[folder][1] if folder in BOSSES else MINIONS[folder][1] if folder in MINIONS else target) / hgt if target else FAM_X / FAMILIARS[folder]

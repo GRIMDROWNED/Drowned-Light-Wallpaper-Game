@@ -2,7 +2,7 @@
    the Mother Wyvern (map 2, level 15), the Crucible Wyrm (map 2, level 20), the Starved Bell (map 3, level 25) and
    The Deadly Rose (map 3, level 30), the Seething Seraph (map 4, level 35), the Lord of the Rift Throne (level 40), the Magma Golem (map 5, level 45)
    and the Furnace Hydra (level 50), the Cinder Colossus (map 6, level 55), the Ashen Sovereign (level 60) and the
-   Sunken King (the finale, level 71, after the Jade Hollow). DS.bossFor in data.js puts them at the
+   Sunken King (the finale, level 71, after the Jade Hollow), and the Jade Hollow's Hollow Stag (level 65). DS.bossFor in data.js puts them at the
    end of their level; the Sovereign's moves stay in kits.js (DS.BOSS_AI.champion).
    Every boss is a DS.BOSS_AI entry: think() picks a move (sets e.move, e.wind, state "windup"), strike() starts it,
    tick() runs it while it lands, frame() steers every frame (the fliers hold their height: e.fly turns gravity off),
@@ -1050,4 +1050,109 @@
       return "raised";
     },
   };
+  // ---------------- the Hollow Stag (map 7, the Jade Hollow, level 65: wins a familiar) ----------------
+  // Robert drew it 2026-11-27. Fast and tall. Antler Charge: it scrapes the floor, then gallops flat out straight
+  // through where the knight stood (jump it); below half it wheels round and charges back. Shard Volley: it throws
+  // its head back and flings its antlers, and jade shards arc high and rain down on marked spots round the knight.
+  // Crown Leap: it leaps on to the knight and its landing raises a ring of jade spikes that runs outward both ways,
+  // nearest first (jump the ripple). Root Call: it rears and stamps, and roots burst up on marked spots; a knight
+  // caught in them is HELD fast for a moment. Every fourth move is a leap.
+  const JADE = "90,255,160";
+  AI["jade-stag"] = {
+    think(e, dx, adx) {
+      const hot = rage(e, "The Stag's antlers blaze");
+      e.dir = Math.sign(dx) || e.dir;
+      if (e.cd <= 0) {
+        const m = e.boss.count % 4 === 3 ? "leap"
+          : adx < 200 ? pick([["roots", 3], ["leap", 2], ["volley", 1]])
+          : adx < 520 ? pick([["charge", 4], ["volley", 3], ["roots", 2]])
+          : pick([["charge", 3], ["volley", 3], ["leap", 2]]);
+        start(e, m, { charge: 0.75, volley: 0.7, leap: 0.5, roots: 0.65 }[m] * (hot ? 0.85 : 1));
+        e.boss.turns = hot && m === "charge" ? 1 : 0;
+        return 0;
+      }
+      return adx > 260 ? Math.sign(dx) : adx < 140 ? -Math.sign(dx) * 0.6 : 0;
+    },
+    frame(e, dt) {
+      const b = e.boss, p = G.player, h = b.held;
+      if (h && (h.t -= dt) > 0 && !p.dead) { p.x = h.x; p.vx = 0; if (p.vy < 0) p.vy = 0; } // caught in the roots
+      else b.held = null;
+      if (e.state === "windup" && e.move === "charge" && Math.random() < 0.3) fx().puff(e.x + e.dir * e.w * 0.4, e.y, 1, "rgba(120,160,120,0.5)");
+    },
+    strike(e) {
+      const p = G.player, d = e.d, b = e.boss, hot = b.phase > 1;
+      e.hitDone = false;
+      if (e.move === "charge") {
+        e.dir = Math.sign(p.x - e.x) || e.dir; e.strikeDur = 2.2; b.goal = clamp(p.x + e.dir * 260, camL() + 70, camR() - 70);
+        if (Math.sign(b.goal - e.x) !== e.dir) b.goal = e.x + e.dir * 200;
+        fx().shake(4);
+      } else if (e.move === "volley") {
+        e.strikeDur = 0.6; fx().shake(3);
+        const n = hot ? 8 : 5, g = 1300, sx = e.x + e.dir * e.w * 0.3, sy = e.y - e.h * 1.05;
+        for (let i = 0; i < n; i++) {
+          const tx = clamp(p.x + (i - (n - 1) / 2) * (hot ? 70 : 95) + rnd(-15, 15), 40, Wd.W - 40), gy = groundY(tx, p.y - 40);
+          const T = 1.05 + i * 0.07, v = lobAt(sx, sy, tx, gy - 6, T, g);
+          G.shots.push({ team: "f", kind: "jshard", x: sx, y: sy, vx: v.vx, vy: v.vy, g, r: 9, dmg: Math.round(d.dmg * 0.6), life: T + 0.3, land: true, warn: gy, tx, src: e, by: d.name,
+            onEnd: (s) => fx().spark(s.x, s.y, "#7affc0", 6) });
+        }
+      } else if (e.move === "leap") {
+        e.dir = Math.sign(p.x - e.x) || e.dir; e.strikeDur = 3; b.air = "up";
+        const tx = clamp(p.x, camL() + 80, camR() - 80), T = 0.75;
+        e.vy = -0.5 * P.gravity * T; e.vx = (tx - e.x) / T; e.onGround = false;
+      } else if (e.move === "roots") {
+        e.strikeDur = hot ? 1.5 : 0.9; fx().shake(9);
+        const xs = [p.x, p.x - 170, p.x + 170];
+        xs.forEach((x, i) => roots(e, clamp(x, 40, Wd.W - 40), 0.45 + i * 0.12, d.dmg * 0.7));
+        if (hot) roots(e, 0, 1.05, d.dmg * 0.7, true); // a second burst right under wherever the knight went
+        fx().puff(e.x + e.dir * 60, e.y, 12, "rgba(110,90,60,0.6)");
+      }
+    },
+    tick(e, dt) {
+      const d = e.d, p = G.player, b = e.boss;
+      if (e.move === "charge") {
+        e.vx = e.dir * 820;
+        if (Math.random() < 0.5) fx().puff(e.x - e.dir * e.w * 0.4, e.y, 1, "rgba(120,160,120,0.5)");
+        if (!e.hitDone && front(e, e.w * 0.6, 0.85, e.w * 0.3)) { e.hitDone = true; hurt(e, d.dmg * 1.1); p.vx = e.dir * 520; p.vy = -380; p.onGround = false; }
+        const past = (b.goal - e.x) * e.dir <= 0 || e.hitWall;
+        if (past) {
+          if (b.turns > 0) { b.turns--; e.dir = -e.dir; e.hitDone = false; b.goal = clamp(p.x + e.dir * 260, camL() + 70, camR() - 70); if ((b.goal - e.x) * e.dir < 100) b.goal = e.x + e.dir * 200; fx().shake(5); }
+          else { e.vx = e.dir * 200; e.st = e.strikeDur; fx().puff(e.x + e.dir * 40, e.y, 10, "rgba(120,160,120,0.5)"); }
+        }
+      } else if (e.move === "leap") {
+        if (b.air === "up" && e.vy > 0) b.air = "fall";
+        if (b.air !== "land" && e.onGround && e.st > 0.1) {
+          b.air = "land"; e.vx = 0; e.st = e.strikeDur - 0.7; fx().shake(12);
+          if (DS.boxHitsPlayer(e.x - e.w * 0.5, e.y - e.h, e.x + e.w * 0.5, e.y)) hurt(e, d.dmg * 1.2);
+          const n = e.boss.phase > 1 ? 5 : 4;
+          for (const k of [1, -1]) for (let i = 0; i < n; i++) {
+            const x = e.x + k * (e.w * 0.5 + 30 + i * 62);
+            if (x > 30 && x < Wd.W - 30) spike(e, "crystal", x, 0.08 + i * 0.13, d.dmg * 0.6, 70 + i * 8, 0.4, JADE);
+          }
+          fx().puff(e.x, e.y, 18, "rgba(120,255,180,0.45)");
+        }
+        if (b.air !== "land" && e.st > e.strikeDur - 0.75) e.st = e.strikeDur - 0.75;
+      }
+    },
+    pose(e) {
+      const m = e.move, b = e.boss;
+      if (e.state === "hurt") return !e.onGround ? "knock" : e.stun >= 0.5 ? "stun" : null;
+      if (e.state === "windup") return { charge: "chargeWind", volley: "volleyWind", leap: "crouch", roots: "rear" }[m];
+      if (e.state === "strike" && m === "leap") return { up: "leap", fall: "fall", land: "land" }[b.air];
+      if (e.state === "strike" || e.state === "recover") return { charge: e.state === "recover" ? null : "charge", volley: "volley", leap: "land", roots: "slam" }[m];
+      return null;
+    },
+  };
+  // roots bursting up from a marked spot: a knight they catch is held fast (follow: aimed under the knight when they burst)
+  function roots(e, x, delay, dmg, follow) {
+    const gy0 = groundY(x, G.player.y - 40);
+    G.shots.push({ team: "f", kind: "roots", x, y: gy0 - 34, vx: 0, vy: 0, r: 30, h: 68, dmg: Math.round(dmg), life: 0.7, delay, warn: gy0, ghost: true, src: e, by: e.d.name, c: "150,120,70", follow,
+      update(s) {
+        if (s.t > 0.2) return;
+        const p = G.player;
+        if (s.follow && !s.aimed) { s.aimed = true; s.x = clamp(p.x, 40, Wd.W - 40); s.warn = groundY(s.x, p.y - 40); s.y = s.warn - 34; }
+        if (!e.boss.held && !p.dead && DS.boxHitsPlayer(s.x - s.r, s.y - s.h / 2, s.x + s.r, s.y + s.h / 2)) {
+          e.boss.held = { x: p.x, t: 0.9 }; fx().text(p.x, p.y - 100, "HELD", "#b8ff9a", 14);
+        }
+      } });
+  }
 })(window.DS = window.DS || {});

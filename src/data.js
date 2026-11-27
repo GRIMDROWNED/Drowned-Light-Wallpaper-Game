@@ -4,7 +4,7 @@
    a frame without one gets its feet guessed from its lowest opaque pixels (src/sprites.js). */
 "use strict";
 (function (DS) {
-  DS.VERSION = "0.15.0";
+  DS.VERSION = "0.15.1";
   // Tester tools (Robert 2026-11-24): the pause menu's spawn/testing rows and the ?level= jump only work once the tester
   // code has been entered on this device (Pause -> Tester code), so friends play the game as intended. Not real security:
   // it only keeps the cheats out of the way. Stored as dl-side-tester; src/ui.js unlocks and locks it.
@@ -219,6 +219,10 @@
     "ashen-sovereign": boss("ashen-sovereign", { idle: ["right"], jump: ["side/leap"], fall: ["side/plunge"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], hurt: ["side/hurt"], death: ["side/death"] },
       ["sweepWind", "sweep", "thrust", "pillar", "cloak", "stun", "crouch", "leap", "apex", "plunge", "land", "knock"],
       { name: "Ashen Sovereign", title: "The Ashen Sovereign", fallen: "THE ASHEN CROWN FALLS", hp: 2100, speed: 135, dmg: 25, reach: 200, windup: 0.6, cd: 0.9, w: 70, h: 125 }),
+    // the Jade Hollow's level 65 boss: Robert's own side-view sheets only (no main-game sprite; tools/pixelize.py BOSSES)
+    "jade-stag": boss("jade-stag", { idle: ["right"], run: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"], hurt: ["side/hurt"], death: ["side/death"], jump: ["side/leap"], fall: ["side/fall"] },
+      ["chargeWind", "charge", "volleyWind", "volley", "rear", "slam", "crouch", "leap", "fall", "land", "stun", "knock"],
+      { name: "Hollow Stag", title: "The Hollow Stag", fallen: "THE STAG SINKS INTO THE ROOTS", hp: 2150, speed: 150, dmg: 25, reach: 170, windup: 0.6, cd: 0.95, w: 140, h: 135 }),
     "sunken-king": boss("sunken-king", { idle: ["side/raised"], run: ["side/raised"], jump: ["side/raised"], fall: ["side/raised"], hurt: ["side/rest"], death: ["side/rest"] },
       ["raised", "slam", "sweep", "grab", "rest", "rise"],
       { name: "The Sunken King", title: "The Sunken King", fallen: "THE SUNKEN KING SINKS AT LAST", hp: 3000, speed: 0, dmg: 26, reach: 120, windup: 0.8, cd: 0.9, w: 150, h: 80, back: "KING_BODY" }),
@@ -257,8 +261,8 @@
   // its level 10 boss wins a kit. The plan, map by map (bosses not built yet stay the Sovereign until they are):
   DS.MAP_BOSSES = [["drowned-colossus", "champion"], ["mother-wyvern", "crucible-wyrm"], ["starved-bell", "deadly-rose"],
     ["seething-seraph", "rift-throne"], ["magma-golem", "furnace-hydra"], ["cinder-colossus", "ashen-sovereign"],
-    // map 7, the Jade Hollow (Robert 2026-11-25): its level 70 boss wins the Jade Breaker. Robert drew the Hollow Stag (level 65) and the Jade Carapace (level 70); until
-    // their moves are built these names fall back to the champion (bossFor) and the Drowned guard its wells.
+    // map 7, the Jade Hollow (Robert 2026-11-25): its level 70 boss wins the Jade Breaker. Robert drew the Hollow Stag (level 65, built 2026-11-27) and the Jade Carapace (level 70);
+    // until the Carapace's moves are built it falls back to the champion (bossFor). The Drowned guard the map's wells.
     ["jade-stag", "jade-carapace"]];
   // the finale, the Sunken King's hall: the level after the last map (level 71, index 70), and every loop after
   DS.FINALE = DS.MAP_BOSSES.length * 10;
